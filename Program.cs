@@ -9,10 +9,14 @@ using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using System;
 
-namespace simple_oidc_oauth
+namespace SimpleOidcOauth
 {
+    /// <summary>The main class of the application, which builds the web server and starts it up.</summary>
     public class Program
     {
+        /// <summary>Application's entry point.</summary>
+        /// <param name="args">Command line arguments.</param>
+        /// <returns>Returns an integer with the application's result.</returns>
         public static int Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
@@ -48,6 +52,9 @@ namespace simple_oidc_oauth
             }
         }
 
+        /// <summary>Creates the web host and initializes its startup configurations.</summary>
+        /// <param name="args">The command line arguments received by the application.</param>
+        /// <returns>Returns an <see cref="IHostBuilder" /> reference representing the host being built.</returns>
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
