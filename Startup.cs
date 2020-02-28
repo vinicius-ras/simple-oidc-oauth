@@ -2,8 +2,13 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
+using System.Linq;
+using System.Reflection;
+using IdentityServer4.EntityFramework.DbContexts;
+using IdentityServer4.EntityFramework.Mappers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -19,6 +24,9 @@ namespace SimpleOidcOauth
         /// <summary>Refererence to an <see cref="IWebHostEnvironment" /> object, injected by the container.</summary>
         /// <value>The <see cref="IWebHostEnvironment" /> object that has been injected by the container.</value>
         private IWebHostEnvironment Environment { get; }
+
+
+
 
 
         // PUBLIC METHODS
@@ -40,10 +48,25 @@ namespace SimpleOidcOauth
             // uncomment, if you want to add an MVC-based UI
             services.AddControllersWithViews();
 
+            var migrationAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+            const string databaseConnString = @"Data Source=identity-database.db;";
             var builder = services.AddIdentityServer()
-                .AddInMemoryIdentityResources(Config.IdentityResources)
-                .AddInMemoryApiResources(Config.ApiResources)
-                .AddInMemoryClients(Config.Clients);
+                .AddConfigurationStore(configStoreOptions => {
+                    configStoreOptions.ConfigureDbContext = genericDbOptions => {
+                        genericDbOptions.UseSqlite(
+                            databaseConnString,
+                            sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationAssembly)
+                        );
+                    };
+                })
+                .AddOperationalStore(opStoreOptions => {
+                    opStoreOptions.ConfigureDbContext = genericDbOptions => {
+                        genericDbOptions.UseSqlite(
+                            databaseConnString,
+                            sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationAssembly)
+                        );
+                    };
+                });
 
             // not recommended for production - you need to store your key material somewhere secure
             builder.AddDeveloperSigningCredential();
@@ -54,6 +77,7 @@ namespace SimpleOidcOauth
         /// <param name="app">An object which can be used for configuring the application's HTTP request processing pipeline.</param>
         public void Configure(IApplicationBuilder app)
         {
+            // InitializeDatabase(app);
             if (Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
