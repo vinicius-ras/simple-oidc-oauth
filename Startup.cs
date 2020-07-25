@@ -2,15 +2,15 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using System.Linq;
+using System;
 using System.Reflection;
-using IdentityServer4.EntityFramework.DbContexts;
-using IdentityServer4.EntityFramework.Mappers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using SimpleOidcOauth.Data;
 
 namespace SimpleOidcOauth
 {
@@ -20,10 +20,19 @@ namespace SimpleOidcOauth
     /// </summary>
     public class Startup
     {
-        // PRIVATE FIELDS
+        // CONSTANTS
+        /// <summary>Name of the file which stores the configurations database.</summary>
+        private const string DbFileNameConfigurations = "identity-database-configs.sqlite";
+        /// <summary>Name of the file which stores the operational database.</summary>
+        private const string DbFileNameOperational = "identity-database-operational.sqlite";
+        /// <summary>Name of the file which stores user-related data.</summary>
+        private const string DbFileNameUsers = "identity-database-users.sqlite";
+
+
+        // PRIVATE PROPERTIES
         /// <summary>Refererence to an <see cref="IWebHostEnvironment" /> object, injected by the container.</summary>
         /// <value>The <see cref="IWebHostEnvironment" /> object that has been injected by the container.</value>
-        private IWebHostEnvironment Environment { get; }
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
 
 
@@ -34,7 +43,7 @@ namespace SimpleOidcOauth
         /// <param name="environment">Reference to an injected <see cref="IWebHostEnvironment"/>, provided by the container.</param>
         public Startup(IWebHostEnvironment environment)
         {
-            Environment = environment;
+            _webHostEnvironment = environment;
         }
 
 
@@ -45,31 +54,47 @@ namespace SimpleOidcOauth
         /// <param name="services">The collection where services can be added for the container to know them.</param>
         public void ConfigureServices(IServiceCollection services)
         {
-            // uncomment, if you want to add an MVC-based UI
-            services.AddControllersWithViews();
+            services.AddControllers();
 
-            var migrationAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
-            const string databaseConnString = @"Data Source=identity-database.db;";
-            var builder = services.AddIdentityServer()
+            // Configure ASP.NET Core Identity, IdentityServer and the data stores to be used
+            var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+            services.AddDbContext<AppDbContext>(appDbOptions => {
+                appDbOptions.UseSqlite(
+                    @$"Data Source={DbFileNameUsers};",
+                    sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationsAssembly)
+                );
+            });
+
+
+            services.AddIdentity<IdentityUser, IdentityRole>()
+                .AddEntityFrameworkStores<AppDbContext>();
+
+
+            var identityServerBuilder = services.AddIdentityServer()
                 .AddConfigurationStore(configStoreOptions => {
                     configStoreOptions.ConfigureDbContext = genericDbOptions => {
                         genericDbOptions.UseSqlite(
-                            databaseConnString,
-                            sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationAssembly)
+                            @$"Data Source={DbFileNameConfigurations};",
+                            sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationsAssembly)
                         );
                     };
                 })
                 .AddOperationalStore(opStoreOptions => {
                     opStoreOptions.ConfigureDbContext = genericDbOptions => {
                         genericDbOptions.UseSqlite(
-                            databaseConnString,
-                            sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationAssembly)
+                            @$"Data Source={DbFileNameOperational};",
+                            sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationsAssembly)
                         );
                     };
-                });
+                })
+                .AddAspNetIdentity<IdentityUser>();
 
-            // not recommended for production - you need to store your key material somewhere secure
-            builder.AddDeveloperSigningCredential();
+
+            // Configure key/signing material
+            if (_webHostEnvironment.IsDevelopment())
+                identityServerBuilder.AddDeveloperSigningCredential();
+            else
+                throw new NotImplementedException($@"Signing credentials not configured/implemented for environment of type ""{_webHostEnvironment.EnvironmentName}"".");
         }
 
 
@@ -77,19 +102,17 @@ namespace SimpleOidcOauth
         /// <param name="app">An object which can be used for configuring the application's HTTP request processing pipeline.</param>
         public void Configure(IApplicationBuilder app)
         {
-            // InitializeDatabase(app);
-            if (Environment.IsDevelopment())
+            if (_webHostEnvironment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                TestData.InitializeDatabase(app).Wait();
             }
 
-            // uncomment if you want to add MVC
             app.UseStaticFiles();
             app.UseRouting();
 
             app.UseIdentityServer();
 
-            // uncomment, if you want to add MVC
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {

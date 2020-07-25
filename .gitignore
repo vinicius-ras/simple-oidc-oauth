@@ -432,5 +432,8 @@ $RECYCLE.BIN/
 !.vscode/launch.json
 !.vscode/extensions.json
 
-tempkey.rsa
-identity-database.db
+*.rsa
+*.jwk
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
