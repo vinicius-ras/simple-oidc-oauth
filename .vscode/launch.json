@@ -5,13 +5,13 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": ".NET Core Launch (web)",
+			"name": "Launch auth-server",
 			"type": "coreclr",
 			"request": "launch",
 			"preLaunchTask": "build",
-			"program": "${workspaceFolder}/bin/Debug/netcoreapp3.1/simple-oidc-oauth.dll",
+			"program": "${workspaceFolder}/auth-server/bin/Debug/netcoreapp3.1/auth-server.dll",
 			"args": [],
-			"cwd": "${workspaceFolder}",
+			"cwd": "${workspaceFolder}/auth-server",
 			"stopAtEntry": false,
 			"serverReadyAction": {
 				"action": "openExternally",
@@ -21,14 +21,14 @@
 				"ASPNETCORE_ENVIRONMENT": "Development"
 			},
 			"sourceFileMap": {
-				"/Views": "${workspaceFolder}/Views"
+				"/Views": "${workspaceFolder}/auth-server/Views"
 			},
 			"logging": {
 				"moduleLoad": false
 			}
 		},
 		{
-			"name": ".NET Core Attach",
+			"name": "Attach to .NET Core process",
 			"type": "coreclr",
 			"request": "attach",
 			"processId": "${command:pickProcess}"
