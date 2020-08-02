@@ -32,6 +32,28 @@
 			"type": "coreclr",
 			"request": "attach",
 			"processId": "${command:pickProcess}"
+		},
+		{
+			"type": "firefox",
+			"request": "launch",
+			"reAttach": true,
+			"name": "Attach to SPA / Mozilla Firefox",
+			"url": "http://localhost:3000",
+			"webRoot": "${workspaceFolder}/spa/src"
+		},
+		{
+			"name": "Attach to SPA / Google Chrome",
+			"type": "chrome",
+			"request": "launch",
+			"url": "http://localhost:3000",
+			"webRoot": "${workspaceFolder}/spa/src",
+			"sourceMapPathOverrides": {
+				"webpack:///./*": "${webRoot}/*",
+				"webpack:///src/*": "${webRoot}/*",
+				"webpack:///*": "*",
+				"webpack:///./~/*": "${webRoot}/node_modules/*",
+				"meteor://💻app/*": "${webRoot}/*"
+			}
 		}
 	]
 }
