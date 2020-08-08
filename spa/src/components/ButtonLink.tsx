@@ -1,9 +1,9 @@
 import React from 'react';
+import { Link, LinkProps } from 'react-router-dom';
+import History from 'history';
 
 /** Props for the {@link ButtonLink} functional component. */
-interface ButtonLinkProps {
-	href: string | undefined;
-	children: Array<JSX.Element|string> | JSX.Element | string;
+interface ButtonLinkProps<S = History.LocationState> extends LinkProps<S> {
 	[restProps: string]: any;
 }
 
@@ -11,11 +11,9 @@ interface ButtonLinkProps {
 /** An anchor component which renders to a button-like UI element.
  * @param {ButtonLinkProps} props The props to be used by this functional component. */
 function ButtonLink(props: ButtonLinkProps) {
-	const { children, href, className, ...restProps } = props;
+	const { className = '', ...restProps } = props;
 	return (
-		<a className={`component-ButtonLink ${className}`} href={href} {...restProps}>
-			{children}
-		</a>
+		<Link className={`component-ButtonLink ${className}`} {...restProps} />
 	);
 }
 
