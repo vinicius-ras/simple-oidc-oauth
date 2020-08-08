@@ -1,10 +1,11 @@
 import React from 'react';
 import './css/build/app.css';
+import WelcomePage from './components/WelcomePage';
 
 function App() {
   return (
     <div className="App">
-      <p>Simple OAuth 2.0 + OpenID Connect</p>
+      <WelcomePage />
     </div>
   );
 }

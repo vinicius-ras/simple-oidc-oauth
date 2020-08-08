@@ -1,0 +1,7 @@
+.welcome-page > header > div {
+	@apply text-base;
+}
+
+.welcome-page > header > div.subtext {
+	@apply text-gray-400 text-xs leading-none font-bold;
+}
