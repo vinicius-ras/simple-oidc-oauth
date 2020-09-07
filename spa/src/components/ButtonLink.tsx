@@ -3,8 +3,7 @@ import { Link, LinkProps } from 'react-router-dom';
 import History from 'history';
 
 /** Props for the {@link ButtonLink} functional component. */
-interface ButtonLinkProps<S = History.LocationState> extends LinkProps<S> {
-	[restProps: string]: any;
+export interface ButtonLinkProps<S = History.LocationState> extends LinkProps<S> {
 }
 
 
@@ -16,5 +15,6 @@ function ButtonLink(props: ButtonLinkProps) {
 		<Link className={`component-ButtonLink ${className}`} {...restProps} />
 	);
 }
+
 
 export default ButtonLink;

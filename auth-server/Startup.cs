@@ -4,10 +4,12 @@
 
 using System;
 using System.Reflection;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SimpleOidcOauth.Data;
@@ -31,19 +33,22 @@ namespace SimpleOidcOauth
 
         // PRIVATE PROPERTIES
         /// <summary>Refererence to an <see cref="IWebHostEnvironment" /> object, injected by the container.</summary>
-        /// <value>The <see cref="IWebHostEnvironment" /> object that has been injected by the container.</value>
         private readonly IWebHostEnvironment _webHostEnvironment;
+        /// <summary>Refererence to an <see cref="IConfiguration" /> object, injected by the container.</summary>
+		private readonly IConfiguration _config;
 
 
 
 
 
-        // PUBLIC METHODS
-        /// <summary>Constructor.</summary>
-        /// <param name="environment">Reference to an injected <see cref="IWebHostEnvironment"/>, provided by the container.</param>
-        public Startup(IWebHostEnvironment environment)
+		// PUBLIC METHODS
+		/// <summary>Constructor.</summary>
+		/// <param name="environment">Reference to an injected <see cref="IWebHostEnvironment"/>, provided by the container.</param>
+		/// <param name="config">Reference to an injected <see cref="IConfiguration"/>, provided by the container.</param>
+		public Startup(IWebHostEnvironment environment, IConfiguration config)
         {
             _webHostEnvironment = environment;
+            _config = config;
         }
 
 
@@ -54,9 +59,11 @@ namespace SimpleOidcOauth
         /// <param name="services">The collection where services can be added for the container to know them.</param>
         public void ConfigureServices(IServiceCollection services)
         {
+            // Add controllers only (we don't need full MVC support for this project)
             services.AddControllers();
 
-            // Configure ASP.NET Core Identity, IdentityServer and the data stores to be used
+
+            // Add database access services
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
             services.AddDbContext<AppDbContext>(appDbOptions => {
                 appDbOptions.UseSqlite(
@@ -66,6 +73,7 @@ namespace SimpleOidcOauth
             });
 
 
+            // Add ASP.NET Core Identity and IdentityServer4 services
             services.AddIdentity<IdentityUser, IdentityRole>()
                 .AddEntityFrameworkStores<AppDbContext>();
 
@@ -89,6 +97,21 @@ namespace SimpleOidcOauth
                 })
                 .AddAspNetIdentity<IdentityUser>();
 
+            services.ConfigureApplicationCookie(opts => {
+                opts.Cookie.Name = "simple-oidc-oauth-credentials";
+            });
+
+
+            // Configure CORS
+            services.AddCors(opts => {
+                opts.AddDefaultPolicy(corsOpts => {
+                    corsOpts.AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials()
+                        .WithOrigins("http://localhost:3000");
+                });
+            });
+
 
             // Configure key/signing material
             if (_webHostEnvironment.IsDevelopment())
@@ -108,8 +131,10 @@ namespace SimpleOidcOauth
                 TestData.InitializeDatabase(app).Wait();
             }
 
+
             app.UseStaticFiles();
             app.UseRouting();
+            app.UseCors();
 
             app.UseIdentityServer();
 

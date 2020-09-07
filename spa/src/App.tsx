@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom';
-import UserCredentials from './components/UserCredentials';
+import UserCredentialsPage from './components/UserCredentialsPage';
 import WelcomePage from './components/WelcomePage';
 import { library as FontAwesomeIconsLibrary } from '@fortawesome/fontawesome-svg-core';
 import './css/build/app.css';
@@ -21,7 +21,7 @@ function App() {
           <main>
               <Switch>
                 <Route path="/" exact={true} component={WelcomePage} />
-                <Route path="/login" component={UserCredentials} />
+                <Route path="/login" component={UserCredentialsPage} />
               </Switch>
           </main>
           <footer></footer>
