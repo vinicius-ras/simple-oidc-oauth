@@ -16,8 +16,11 @@ export default abstract class AppConfigurationService {
 	/** Contains URLs to the endpoints that this application communicates with. */
 	public static Endpoints = class {
 		/** The endpoint used to log the user in, by sending his/her credentials as a POST request. */
-		public static readonly Login = `${AppConfigurationService.AuthServerUrl}/Account/Login`;
+		public static readonly Login = `${AppConfigurationService.AuthServerUrl}/api/account/login`;
 		/** The endpoint used to log the user out, by sending a POST request. */
-		public static readonly Logout = `${AppConfigurationService.AuthServerUrl}/Account/Logout`;
+		public static readonly Logout = `${AppConfigurationService.AuthServerUrl}/api/account/logout`;
+		/** The endpoint used to check if the user has a valid session with the authentication/authorization server, by sending
+		 * a GET request. */
+		public static readonly CheckLogin = `${AppConfigurationService.AuthServerUrl}/api/account/check-login`;
 	}
 }

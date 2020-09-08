@@ -1,22 +1,20 @@
 import { faSignInAlt, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import React, { useState } from 'react';
+import AppConfigurationService from '../services/AppConfigurationService';
+import UserInfoService, { UserInfoData } from '../services/UserInfoService';
 import ButtonLinkWithIcon from './ButtonLinkWithIcon';
 import WorkerButtonLinkWithIcon from './WorkerButtonLinkWithIcon';
-import AppConfigurationService from '../services/AppConfigurationService';
-import UserInfoServiceType, { UserInfoData } from '../services/UserInfoService';
-import UserInfoService from '../services/UserInfoService';
-import { UserInfo } from 'os';
 import { Redirect } from 'react-router-dom';
 
 /** Props for the {@link UserCredentialsPage} functional component. */
-interface UserCredentialsPageProps
+export interface UserCredentialsPageProps
 {
 }
 
 
 /** A component which allows users to enter their credentials in order to perform a login,
  * or to register themselves. */
-function UserCredentialsPage(props: UserCredentialsPageProps) {
+export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 	const loggedInUserInfo = UserInfoService.getUserInfo();
 
 	const [userEmail, setUserEmail] = useState(loggedInUserInfo?.email || '');
@@ -62,16 +60,14 @@ function UserCredentialsPage(props: UserCredentialsPageProps) {
 
 
 	// Render the component
-	const extraButtonClasses = (isWaitingLogin || isUserLoggedIn)
-		? 'cursor-not-allowed opacity-50'
-		: '';
+	const disableButtons = (isWaitingLogin || isUserLoggedIn);
 
 	return (
 		<div className="component-UserCredentialsPage">
 			<div className="flex flex-col">
 				<input type="email" placeholder="E-mail" value={userEmail} onChange={(evt) => setUserEmail(evt.target.value)} className="border border-gray-500 rounded-lg p-2" disabled={isUserLoggedIn} />
 				<input type="password" placeholder="Password" value={userPassword} onChange={(evt) => setUserPassword(evt.target.value)} className="border border-gray-500 rounded-lg p-2 mt-2" disabled={isUserLoggedIn} />
-				<WorkerButtonLinkWithIcon to="/" icon={faSignInAlt} isBusy={isWaitingLogin} className={`mt-2 self-end ${extraButtonClasses}`} onClick={onLoginButtonClick}>
+				<WorkerButtonLinkWithIcon to="/" icon={faSignInAlt} isBusy={isWaitingLogin} className="mt-2 self-end" disabled={disableButtons} onClick={onLoginButtonClick}>
 					<span>Log in</span>
 				</WorkerButtonLinkWithIcon>
 			</div>
@@ -81,10 +77,10 @@ function UserCredentialsPage(props: UserCredentialsPageProps) {
 				<hr className="flex-grow" />
 			</div>
 			<div className="flex flex-col">
-				<ButtonLinkWithIcon to="/" icon={['fab', 'facebook-square']} className={`my-2 ${extraButtonClasses}`}>
+				<ButtonLinkWithIcon to="/" icon={['fab', 'facebook-square']} className="my-2" disabled={disableButtons}>
 					<span>Login with Facebook</span>
 				</ButtonLinkWithIcon>
-				<ButtonLinkWithIcon to="/" icon={['fab', 'google']} className={extraButtonClasses}>
+				<ButtonLinkWithIcon to="/" icon={['fab', 'google']} disabled={disableButtons}>
 					<span>Login with Google</span>
 				</ButtonLinkWithIcon>
 			</div>
@@ -94,7 +90,7 @@ function UserCredentialsPage(props: UserCredentialsPageProps) {
 				<hr className="flex-grow" />
 			</div>
 			<div className="flex flex-col">
-				<WorkerButtonLinkWithIcon to="/" icon={faUserPlus} className={`mt-2 ${extraButtonClasses}`}>
+				<WorkerButtonLinkWithIcon to="/" icon={faUserPlus} className="mt-2" disabled={disableButtons}>
 					<span>Sign up</span>
 				</WorkerButtonLinkWithIcon>
 			</div>
@@ -112,5 +108,3 @@ function UserCredentialsPage(props: UserCredentialsPageProps) {
 		</div>
 	);
 }
-
-export default UserCredentialsPage;

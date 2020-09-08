@@ -3,7 +3,9 @@
 
 
 using System;
+using System.Net;
 using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -99,6 +101,35 @@ namespace SimpleOidcOauth
 
             services.ConfigureApplicationCookie(opts => {
                 opts.Cookie.Name = "simple-oidc-oauth-credentials";
+
+                // The following workarounds implemented below are described in: https://github.com/dotnet/aspnetcore/issues/9039
+
+                // On authentication failure when the clients try to access API endpoints,
+                // prevent HTTP 302 (Found) redirections to the "standard login page" and send HTTP 401 (Unauthorized) instead.
+                var originalRedirectToLogin = opts.Events.OnRedirectToLogin;
+                opts.Events.OnRedirectToLogin = (context) => {
+                    var requestPath = context.Request.Path;
+                    if (requestPath.StartsWithSegments("/api"))
+                    {
+                        context.Response.StatusCode = (int) HttpStatusCode.Unauthorized;
+                        return Task.CompletedTask;
+                    }
+                    return originalRedirectToLogin(context);
+                };
+
+
+                // On authorization failure when the clients try to access API endpoints,
+                // prevent HTTP 302 (Found) redirections to a "not authorized" page and send HTTP 403 (Forbiden) instead.
+                var originalRedirectToAccessDenied = opts.Events.OnRedirectToAccessDenied;
+                opts.Events.OnRedirectToAccessDenied = (context) => {
+                    var requestPath = context.Request.Path;
+                    if (requestPath.StartsWithSegments("/api"))
+                    {
+                        context.Response.StatusCode = (int) HttpStatusCode.Forbidden;
+                        return Task.CompletedTask;
+                    }
+                    return originalRedirectToAccessDenied(context);
+                };
             });
 
 

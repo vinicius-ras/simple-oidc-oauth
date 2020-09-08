@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace SimpleOidcOauth.Models
 {
 	/// <summary>Output model representing response data returned by the <see cref="AccountController.Login(LoginInputModel)" /> endpoint.</summary>
