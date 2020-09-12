@@ -31,6 +31,21 @@ class UserInfoServiceType {
 	/** Constructor. */
 	constructor() {
 		this.callbackSubscriptions = new Array<()=>void>();
+
+
+		// Subscribe to Local Storage events.
+		// This callback is called once OTHER TABS update the Local Storage data,
+		// allowing THIS TAB to receive the same updates.
+		window.addEventListener("storage", evtData => {
+			// Process only Local Storage events (ignoring Session Storage), and only those
+			// related to the key which stores user's login information
+			if (evtData.storageArea !== localStorage || evtData.key !== UserInfoServiceType.LOCAL_STORAGE_KEY)
+				return;
+
+			// Fire callbacks to subscribed clients
+			const newUserInfo = this.getUserInfo();
+			this.fireEventsToSubscribers(newUserInfo);
+		});
 	}
 
 
@@ -38,14 +53,14 @@ class UserInfoServiceType {
 	 * @param newUserInfo An object containing the user's information to be stored in the browser's Local Storage. */
 	updateUserInfo(newUserInfo: UserInfoData) : void {
 		localStorage.setItem(UserInfoServiceType.LOCAL_STORAGE_KEY, JSON.stringify(newUserInfo));
-		this.callbackSubscriptions.forEach(callback => callback(newUserInfo));
+		this.fireEventsToSubscribers(newUserInfo);
 	}
 
 
 	/** Clears the currently logged in user's information from the browser's Local Storage. */
 	clearUserInfo() : void {
 		localStorage.removeItem(UserInfoServiceType.LOCAL_STORAGE_KEY);
-		this.callbackSubscriptions.forEach(callback => callback(null));
+		this.fireEventsToSubscribers(null);
 	}
 
 
@@ -96,6 +111,13 @@ class UserInfoServiceType {
 		if (callbackIndex >= 0)
 			this.callbackSubscriptions.splice(callbackIndex, 1);
 		return (callbackIndex >= 0);
+	}
+
+
+	/** Fires events related to the change of the user's login state to all subscribed clients.
+	 * @param newUserData The new login state of the user. */
+	private fireEventsToSubscribers(newUserData: UserInfoData|null) {
+		this.callbackSubscriptions.forEach(callback => callback(newUserData));
 	}
 };
 

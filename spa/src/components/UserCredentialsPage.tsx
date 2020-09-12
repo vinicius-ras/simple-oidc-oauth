@@ -1,10 +1,10 @@
 import { faSignInAlt, faUserPlus } from '@fortawesome/free-solid-svg-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Redirect } from 'react-router-dom';
 import AppConfigurationService from '../services/AppConfigurationService';
 import UserInfoService, { UserInfoData } from '../services/UserInfoService';
 import ButtonLinkWithIcon from './ButtonLinkWithIcon';
 import WorkerButtonLinkWithIcon from './WorkerButtonLinkWithIcon';
-import { Redirect } from 'react-router-dom';
 
 /** Props for the {@link UserCredentialsPage} functional component. */
 export interface UserCredentialsPageProps
@@ -21,6 +21,23 @@ export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 	const [userPassword, setUserPassword] = useState('');
 	const [isWaitingLogin, setIsWaitingLogin] = useState(false);
 	const [isUserLoggedIn, setUserLoggedIn] = useState(!!loggedInUserInfo);
+
+
+	// Initialization: setup a callback for receiving events when user's login state changes
+	useEffect(() => {
+		/** Called for any events where the user's login state changes.
+		 * @param newUserData New, updated data about the user. */
+		const onUserLoginDataChanged = (newUserData: UserInfoData | null) => {
+			setUserLoggedIn(!!newUserData);
+		};
+
+		// Subscription and cleanup (when component is unmounted) for receiving user login related callbacks
+		UserInfoService.subscribe(onUserLoginDataChanged);
+		return () => {
+			UserInfoService.unsubscribe(onUserLoginDataChanged)
+		};
+	}, []);
+
 
 
 	/** Called when the user clicks the "login" button, to submit his/her credentials.

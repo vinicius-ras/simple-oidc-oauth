@@ -1,6 +1,6 @@
-import { faSignInAlt, faUserPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faSignInAlt, faSpinner, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import AppConfigurationService from "../services/AppConfigurationService";
 import UserInfoService, { UserInfoData } from "../services/UserInfoService";
 import ButtonLink from "./ButtonLink";
@@ -12,15 +12,31 @@ import WorkerButtonLinkWithIcon from "./WorkerButtonLinkWithIcon";
 export default function WelcomePage() {
 	const [isInitializing, setIsInitializing] = useState(true);
 	const [isWaitingLogout, setIsWaitingLogout] = useState(false);
+	const [loggedUserInfo, setLoggedUserInfo] = useState(UserInfoService.getUserInfo());
 
-	const userInfo = UserInfoService.getUserInfo();
+
+	// Initialization: subscribe to events fired when the user changes his/her login state
+	useEffect(() => {
+		/** Called for any events where the user's login state changes.
+		 * @param newUserData New, updated data about the user. */
+		const onUserLoginDataChanged = (newUserData: UserInfoData | null) => {
+			setLoggedUserInfo(newUserData);
+		};
+
+
+		// Subscription and cleanup (when component is unmounted) for receiving user login related callbacks
+		UserInfoService.subscribe(onUserLoginDataChanged);
+		return () => {
+			UserInfoService.unsubscribe(onUserLoginDataChanged)
+		};
+	}, [loggedUserInfo]);
 
 
 	// Initialization: verifies if the user is currently logged in
 	useEffect(() => {
 		const initializeWelcomePageAsync = async () => {
 			// Is there any information about the user stored in Local Storage?
-			if (userInfo) {
+			if (loggedUserInfo) {
 				// Verify if the user is really logged in, or if the data stored in Local Storage
 				// is actually from an old/expired session
 				let loginSessionVerified = true;
@@ -48,7 +64,7 @@ export default function WelcomePage() {
 			setIsInitializing(false);
 		};
 		initializeWelcomePageAsync();
-	}, [userInfo]);
+	}, [loggedUserInfo]);
 
 
 	/** Called when the user clicks the "Logout" button.
@@ -90,15 +106,15 @@ export default function WelcomePage() {
 						<React.Fragment>
 							<div>
 								{(() => {
-									if (userInfo)
-										return <span>Logged in as: <b>{userInfo.name}</b></span>
+									if (loggedUserInfo)
+										return <span>Logged in as: <b>{loggedUserInfo.name}</b></span>
 									else
 										return <span>You are currently not logged in.</span>
 								})()}
 							</div>
 							<div className="flex flex-row content-between mt-2">
 								{(() => {
-									if (userInfo)
+									if (loggedUserInfo)
 										return (
 											<WorkerButtonLinkWithIcon to="/" icon={faSignInAlt} isBusy={isWaitingLogout} className="mr-2 bg-yellow-600" onClick={onLogoutButtonClick}>
 												<span>Log out</span>
@@ -113,7 +129,7 @@ export default function WelcomePage() {
 										);
 								})()}
 								{(() => {
-									if (!userInfo)
+									if (!loggedUserInfo)
 										return (
 											<ButtonLink to="/login" className="flex-grow">
 												<FontAwesomeIcon icon={faUserPlus} className="mr-2"/>
