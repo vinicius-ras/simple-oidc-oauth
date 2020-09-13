@@ -2,6 +2,7 @@ import { faSignInAlt, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import React, { useEffect, useState } from 'react';
 import { Redirect } from 'react-router-dom';
 import AppConfigurationService from '../services/AppConfigurationService';
+import AxiosService from '../services/AxiosService';
 import UserInfoService, { UserInfoData } from '../services/UserInfoService';
 import ButtonLinkWithIcon from './ButtonLinkWithIcon';
 import WorkerButtonLinkWithIcon from './WorkerButtonLinkWithIcon';
@@ -49,27 +50,23 @@ export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 
 		try
 		{
-			const response = await fetch(AppConfigurationService.Endpoints.Login, {
-				method: "POST",
-				headers: {
-					"Content-type": "application/json; charset=UTF-8"
-				},
-				body: JSON.stringify({
-					"email": userEmail,
-					"password": userPassword,
-				}),
-				credentials: "include",
-			});
+			// Try to perform the login, keeping any returned credentials
+			const axiosResponse = await AxiosService.getInstance()
+				.post<UserInfoData>(
+					AppConfigurationService.Endpoints.Login,
+					{
+						"email": userEmail,
+						"password": userPassword,
+					},
+					{withCredentials: true},
+				);
 
-			if (response.ok) {
-				const jsonResponse = (await response.json()) as UserInfoData;
-				UserInfoService.updateUserInfo(jsonResponse);
-				setUserLoggedIn(true);
-			}
-			else
-				UserInfoService.clearUserInfo();
+			// Update logged user's information
+			UserInfoService.updateUserInfo(axiosResponse.data);
+			return;
 		} catch (err) {
-			console.error("Login attempt failed", err);
+			if (!!UserInfoService.getUserInfo())
+				UserInfoService.clearUserInfo();
 		}
 
 		setIsWaitingLogin(false);

@@ -1,7 +1,9 @@
 import { faSignInAlt, faSpinner, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { AxiosError } from "axios";
 import React, { useEffect, useState } from "react";
 import AppConfigurationService from "../services/AppConfigurationService";
+import AxiosService from "../services/AxiosService";
 import UserInfoService, { UserInfoData } from "../services/UserInfoService";
 import ButtonLink from "./ButtonLink";
 import WorkerButtonLinkWithIcon from "./WorkerButtonLinkWithIcon";
@@ -29,34 +31,35 @@ export default function WelcomePage() {
 		return () => {
 			UserInfoService.unsubscribe(onUserLoginDataChanged)
 		};
-	}, [loggedUserInfo]);
+	}, []);
 
 
 	// Initialization: verifies if the user is currently logged in
 	useEffect(() => {
 		const initializeWelcomePageAsync = async () => {
 			// Is there any information about the user stored in Local Storage?
-			if (loggedUserInfo) {
+			const hasLocalStorageUserData = !!UserInfoService.getUserInfo();
+			if (hasLocalStorageUserData) {
 				// Verify if the user is really logged in, or if the data stored in Local Storage
 				// is actually from an old/expired session
-				let loginSessionVerified = true;
+				let loginSessionIsValid = true;
 				try
 				{
-					const checkLoginResponse = await fetch(AppConfigurationService.Endpoints.CheckLogin, {
-						credentials: "include",
-					});
-					if (checkLoginResponse.ok) {
-						const retrievedUserData : UserInfoData = await checkLoginResponse.json();
-						UserInfoService.updateUserInfo(retrievedUserData);
-					}
+					const response = await AxiosService.getInstance()
+						.get<UserInfoData>(
+							AppConfigurationService.Endpoints.CheckLogin
+						);
 
-					loginSessionVerified = checkLoginResponse.ok;
+					UserInfoService.updateUserInfo(response.data);
 				} catch (err) {
-					console.error(err);
-					loginSessionVerified = false;
+					const axiosError: AxiosError = err;
+					if (!!axiosError.response) {
+						console.error("Failed to check login", err);
+						loginSessionIsValid = false;
+					}
 				}
 
-				if (loginSessionVerified === false)
+				if (loginSessionIsValid === false)
 					UserInfoService.clearUserInfo();
 			}
 
@@ -64,7 +67,7 @@ export default function WelcomePage() {
 			setIsInitializing(false);
 		};
 		initializeWelcomePageAsync();
-	}, [loggedUserInfo]);
+	}, []);
 
 
 	/** Called when the user clicks the "Logout" button.
@@ -75,13 +78,9 @@ export default function WelcomePage() {
 		setIsWaitingLogout(true);
 
 		try {
-			const response = await fetch(AppConfigurationService.Endpoints.Logout, {
-				method: "POST",
-				credentials: "include",
-			});
-			if (response.ok) {
-				UserInfoService.clearUserInfo();
-			}
+			AxiosService.getInstance()
+				.post(AppConfigurationService.Endpoints.Logout);
+			UserInfoService.clearUserInfo();
 		} catch(err) {
 			console.error("Logout failed", err);
 		}
