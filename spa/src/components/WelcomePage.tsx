@@ -37,31 +37,27 @@ export default function WelcomePage() {
 	// Initialization: verifies if the user is currently logged in
 	useEffect(() => {
 		const initializeWelcomePageAsync = async () => {
-			// Is there any information about the user stored in Local Storage?
-			const hasLocalStorageUserData = !!UserInfoService.getUserInfo();
-			if (hasLocalStorageUserData) {
-				// Verify if the user is really logged in, or if the data stored in Local Storage
-				// is actually from an old/expired session
-				let loginSessionIsValid = true;
-				try
-				{
-					const response = await AxiosService.getInstance()
-						.get<UserInfoData>(
-							AppConfigurationService.Endpoints.CheckLogin
-						);
+			// Verify if the user is really logged in, or if the data stored in Local Storage
+			// is actually from an old/expired session
+			let loginSessionIsValid = true;
+			try
+			{
+				const response = await AxiosService.getInstance()
+					.get<UserInfoData>(
+						AppConfigurationService.Endpoints.CheckLogin
+					);
 
-					UserInfoService.updateUserInfo(response.data);
-				} catch (err) {
-					const axiosError: AxiosError = err;
-					if (!!axiosError.response) {
-						console.error("Failed to check login", err);
-						loginSessionIsValid = false;
-					}
+				UserInfoService.updateUserInfo(response.data);
+			} catch (err) {
+				const axiosError: AxiosError = err;
+				if (!!axiosError.response) {
+					console.error("Failed to check login", err);
+					loginSessionIsValid = false;
 				}
-
-				if (loginSessionIsValid === false)
-					UserInfoService.clearUserInfo();
 			}
+
+			if (loginSessionIsValid === false)
+				UserInfoService.clearUserInfo();
 
 			// Finished initialization
 			setIsInitializing(false);

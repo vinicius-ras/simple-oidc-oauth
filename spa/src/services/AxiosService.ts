@@ -27,9 +27,9 @@ class AxiosServiceType {
 			if (requestConfigs.withCredentials)
 				return requestConfigs;
 
-			// Verify if the user is currently logged-in
-			const isUserLoggedIn = !!(UserInfoService.getUserInfo());
-			requestConfigs.withCredentials = isUserLoggedIn;
+			// Whenever credentials are not specified, send them (e.g., to persist credential changes when
+			// receiving an HTTP 401 response)
+			requestConfigs.withCredentials = true;
 			return requestConfigs;
 		});
 
