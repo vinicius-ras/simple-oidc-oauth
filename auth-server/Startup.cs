@@ -6,9 +6,9 @@ using System;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -99,8 +99,11 @@ namespace SimpleOidcOauth
                 })
                 .AddAspNetIdentity<IdentityUser>();
 
+
+            // Configures the cookies used by the application
             services.ConfigureApplicationCookie(opts => {
                 opts.Cookie.Name = "simple-oidc-oauth-credentials";
+                opts.Cookie.SameSite = SameSiteMode.None;
 
                 // The following workarounds implemented below are described in: https://github.com/dotnet/aspnetcore/issues/9039
 
@@ -132,6 +135,8 @@ namespace SimpleOidcOauth
                 };
             });
 
+            services.ConfigureSameSiteCookies();
+
 
             // Configure CORS
             services.AddCors(opts => {
@@ -162,7 +167,7 @@ namespace SimpleOidcOauth
                 TestData.InitializeDatabase(app).Wait();
             }
 
-
+            app.UseCookiePolicy();
             app.UseStaticFiles();
             app.UseRouting();
             app.UseCors();
