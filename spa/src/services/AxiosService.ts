@@ -1,6 +1,7 @@
 import Axios, { AxiosError, AxiosInstance } from "axios";
 import HttpStatusCode from "http-status-codes";
-import UserInfoService from "./UserInfoService";
+import AppStore from "../redux/AppStore";
+import userInfoSlice from "../redux/slices/userInfoSlice";
 
 /** A class which provides default configurations and events when using the Axios library for performing
  * requests to remote services.
@@ -11,7 +12,13 @@ import UserInfoService from "./UserInfoService";
  * unauthenticated (e.g., in cases of session expiration). */
 class AxiosServiceType {
 	// INSTANCE FIELDS
+	/** The Axios instance that the application uses to send HTTP requests and receive responses,
+	 * and to automate the treatment of some specific responses. */
 	private _axiosInstance: AxiosInstance;
+
+
+
+
 
 	// INSTANCE METHODS
 	/** Constructor. */
@@ -49,9 +56,9 @@ class AxiosServiceType {
 				// logged out.
 				const axiosError: AxiosError = httpNotOkResponse;
 				if (axiosError.response?.status === HttpStatusCode.UNAUTHORIZED) {
-					const isUserLoggedIn = !!(UserInfoService.getUserInfo());
+					const isUserLoggedIn = !!(AppStore.getState()?.userInfo);
 					if (isUserLoggedIn)
-						UserInfoService.clearUserInfo();
+						AppStore.dispatch(userInfoSlice.actions.clearUserInfo());
 				}
 				return Promise.reject(httpNotOkResponse);
 			});

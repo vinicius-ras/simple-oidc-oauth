@@ -1,9 +1,11 @@
 import { faSignInAlt, faUserPlus } from '@fortawesome/free-solid-svg-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Redirect } from 'react-router-dom';
+import { AppState } from '../redux/AppStore';
+import userInfoSlice, { UserInfoData } from '../redux/slices/userInfoSlice';
 import AppConfigurationService from '../services/AppConfigurationService';
 import AxiosService from '../services/AxiosService';
-import UserInfoService, { UserInfoData } from '../services/UserInfoService';
 import ButtonLinkWithIcon from './ButtonLinkWithIcon';
 import WorkerButtonLinkWithIcon from './WorkerButtonLinkWithIcon';
 
@@ -16,28 +18,15 @@ export interface UserCredentialsPageProps
 /** A component which allows users to enter their credentials in order to perform a login,
  * or to register themselves. */
 export default function UserCredentialsPage(props: UserCredentialsPageProps) {
-	const loggedInUserInfo = UserInfoService.getUserInfo();
+	const loggedInUserInfo = useSelector((state: AppState) => state.userInfo);
+	const dispatch = useDispatch();
 
 	const [userEmail, setUserEmail] = useState(loggedInUserInfo?.email || '');
 	const [userPassword, setUserPassword] = useState('');
 	const [isWaitingLogin, setIsWaitingLogin] = useState(false);
-	const [isUserLoggedIn, setUserLoggedIn] = useState(!!loggedInUserInfo);
 
+	const isUserLoggedIn = (!!loggedInUserInfo);
 
-	// Initialization: setup a callback for receiving events when user's login state changes
-	useEffect(() => {
-		/** Called for any events where the user's login state changes.
-		 * @param newUserData New, updated data about the user. */
-		const onUserLoginDataChanged = (newUserData: UserInfoData | null) => {
-			setUserLoggedIn(!!newUserData);
-		};
-
-		// Subscription and cleanup (when component is unmounted) for receiving user login related callbacks
-		UserInfoService.subscribe(onUserLoginDataChanged);
-		return () => {
-			UserInfoService.unsubscribe(onUserLoginDataChanged)
-		};
-	}, []);
 
 
 
@@ -62,11 +51,11 @@ export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 				);
 
 			// Update logged user's information
-			UserInfoService.updateUserInfo(axiosResponse.data);
+			dispatch(userInfoSlice.actions.setUserInfo(axiosResponse.data));
 			return;
 		} catch (err) {
-			if (!!UserInfoService.getUserInfo())
-				UserInfoService.clearUserInfo();
+			if (isUserLoggedIn)
+				dispatch(userInfoSlice.actions.clearUserInfo());
 		}
 
 		setIsWaitingLogin(false);

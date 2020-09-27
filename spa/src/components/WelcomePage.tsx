@@ -1,10 +1,13 @@
 import { faSignInAlt, faSpinner, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { AxiosError } from "axios";
+import HttpStatusCode from "http-status-codes";
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppState } from "../redux/AppStore";
+import userInfoSlice, { UserInfoData } from "../redux/slices/userInfoSlice";
 import AppConfigurationService from "../services/AppConfigurationService";
 import AxiosService from "../services/AxiosService";
-import UserInfoService, { UserInfoData } from "../services/UserInfoService";
 import ButtonLink from "./ButtonLink";
 import WorkerButtonLinkWithIcon from "./WorkerButtonLinkWithIcon";
 
@@ -12,26 +15,11 @@ import WorkerButtonLinkWithIcon from "./WorkerButtonLinkWithIcon";
  *
  * This is the page opened whenever the user accesses the root URL of the application. */
 export default function WelcomePage() {
+	const loggedUserInfo = useSelector((state: AppState) => state.userInfo);
+	const dispatch = useDispatch();
+
 	const [isInitializing, setIsInitializing] = useState(true);
 	const [isWaitingLogout, setIsWaitingLogout] = useState(false);
-	const [loggedUserInfo, setLoggedUserInfo] = useState(UserInfoService.getUserInfo());
-
-
-	// Initialization: subscribe to events fired when the user changes his/her login state
-	useEffect(() => {
-		/** Called for any events where the user's login state changes.
-		 * @param newUserData New, updated data about the user. */
-		const onUserLoginDataChanged = (newUserData: UserInfoData | null) => {
-			setLoggedUserInfo(newUserData);
-		};
-
-
-		// Subscription and cleanup (when component is unmounted) for receiving user login related callbacks
-		UserInfoService.subscribe(onUserLoginDataChanged);
-		return () => {
-			UserInfoService.unsubscribe(onUserLoginDataChanged)
-		};
-	}, []);
 
 
 	// Initialization: verifies if the user is currently logged in
@@ -39,7 +27,6 @@ export default function WelcomePage() {
 		const initializeWelcomePageAsync = async () => {
 			// Verify if the user is really logged in, or if the data stored in Local Storage
 			// is actually from an old/expired session
-			let loginSessionIsValid = true;
 			try
 			{
 				const response = await AxiosService.getInstance()
@@ -47,23 +34,23 @@ export default function WelcomePage() {
 						AppConfigurationService.Endpoints.CheckLogin
 					);
 
-				UserInfoService.updateUserInfo(response.data);
+				dispatch(userInfoSlice.actions.setUserInfo(response.data));
 			} catch (err) {
 				const axiosError: AxiosError = err;
-				if (!!axiosError.response) {
-					console.error("Failed to check login", err);
-					loginSessionIsValid = false;
+				if (axiosError.response?.status !== HttpStatusCode.UNAUTHORIZED) {
+					// TODO: an error that was not HTTP 200 (Ok) or HTTP 401 (Unauthorized) has occurred.
+					// Here, we are considering that the user should be "logged out", but that is incorrect behavior.
+					// Ideally, if any response that is not HTTP 200 or HTTP 401 is returned by the API, the request
+					// should be retried (because the auth server might be offline, or currently in an error state).
+					dispatch(userInfoSlice.actions.clearUserInfo());
 				}
 			}
-
-			if (loginSessionIsValid === false)
-				UserInfoService.clearUserInfo();
 
 			// Finished initialization
 			setIsInitializing(false);
 		};
 		initializeWelcomePageAsync();
-	}, []);
+	}, [dispatch]);
 
 
 	/** Called when the user clicks the "Logout" button.
@@ -76,7 +63,7 @@ export default function WelcomePage() {
 		try {
 			AxiosService.getInstance()
 				.post(AppConfigurationService.Endpoints.Logout);
-			UserInfoService.clearUserInfo();
+			dispatch(userInfoSlice.actions.clearUserInfo());
 		} catch(err) {
 			console.error("Logout failed", err);
 		}
