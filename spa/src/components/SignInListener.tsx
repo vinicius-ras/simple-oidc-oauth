@@ -4,14 +4,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../redux/AppStore';
 import userInfoSlice, { UserInfoData } from '../redux/slices/userInfoSlice';
 
-/** Props for the {@link MultipleTabsSignInListener} functional component. */
-interface MultipleTabsSignInListenerProps
+/** Props for the {@link SignInListener} functional component. */
+interface SignInListenerProps
 {
 }
 
 
 /** A component which provides sign-in/sign-out information to multiple tabs of the user's browser. */
-function MultipleTabsSignInListener(props: MultipleTabsSignInListenerProps) {
+function SignInListener(props: SignInListenerProps) {
 	const LOCAL_STORAGE_KEY = 'logged-in-user-info';
 
 	const userInfo = useSelector((state: AppState) => state.userInfo);
@@ -81,4 +81,4 @@ function MultipleTabsSignInListener(props: MultipleTabsSignInListenerProps) {
 	return null;
 }
 
-export default MultipleTabsSignInListener;
+export default SignInListener;

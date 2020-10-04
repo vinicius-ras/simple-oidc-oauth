@@ -22,7 +22,7 @@ const userInfoSlice = createSlice({
 		 * @param action
 		 *     The action which caused the update on the Redux Store's state.
 		 *     This action should have a payload containing the new data about the user. */
-		setUserInfo(state: (UserInfoData|null), action: PayloadAction<(UserInfoData|null)>) {
+		setUserInfo(state, action: PayloadAction<(UserInfoData|null)>) {
 			return action.payload;
 		},
 
@@ -31,7 +31,7 @@ const userInfoSlice = createSlice({
 		 * This action should be fired once the user logs out.
 		 * @param state The current data about the user.
 		 * @param action The action which caused the update on the Redux Store's state. */
-		clearUserInfo(state: (UserInfoData|null), action: Action) {
+		clearUserInfo(state, action: Action) {
 			return null;
 		}
 	}
