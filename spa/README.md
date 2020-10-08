@@ -1,44 +1,50 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# About the app
 
-## Available Scripts
+This application is a project which has been bootstrapped using the [Create React App](https://github.com/facebook/create-react-app) tool. Thus, the app is compatible with most of the standards adopted by a [Create React App](https://github.com/facebook/create-react-app) project.
 
-In the project directory, you can run:
+This project's main goal is to provide a web app to enable the user to communicate with the *OpenID Connect / OAuth 2.0 server*. Most users will simply be using it to perform login and consent clients to access protected resources. Users with the necessary claims will also be able to manage and provide configuration for clients and protected resources themselves.
 
-### `npm start`
+**Attention:** The web application requires the *OpenID Connect / OAuth 2.0 server* to be running. If the auth server is not running, the web app will be stuck in a loading screen, making new attempts until it is able to communicate with the auth server.
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+# Scripts
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+## Running  the project
 
-### `npm test`
+The app can be run just like a standard [Create React App](https://github.com/facebook/create-react-app) project:
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+cd <SPA_project_folder>
+npm start
+```
 
-### `npm run build`
+If not configured otherwise, the project will be accessible through a web browser under the default address [http://localhost:3000](http://localhost:3000).
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Editing the project's files while it's running will automatically update it, and changes will be reflected in the browser's open pages.
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+## Building the project
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Once the project is ready to be deployed to a production server, it must be built. The build process will bundle the project, optiize it (e.g., compile TypeScript files, minify generated output, etc), and set it up for production mode.
 
-### `npm run eject`
+Again, the project complies with [Create React App](https://github.com/facebook/create-react-app) standards and can be build the following:
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```
+cd <SPA_project_folder>
+npm run build
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+For more information, consult the [Create React App documentation on deployment](https://create-react-app.dev/docs/deployment/).
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## Generating code documentation
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+Most of the project's code entities (classes, functions, methods, properties, etc) are documented using [TSDoc](https://github.com/microsoft/tsdoc): a proposal to standardize code documentation.
 
-## Learn More
+There are many tools which can parse the project's code, find [TSDoc](https://github.com/microsoft/tsdoc) documentation tags, and output this in a more human-readable format. From all of the options, this project mainly uses [TypeDoc](https://github.com/TypeStrong/typedoc) as the documentation generator.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+There are many ways to run this tool. One of the easiest ones is to run it through NPX in the app's folder:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+cd <SPA_project_folder>
+npx typedoc --out ./docs
+```
+
+This will generate the documentation in the project's `docs/` folder - just open the generated `docs/index.html` file to view it.
