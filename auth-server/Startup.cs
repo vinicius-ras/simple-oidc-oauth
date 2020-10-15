@@ -6,6 +6,9 @@ using System;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
+using IdentityServer4;
+using IdentityServer4.EntityFramework.Entities;
+using IdentityServer4.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -15,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SimpleOidcOauth.Data;
+using SimpleOidcOauth.Data.Configuration;
 
 namespace SimpleOidcOauth
 {
@@ -24,15 +28,6 @@ namespace SimpleOidcOauth
     /// </summary>
     public class Startup
     {
-        // CONSTANTS
-        /// <summary>Name of the file which stores the configurations database.</summary>
-        private const string DbFileNameConfigurations = "identity-database-configs.sqlite";
-        /// <summary>Name of the file which stores the operational database.</summary>
-        private const string DbFileNameOperational = "identity-database-operational.sqlite";
-        /// <summary>Name of the file which stores user-related data.</summary>
-        private const string DbFileNameUsers = "identity-database-users.sqlite";
-
-
         // PRIVATE PROPERTIES
         /// <summary>Refererence to an <see cref="IWebHostEnvironment" /> object, injected by the container.</summary>
         private readonly IWebHostEnvironment _webHostEnvironment;
@@ -61,6 +56,15 @@ namespace SimpleOidcOauth
         /// <param name="services">The collection where services can be added for the container to know them.</param>
         public void ConfigureServices(IServiceCollection services)
         {
+            // Load app custom configurations
+            var appConfigsSection = _config.GetSection(AppConfigs.ConfigKey);
+            services.Configure<AppConfigs>(appConfigsSection);
+
+            var appConfigs = appConfigsSection.Get<AppConfigs>();
+            string connStrUsersStore = _config.GetConnectionString(AppConfigs.ConnectionStringIdentityServerUsers),
+                connStrISConfigurationStore = _config.GetConnectionString(AppConfigs.ConnectionStringIdentityServerConfiguration),
+                connStrISOperationalStore = _config.GetConnectionString(AppConfigs.ConnectionStringIdentityServerOperational);
+
             // Add controllers only (we don't need full MVC support for this project)
             services.AddControllers();
 
@@ -69,7 +73,7 @@ namespace SimpleOidcOauth
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
             services.AddDbContext<AppDbContext>(appDbOptions => {
                 appDbOptions.UseSqlite(
-                    @$"Data Source={DbFileNameUsers};",
+                    connStrUsersStore,
                     sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationsAssembly)
                 );
             });
@@ -84,7 +88,7 @@ namespace SimpleOidcOauth
                 .AddConfigurationStore(configStoreOptions => {
                     configStoreOptions.ConfigureDbContext = genericDbOptions => {
                         genericDbOptions.UseSqlite(
-                            @$"Data Source={DbFileNameConfigurations};",
+                            connStrISConfigurationStore,
                             sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationsAssembly)
                         );
                     };
@@ -92,7 +96,7 @@ namespace SimpleOidcOauth
                 .AddOperationalStore(opStoreOptions => {
                     opStoreOptions.ConfigureDbContext = genericDbOptions => {
                         genericDbOptions.UseSqlite(
-                            @$"Data Source={DbFileNameOperational};",
+                            connStrISOperationalStore,
                             sqlServerOptions => sqlServerOptions.MigrationsAssembly(migrationsAssembly)
                         );
                     };
@@ -102,7 +106,7 @@ namespace SimpleOidcOauth
 
             // Configures the cookies used by the application
             services.ConfigureApplicationCookie(opts => {
-                opts.Cookie.Name = "simple-oidc-oauth-credentials";
+                opts.Cookie.Name = appConfigs.ApplicationCookieName;
                 opts.Cookie.SameSite = SameSiteMode.None;
 
                 // The following workarounds implemented below are described in: https://github.com/dotnet/aspnetcore/issues/9039
@@ -144,7 +148,7 @@ namespace SimpleOidcOauth
                     corsOpts.AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials()
-                        .WithOrigins("http://localhost:3000");
+                        .WithOrigins(appConfigs.SpaUrl);
                 });
             });
 

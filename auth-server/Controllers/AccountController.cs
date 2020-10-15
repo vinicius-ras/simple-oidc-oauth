@@ -1,15 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using Microsoft.AspNetCore.Authentication;
 using System.Threading.Tasks;
 using System.Linq;
 using SimpleOidcOauth.Models;
 using Microsoft.AspNetCore.Authorization;
-using IdentityServer4;
-using System.Security.Claims;
 using IdentityModel;
 
 namespace SimpleOidcOauth.Controllers
