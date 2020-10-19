@@ -3,6 +3,7 @@ import { fab } from '@fortawesome/free-brands-svg-icons';
 import React from 'react';
 import { Provider } from 'react-redux';
 import { BrowserRouter as Router, Link, Route, Switch } from 'react-router-dom';
+import LogoutPage from './components/LogoutPage';
 import RequireAppInitialization from './components/RequireAppInitialization';
 import SignInListener from './components/SignInListener';
 import UserCredentialsPage from './components/UserCredentialsPage';
@@ -29,6 +30,7 @@ function App() {
 							<Switch>
 								<Route path="/" exact={true} component={WelcomePage} />
 								<Route path="/login" component={UserCredentialsPage} />
+								<Route path="/logout" component={LogoutPage} />
 							</Switch>
 						</RequireAppInitialization>
 					</main>

@@ -12,5 +12,8 @@ namespace SimpleOidcOauth.Models
 		/// <summary>User's email.</summary>
 		/// <value>The email for the user that has been logged in.</value>
 		public string Email { get; set; }
+		/// <summary>The URL to which the user should be redirected to.</summary>
+		/// <value>The URL to which the user should be redirected to after a successful login.</value>
+		public string ReturnUrl { get; set; }
 	}
 }

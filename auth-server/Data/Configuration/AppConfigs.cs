@@ -34,11 +34,6 @@ namespace SimpleOidcOauth.Data.Configuration
 
 
 		// PROPERTIES
-		/// <summary>The URL where the SPA is running.</summary>
-		/// <value>
-		///     An URL which refers to the location where the SPA used by the auth server is running.
-		/// </value>
-		public string SpaUrl { get; set; }
 		/// <summary>The name of the cookie used to store user's session.</summary>
 		/// <value>
 		///     A name for the application cookie, which will be storing the user's session information.
@@ -46,5 +41,14 @@ namespace SimpleOidcOauth.Data.Configuration
 		///     of these users, as their sessions will be invalidated.
 		/// </value>
 		public string ApplicationCookieName { get; set; }
+		/// <summary>The base URL where the auth server is running.</summary>
+		/// <value>
+		///     The base URL where the auth server is running, which is used to check and prevent against
+		///     open redirect attacks.
+		/// </value>
+		public string AuthServerBaseUrl { get; set; }
+		/// <summary>Configurations for the Single Page Application which displays the auth server's User Interface.</summary>
+		/// <value>An object holding all of the auth server's SPA configurations.</value>
+		public SpaConfigs Spa { get; set; }
 	}
 }

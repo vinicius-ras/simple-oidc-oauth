@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
+using SimpleOidcOauth.IdentityServer;
 
 namespace SimpleOidcOauth
 {
@@ -84,7 +85,11 @@ namespace SimpleOidcOauth
                 .AddEntityFrameworkStores<AppDbContext>();
 
 
-            var identityServerBuilder = services.AddIdentityServer()
+            var identityServerBuilder = services.AddIdentityServer(opts => {
+                    opts.UserInteraction.LoginUrl = appConfigs.Spa.LoginUrl;
+                    opts.UserInteraction.LogoutUrl = appConfigs.Spa.LogoutUrl;
+                    opts.UserInteraction.ErrorUrl = appConfigs.Spa.ErrorUrl;
+                })
                 .AddConfigurationStore(configStoreOptions => {
                     configStoreOptions.ConfigureDbContext = genericDbOptions => {
                         genericDbOptions.UseSqlite(
@@ -102,6 +107,8 @@ namespace SimpleOidcOauth
                     };
                 })
                 .AddAspNetIdentity<IdentityUser>();
+
+            services.AddTransient<IReturnUrlParser, CustomReturnUrlParser>();
 
 
             // Configures the cookies used by the application
@@ -148,7 +155,7 @@ namespace SimpleOidcOauth
                     corsOpts.AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials()
-                        .WithOrigins(appConfigs.SpaUrl);
+                        .WithOrigins(appConfigs.Spa.BaseUrl);
                 });
             });
 

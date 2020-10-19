@@ -15,5 +15,8 @@ namespace SimpleOidcOauth.Models
 		/// <summary>User's password.</summary>
 		/// <value>The password for the user who is trying to log in.</value>
 		public string Password { get; set; }
+		/// <summary>The URL to which the user will be redirected to after login.</summary>
+		/// <value>The return URL to which the user will be redirected to after a successful login.</value>
+		public string ReturnUrl { get; set; }
 	}
 }
