@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using IdentityServer4.Models;
@@ -11,7 +10,6 @@ using IdentityServer4.Validation;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 using SimpleOidcOauth.Data.Configuration;
 
 namespace SimpleOidcOauth.IdentityServer
@@ -33,6 +31,24 @@ namespace SimpleOidcOauth.IdentityServer
 	/// </summary>
 	class CustomReturnUrlParser : IReturnUrlParser
 	{
+		// CONSTANTS
+		/// <summary>
+		///     Collection of prefixes to be considered required for Local URLs.
+		///     A URL can only be considered a Local URL if it starts with one of these prefixes.
+		/// </summary>
+		/// <value>
+		///     An enumerable collection of strings which are to be considered mandatory for Local URLs.
+		///     The URL must match at least one of these prefixes to be considered a possible "Local URL".
+		/// </value>
+		private static IEnumerable<string> _possibleLocalUrlPrefixes = new [] {"/", "~/"};
+		/// <summary>Collection of prefixes to be considered invalid for Local URLs.</summary>
+		/// <value>An enumerable collection of strings which are to be considered invalid prefixes for Local URLs.</value>
+		private static IEnumerable<string> _invalidLocalUrlPrefixes = new [] {"//", @"/\", "~//", @"~/\"};
+
+
+
+
+
 		// PRIVATE FIELDS
 		/// <summary>Container-injected instance for the <see cref="IAuthorizeRequestValidator" /> service.</summary>
 		private readonly IAuthorizeRequestValidator _validator;
@@ -44,6 +60,24 @@ namespace SimpleOidcOauth.IdentityServer
 		private readonly IOptions<AppConfigs> _appConfigs;
 		/// <summary>Container-injected instance for the <see cref="IAuthorizationParametersMessageStore" /> service.</summary>
 		private readonly IAuthorizationParametersMessageStore _authorizationParametersMessageStore;
+
+
+
+
+
+		// PRIVATE STATIC METHODS
+		/// <summary>Checks if a given URL can be considered a "Local URL".</summary>
+		/// <param name="url">The URL that needs to be checked.</param>
+		/// <returns>Returns a flag indicating if the URL is to be considered a "Local URL".</returns>
+		private static bool CheckIsLocalUrl(string url)
+		{
+			if (string.IsNullOrEmpty(url))
+				return false;
+
+			bool urlStartsWithLocalPrefix = _possibleLocalUrlPrefixes.Any(prefix => url.StartsWith(prefix)),
+				urlHasInvalidPrefix = _invalidLocalUrlPrefixes.Any(prefix => url.StartsWith(prefix));
+			return (urlStartsWithLocalPrefix && urlHasInvalidPrefix == false);
+		}
 
 
 
@@ -75,38 +109,144 @@ namespace SimpleOidcOauth.IdentityServer
 
 
 		// INTERFACE IMPLEMENTATION: IReturnUrlParser
+		/// <summary>Tries to perform the parsing of a return URL.</summary>
+		/// <param name="returnUrl">The return URL that needs to be parsed.</param>
+		/// <returns>
+		///     <para>In case of success, returns a <see cref="AuthorizationRequest"/> object representing the parsed URL.</para>
+		///     <para>In case of failure, returns a <c>null</c> value.</para>
+		/// </returns>
 		public async Task<AuthorizationRequest> ParseAsync(string returnUrl)
 		{
-			if (IsValidReturnUrl(returnUrl))
+			// First we must verify if the return URL is valid
+			if (IsValidReturnUrl(returnUrl) == false)
+				return null;
+
+
+			// Retrieve the URL's Query String, and try to parse it into a NameValueCollection
+			var queryStringNameValueCollection = new NameValueCollection();
+			if (string.IsNullOrEmpty(returnUrl) == false)
 			{
-				var parameters = returnUrl.ReadQueryStringAsNameValueCollection();
-				if (_authorizationParametersMessageStore != null)
+				string queryToParse = null;
+				if (CheckIsLocalUrl(returnUrl))
 				{
-					var messageStoreId = parameters[Constants.AuthorizationParamsStore.MessageStoreIdParameterName];
-					var entry = await _authorizationParametersMessageStore.ReadAsync(messageStoreId);
-					parameters = entry?.Data.FromFullDictionary() ?? new NameValueCollection();
+					// Find the Local URL's query string
+					int queryStartIndex = queryToParse.IndexOf("?");
+					if (queryStartIndex >= 0)
+						queryToParse = returnUrl.Substring(queryStartIndex);
+				}
+				else
+				{
+					// Parse external URL
+					try
+					{
+						var parsedReturnUri = new Uri(returnUrl);
+						queryToParse = parsedReturnUri.Query;
+					}
+					catch (UriFormatException ex)
+					{
+						// Failed to parse the URL
+						_logger.LogDebug(ex, $"Failed to parse return URL due to {nameof(UriFormatException)}: {returnUrl}");
+						return null;
+					}
+					catch (InvalidOperationException ex)
+					{
+						// Failed to parse the URL's query string
+						_logger.LogDebug(ex, $"Failed to parse return URL's Query String: {returnUrl}");
+						return null;
+					}
 				}
 
-				var user = await _userSession.GetUserAsync();
-				var result = await _validator.ValidateAsync(parameters, user);
-				if (!result.IsError)
-					return result.ValidatedRequest.ToAuthorizationRequest();
+				var parsedQueryDictionary = QueryHelpers.ParseQuery(queryToParse ?? "?");
+				foreach (var parsedItem in parsedQueryDictionary)
+					queryStringNameValueCollection.Add(parsedItem.Key, parsedItem.Value.First());
 			}
 
-			return null;
+
+			// Retrieve the authorization parameters from the message store, if applicable
+			if (_authorizationParametersMessageStore != null)
+			{
+				// Retrieve parameters from message store
+				var messageStoreId = queryStringNameValueCollection[Constants.AuthorizationParamsStore.MessageStoreIdParameterName];
+				var entry = await _authorizationParametersMessageStore.ReadAsync(messageStoreId);
+
+				// Replace our current value collection with the incoming message store's data
+				queryStringNameValueCollection.Clear();
+				if (entry != null)
+				{
+					foreach (var collectionEntry in entry.Data)
+					{
+						string collectionEntryKey = collectionEntry.Key;
+						foreach (var collectionElement in collectionEntry.Value)
+							queryStringNameValueCollection.Add(collectionEntryKey, collectionElement);
+					}
+				}
+			}
+
+
+			// Try to validate the authorization request by using IdentityServer's services
+			var user = await _userSession.GetUserAsync();
+			var validationResult = await _validator.ValidateAsync(queryStringNameValueCollection, user);
+			if (validationResult.IsError)
+				return null;
+
+
+			// Create the resulting AuthorizationRequest.
+			// This code mirrors the behavior of the AuthorizationRequest's constructor method which receives
+			// a ValidatedAuthorizeRequest and builds a new AuthorizationRequest object from it.
+			// That constructor is present at IdentityServer 4.0.4, and is not accessible outside of the IdentityServer's
+			// assemblies, due to its "internal" modifier.
+			var validatedRequest = validationResult.ValidatedRequest;
+			var resultAuthRequest = new AuthorizationRequest
+			{
+				Client = validatedRequest.Client,
+				RedirectUri = validatedRequest.RedirectUri,
+				DisplayMode = validatedRequest.DisplayMode,
+				UiLocales = validatedRequest.UiLocales,
+				IdP = validatedRequest.GetIdP(),
+				Tenant = validatedRequest.GetTenant(),
+				LoginHint = validatedRequest.LoginHint,
+				PromptModes = validatedRequest.PromptModes,
+				AcrValues = validatedRequest.GetAcrValues(),
+				ValidatedResources = validatedRequest.ValidatedResources,
+			};
+
+			resultAuthRequest.Parameters.Add(validatedRequest.Raw);
+			foreach (var entry in validatedRequest.RequestObjectValues)
+				resultAuthRequest.RequestObjectValues.Add(entry.Key, entry.Value);
+
+			return resultAuthRequest;
 		}
 
+
+		/// <summary>
+		///     Verifies if the given return URL is valid.
+		///     A valid return URL needs to either be a Local URL, or a well-known External/Remote URL configured
+		///     as the auth-server's origin (see <see cref="AppConfigs.AuthServerBaseUrl"/>).
+		/// </summary>
+		/// <param name="returnUrl">The return URL to be verified.</param>
+		/// <returns>Returns a flag indicating if the specified return URL is valid.</returns>
 		public bool IsValidReturnUrl(string returnUrl)
 		{
 			// To be considered valid, the return URL must be either local or have the
 			// same origin as configured for this authorization server
-			bool isLocalUrl = returnUrl.IsLocalUrl(),
+			bool isLocalUrl = CheckIsLocalUrl(returnUrl),
 				isAuthServerUrl = false;
 
-			if (!isLocalUrl)
+			if (isLocalUrl == false)
 			{
-				Uri returnUrlUri = new Uri(returnUrl),
+				Uri returnUrlUri = null,
+					authServerUri = null;
+
+				try
+				{
+					returnUrlUri = new Uri(returnUrl);
 					authServerUri = new Uri(_appConfigs.Value.AuthServerBaseUrl);
+				}
+				catch (UriFormatException ex)
+				{
+					_logger.LogDebug(ex, $"Failed to validate a return URL: an invalid URL was provided as a return URL and/or as the auth-server's URL.");
+					return false;
+				}
 
 				int uriCompareResult = Uri.Compare(
 					returnUrlUri,
@@ -119,22 +259,21 @@ namespace SimpleOidcOauth.IdentityServer
 				isAuthServerUrl = (uriCompareResult == 0);
 			}
 
-			if (!isLocalUrl && !isAuthServerUrl)
+			if (isLocalUrl == false && isAuthServerUrl == false)
 			{
-				_logger.LogTrace("returnUrl is not valid");
+				_logger.LogTrace($"Invalid return URL: {returnUrl}");
 				return false;
 			}
 
+			string returnUrlWithoutQueryString = returnUrl;
 			var index = returnUrl.IndexOf('?');
 			if (index >= 0)
-			{
-				returnUrl = returnUrl.Substring(0, index);
-			}
+				returnUrlWithoutQueryString = returnUrl.Substring(0, index);
 
-			if (returnUrl.EndsWith(Constants.ProtocolRoutePaths.Authorize, StringComparison.Ordinal) ||
-				returnUrl.EndsWith(Constants.ProtocolRoutePaths.AuthorizeCallback, StringComparison.Ordinal))
+			if (returnUrlWithoutQueryString.EndsWith(Constants.ProtocolRoutePaths.Authorize, StringComparison.Ordinal) ||
+				returnUrlWithoutQueryString.EndsWith(Constants.ProtocolRoutePaths.AuthorizeCallback, StringComparison.Ordinal))
 			{
-				_logger.LogTrace("returnUrl is valid");
+				_logger.LogTrace($"Invalid return URL ending: {returnUrl}");
 				return true;
 			}
 
@@ -145,156 +284,43 @@ namespace SimpleOidcOauth.IdentityServer
 
 
 
-
-
-		public static class Constants
+		/// <summary>
+		///     Constants extracted from IdentityServer4's code base, which represent parammeter names and
+		///     endpoint paths used internally by IdentityServer.
+		/// </summary>
+		private static class Constants
 		{
+			/// <summary>
+			///     Constants representing the name of authorization parameters received
+			///     by IdentityServer4's Authorization Endpoint.
+			/// </summary>
 			public static class AuthorizationParamsStore
 			{
+				/// <summary>
+				///     The name of a parameter received by IdentityServer4's Authorization Endpoint which
+				///     informs a Message Store ID value.
+				/// </summary>
 				public const string MessageStoreIdParameterName = "authzId";
 			}
+
+
+
+
+
+			/// <summary>
+			///     Constants representing endpoint paths used by IdentityServer4's Authorization Endpoint.
+			/// </summary>
 			public static class ProtocolRoutePaths
 			{
+				/// <summary>Represents the Authorize Endpoint's path.</summary>
 				public const string Authorize = "connect/authorize";
+				/// <summary>
+				///     Represents the Authorize Endpoint's Callback path.
+				///     This path will receive authorization's context data that is be used to
+				///     process Authorization Requests.
+				/// </summary>
 				public const string AuthorizeCallback = Authorize + "/callback";
 			}
-		}
-
-
-
-
-	}
-
-
-
-
-
-
-
-
-
-	internal static class Extensions
-	{
-
-		[DebuggerStepThrough]
-		public static bool IsLocalUrl(this string url)
-		{
-			if (string.IsNullOrEmpty(url))
-			{
-				return false;
-			}
-
-			// Allows "/" or "/foo" but not "//" or "/\".
-			if (url[0] == '/')
-			{
-				// url is exactly "/"
-				if (url.Length == 1)
-				{
-					return true;
-				}
-
-				// url doesn't start with "//" or "/\"
-				if (url[1] != '/' && url[1] != '\\')
-				{
-					return true;
-				}
-
-				return false;
-			}
-
-			// Allows "~/" or "~/foo" but not "~//" or "~/\".
-			if (url[0] == '~' && url.Length > 1 && url[1] == '/')
-			{
-				// url is exactly "~/"
-				if (url.Length == 2)
-				{
-					return true;
-				}
-
-				// url doesn't start with "~//" or "~/\"
-				if (url[2] != '/' && url[2] != '\\')
-				{
-					return true;
-				}
-
-				return false;
-			}
-
-			return false;
-		}
-
-		[DebuggerStepThrough]
-		public static NameValueCollection ReadQueryStringAsNameValueCollection(this string url)
-		{
-			if (url != null)
-			{
-				var idx = url.IndexOf('?');
-				if (idx >= 0)
-				{
-					url = url.Substring(idx + 1);
-				}
-				var query = QueryHelpers.ParseNullableQuery(url);
-				if (query != null)
-				{
-					return query.AsNameValueCollection();
-				}
-			}
-
-			return new NameValueCollection();
-		}
-
-		[DebuggerStepThrough]
-		internal static AuthorizationRequest ToAuthorizationRequest(this ValidatedAuthorizeRequest request)
-		{
-			var authRequest = new AuthorizationRequest
-			{
-				Client = request.Client,
-				RedirectUri = request.RedirectUri,
-				DisplayMode = request.DisplayMode,
-				UiLocales = request.UiLocales,
-				IdP = request.GetIdP(),
-				Tenant = request.GetTenant(),
-				LoginHint = request.LoginHint,
-				PromptModes = request.PromptModes,
-				AcrValues = request.GetAcrValues(),
-				ValidatedResources = request.ValidatedResources,
-			};
-
-			authRequest.Parameters.Add(request.Raw);
-			foreach (var entry in request.RequestObjectValues)
-				authRequest.RequestObjectValues.Add(entry.Key, entry.Value);
-
-			return authRequest;
-		}
-
-		[DebuggerStepThrough]
-		public static NameValueCollection AsNameValueCollection(this IDictionary<string, StringValues> collection)
-		{
-			var nv = new NameValueCollection();
-
-			foreach (var field in collection)
-			{
-				nv.Add(field.Key, field.Value.First());
-			}
-
-			return nv;
-		}
-
-
-
-		public static NameValueCollection FromFullDictionary(this IDictionary<string, string[]> source)
-		{
-			var nvc = new NameValueCollection();
-
-			foreach ((string key, string[] strings) in source)
-			{
-				foreach (var value in strings)
-				{
-					nvc.Add(key, value);
-				}
-			}
-
-			return nvc;
 		}
 	}
 }
