@@ -1,5 +1,4 @@
 import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AxiosResponse } from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -7,7 +6,7 @@ import { useLocation } from 'react-router-dom';
 import userInfoSlice from '../redux/slices/userInfoSlice';
 import AppConfigurationService from '../services/AppConfigurationService';
 import AxiosService from '../services/AxiosService';
-import ButtonLink from './ButtonLink';
+import WorkerButtonLinkWithIcon from './WorkerButtonLinkWithIcon';
 
 /** Props for the {@link LogoutPage} functional component. */
 interface LogoutPageProps
@@ -36,6 +35,7 @@ function LogoutPage(props: LogoutPageProps) {
 	const [iframeUrl, setIframeUrl] = useState<string|null>(null);
 	const [redirectUrl, setRedirectUrl] = useState<string|null>(null);
 	const [performRedirect, setPerformRedirect] = useState(false);
+	const [isCallingLogoutEndpoint, setIsCallingLogoutEndpoint] = useState(false);
 
 
 
@@ -52,6 +52,7 @@ function LogoutPage(props: LogoutPageProps) {
 	/** Function which performs a call to the endpoint which will log the user out. */
 	const callLogoutEndpoint = async (evt?: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
 		evt?.preventDefault();
+		setIsCallingLogoutEndpoint(true);
 
 		try
 		{
@@ -87,6 +88,7 @@ function LogoutPage(props: LogoutPageProps) {
 			dispatch(userInfoSlice.actions.clearUserInfo());
 		} catch (err) {
 			console.error(err);
+			setIsCallingLogoutEndpoint(false);
 		}
 	};
 
@@ -99,10 +101,9 @@ function LogoutPage(props: LogoutPageProps) {
 					return <iframe title={"Client sign-out IFrame"} width={0} height={0} src={iframeUrl} onLoad={() => setPerformRedirect(true)} />
 				return null;
 			})()}
-			<ButtonLink to="/" onClick={callLogoutEndpoint}>
-				<FontAwesomeIcon icon={faSignOutAlt} />
+			<WorkerButtonLinkWithIcon to="/" icon={faSignOutAlt} onClick={callLogoutEndpoint} isBusy={isCallingLogoutEndpoint}>
 				<span className="ml-2">Confirm logout</span>
-			</ButtonLink>
+			</WorkerButtonLinkWithIcon>
 		</div>
 	);
 }
