@@ -1,13 +1,7 @@
-﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
-
-
-using System;
+﻿using System;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
-using IdentityServer4;
-using IdentityServer4.EntityFramework.Entities;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -17,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using SimpleOidcOauth.Controllers;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.IdentityServer;
@@ -172,11 +167,9 @@ namespace SimpleOidcOauth
         /// <param name="app">An object which can be used for configuring the application's HTTP request processing pipeline.</param>
         public void Configure(IApplicationBuilder app)
         {
+            app.UseExceptionHandler(UnhandledExceptionsController.EXCEPTION_HANDLER_ROUTE);
             if (_webHostEnvironment.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
                 TestData.InitializeDatabase(app).Wait();
-            }
 
             app.UseCookiePolicy();
             app.UseStaticFiles();
