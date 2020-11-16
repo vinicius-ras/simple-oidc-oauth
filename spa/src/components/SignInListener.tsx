@@ -1,7 +1,7 @@
 import Lodash from 'lodash';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../redux/AppStore';
+import { AppState } from '../redux/AppStoreCreation';
 import userInfoSlice, { UserInfoData } from '../redux/slices/userInfoSlice';
 
 /** Props for the {@link SignInListener} functional component. */

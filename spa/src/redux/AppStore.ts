@@ -1,13 +1,6 @@
-import { configureStore } from "@reduxjs/toolkit";
-import userInfoSlice from "./slices/userInfoSlice";
+import createAppStore from "./AppStoreCreation";
 
-/** The Redux Store instance used by the application. */
-const AppStore = configureStore({
-	reducer: {
-		userInfo: userInfoSlice.reducer,
-	},
-});
-
-/** The type representing the application's state. */
-export type AppState = ReturnType<typeof AppStore.getState>;
+/** The Redux Store instance used by the application, when the app is running
+ * in the user's web browser. */
+const AppStore = createAppStore();
 export default AppStore;

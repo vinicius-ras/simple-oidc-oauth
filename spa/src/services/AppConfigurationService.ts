@@ -3,6 +3,16 @@
  * See the project's ".env" file for a listing of these variables and their default values used
  * for development environments. */
 export default abstract class AppConfigurationService {
+	// CONSTANTS
+	/** The Content-Type header value which identifies a JSON-serialized "Problem Details" (RFC 7807) response from the
+	 * server. */
+	public static readonly CONTENT_TYPE_PROBLEM_DETAILS = "application/problem+json";
+
+
+
+
+
+	// CONFIGURABLE VALUES (EXTRACTED OR DERIVED FROM ENVIRONMENT VARIABLES)
 	/** The URL pointing to the authentication/authorization server.
 	 * This URL should contain the scheme (HTTP or HTTPS), the domain (and subdomain, if applicable) name, and optionally
 	 * the port to be used to communicate with the authentication/authorization server.

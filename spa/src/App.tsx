@@ -3,6 +3,9 @@ import { fab } from '@fortawesome/free-brands-svg-icons';
 import React from 'react';
 import { Provider } from 'react-redux';
 import { BrowserRouter as Router, Link, Route, Switch } from 'react-router-dom';
+import { AlertColor } from './components/AlertBox';
+import ErrorAlert from './components/ErrorAlert';
+import { ErrorDisplayMode } from './components/ErrorText';
 import LogoutPage from './components/LogoutPage';
 import RequireAppInitialization from './components/RequireAppInitialization';
 import SignInListener from './components/SignInListener';
@@ -23,6 +26,9 @@ function App() {
 							<div>OAuth 2.0 + OpenID Connect Provider</div>
 							<div className="subtext">By Vinicius R. A. Silva</div>
 						</Link>
+
+						{/* A component to display application-wide errors (HTTP Status Codes from 500 to 599). */}
+						<ErrorAlert alertBox={{color: AlertColor.ERROR, className: "mt-4"}} errorText={{displayMode: ErrorDisplayMode.DETAIL_OR_TITLE, statusCodes: ({minCode: 500, maxCode: 599})}} />
 					</header>
 					<main>
 						<RequireAppInitialization>

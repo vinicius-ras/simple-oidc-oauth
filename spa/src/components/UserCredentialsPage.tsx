@@ -2,7 +2,7 @@ import { faSignInAlt, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect, useLocation } from 'react-router-dom';
-import { AppState } from '../redux/AppStore';
+import { AppState } from '../redux/AppStoreCreation';
 import userInfoSlice, { UserInfoData } from '../redux/slices/userInfoSlice';
 import AppConfigurationService from '../services/AppConfigurationService';
 import AxiosService from '../services/AxiosService';
