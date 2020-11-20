@@ -12,7 +12,7 @@ export enum AlertColor {
 /** Props for the {@link AlertBox} functional component. */
 export interface AlertBoxProps {
 	/** Children element(s) to be rendered. */
-	children?: JSX.Element|JSX.Element[];
+	children?: React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>["children"];
 	/** Extra classes to be included for the component. */
 	className?: string;
 	/** The color to be used as the alert's background.

@@ -1,0 +1,11 @@
+.component-InputElement {
+	@apply flex flex-col;
+}
+
+.component-InputElement input {
+	@apply border border-gray-500 rounded-lg p-2;
+}
+
+.component-InputElement .component-AlertBox {
+	@apply mb-1;
+}

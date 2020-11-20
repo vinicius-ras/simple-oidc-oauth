@@ -1,4 +1,6 @@
 import { faSignInAlt, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import { AxiosError } from 'axios';
+import HttpStatusCode from "http-status-codes";
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect, useLocation } from 'react-router-dom';
@@ -6,7 +8,9 @@ import { AppState } from '../redux/AppStoreCreation';
 import userInfoSlice, { UserInfoData } from '../redux/slices/userInfoSlice';
 import AppConfigurationService from '../services/AppConfigurationService';
 import AxiosService from '../services/AxiosService';
+import AlertBox, { AlertBoxProps, AlertColor } from './AlertBox';
 import ButtonLinkWithIcon from './ButtonLinkWithIcon';
+import InputElement from './InputElement';
 import WorkerButtonLinkWithIcon from './WorkerButtonLinkWithIcon';
 
 /** Props for the {@link UserCredentialsPage} functional component. */
@@ -30,6 +34,7 @@ export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 	const [userPassword, setUserPassword] = useState('');
 	const [redirectUrl, setRedirectUrl]= useState<string|null>(null);
 	const [isWaitingLogin, setIsWaitingLogin] = useState(false);
+	const [formAlertBoxProps, setFormAlertBoxProps] = useState<AlertBoxProps|undefined>(undefined);
 
 	const isUserLoggedIn = (!!loggedInUserInfo);
 
@@ -48,6 +53,7 @@ export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 	const onLoginButtonClick = async (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
 		event.preventDefault();
 
+		setFormAlertBoxProps(undefined);
 		setIsWaitingLogin(true);
 
 		try
@@ -79,6 +85,15 @@ export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 			dispatch(userInfoSlice.actions.setUserInfo(responseData));
 			return;
 		} catch (err) {
+			// Display an error message on HTTP 401 (Unauthorized) status codes
+			const axiosError: AxiosError = err;
+			if (axiosError.response?.status === HttpStatusCode.UNAUTHORIZED)
+				setFormAlertBoxProps({
+					color: AlertColor.ERROR,
+					children: "Invalid username and/or password combination."
+				});
+
+			// If the user is logged in, clear his/her login data
 			if (isUserLoggedIn)
 				dispatch(userInfoSlice.actions.clearUserInfo());
 		}
@@ -100,9 +115,14 @@ export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 
 	return (
 		<div className="component-UserCredentialsPage">
+			{(()=> {
+				if (formAlertBoxProps)
+					return <AlertBox className="mb-6" {...formAlertBoxProps} />
+				return null;
+			})()}
 			<div className="flex flex-col">
-				<input type="email" placeholder="E-mail" value={userEmail} onChange={(evt) => setUserEmail(evt.target.value)} className="border border-gray-500 rounded-lg p-2" disabled={isWaitingLogin} />
-				<input type="password" placeholder="Password" value={userPassword} onChange={(evt) => setUserPassword(evt.target.value)} className="border border-gray-500 rounded-lg p-2 mt-2" disabled={isWaitingLogin} />
+				<InputElement name="Email" type="email" placeholder="E-mail" onChange={(evt) => setUserEmail(evt.target.value)} disabled={isWaitingLogin} />
+				<InputElement name="Password" type="password" placeholder="Password" value={userPassword} onChange={(evt) => setUserPassword(evt.target.value)} disabled={isWaitingLogin} containerClassName="mt-3" />
 				<WorkerButtonLinkWithIcon to="/" icon={faSignInAlt} isBusy={isWaitingLogin} className="mt-2 self-end" disabled={disableButtons} onClick={onLoginButtonClick}>
 					<span>Log in</span>
 				</WorkerButtonLinkWithIcon>
