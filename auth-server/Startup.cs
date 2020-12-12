@@ -15,6 +15,7 @@ using SimpleOidcOauth.Controllers;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.IdentityServer;
+using SimpleOidcOauth.Services;
 
 namespace SimpleOidcOauth
 {
@@ -153,6 +154,10 @@ namespace SimpleOidcOauth
                         .WithOrigins(appConfigs.Spa.BaseUrl);
                 });
             });
+
+
+            // Configure custom services
+            services.AddTransient<IEmbeddedResourcesService, EmbeddedResourcesService>();
 
 
             // Configure key/signing material

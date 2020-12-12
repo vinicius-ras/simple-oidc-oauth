@@ -1,6 +1,7 @@
 {
 	"folders": [
 		{ "path": "auth-server" },
+		{ "path": "auth-server-tests" },
 		{ "path": "spa" }
 	],
 	"settings": {}

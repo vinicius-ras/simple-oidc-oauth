@@ -1,0 +1,1 @@
+Sample resource for testing if the IEmbeddedResourcesService loads a resource.

@@ -5,7 +5,7 @@ namespace SimpleOidcOauth.Data.Configuration
 	///     The SPA is the web application which is displays the front end interfaces to allow user's
 	///     to interact with the auth server.
 	/// </summary>
-	class AppConfigs
+	public class AppConfigs
 	{
 		// CONSTANTS
 		/// <summary>
@@ -50,5 +50,8 @@ namespace SimpleOidcOauth.Data.Configuration
 		/// <summary>Configurations for the Single Page Application which displays the auth server's User Interface.</summary>
 		/// <value>An object holding all of the auth server's SPA configurations.</value>
 		public SpaConfigs Spa { get; set; }
+		/// <summary>Configurations for the <see cref="Services.IEmbeddedResourcesService">.</summary>
+		/// <value>An object holding all of the configurations for the <see cref="Services.IEmbeddedResourcesService">.</value>
+		public EmbeddedResourcesConfigs EmbeddedResources { get; set; }
 	}
 }

@@ -4,7 +4,7 @@ namespace SimpleOidcOauth.Data.Configuration
 	///     Models the configurations for the Single Page Application which displays
 	///     the auth server's user interface.
 	/// </summary>
-	class SpaConfigs
+	public class SpaConfigs
 	{
 		/// <summary>The base URL for the auth server's SPA.</summary>
 		/// <value>The base URL where the auth server's SPA should be running.</value>
