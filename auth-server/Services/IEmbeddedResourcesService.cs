@@ -43,6 +43,6 @@ namespace SimpleOidcOauth.Services
 		/// <exception cref="ArgumentNullException">The <paramref name="resourcePath"/> parameter is null.</exception>
 		/// <exception cref="ArgumentOutOfRangeException">The number of characters in the resource is larger than <see cref="Int32.MaxValue" />.</exception>
 		/// <exception cref="NotImplementedException">The resource's length is greater than <see cref="Int64.MaxValue" />.</exception>
-		Task<string> GetResourceAsString(string resourcePath, Encoding encoding = null);
+		Task<string> GetResourceAsStringAsync(string resourcePath, Encoding encoding = null);
 	}
 }

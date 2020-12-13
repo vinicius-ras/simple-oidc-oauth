@@ -1,0 +1,1 @@
+Another sample resource, used for testing if the IEmbeddedResourcesService loads a resource in a deeper/nested resource folder structure.

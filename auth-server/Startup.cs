@@ -3,6 +3,7 @@ using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using IdentityServer4.Services;
+using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -158,6 +159,9 @@ namespace SimpleOidcOauth
 
             // Configure custom services
             services.AddTransient<IEmbeddedResourcesService, EmbeddedResourcesService>();
+
+            services.AddTransient<ISmtpClient, SmtpClient>();
+            services.AddTransient<IEmailService, EmailService>();
 
 
             // Configure key/signing material

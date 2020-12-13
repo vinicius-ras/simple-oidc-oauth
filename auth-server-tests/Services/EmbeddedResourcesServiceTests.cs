@@ -5,17 +5,22 @@ using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Services;
 using Xunit;
 
-namespace SimpleOidcOauth.Tests
+namespace SimpleOidcOauth.Tests.Services
 {
+    /// <summary>Tests for the <see cref="EmbeddedResourcesService" /> class.</summary>
     public class EmbeddedResourcesServiceTests
     {
         // CONSTANTS
         /// <summary>Namespace where the tests' embedded resources are to be located.</summary>
         private const string TEST_RESOURCES_NAMESPACE = "SimpleOidcOauth.EmbeddedResources.Tests";
         /// <summary>Path to the embedded resource used to test that the <see cref="EmbeddedResourcesService" /> can actually load resources.</summary>
-        private const string TEST_RESOURCE_ID_EMAIL_TEMPLATE_LOADS_TEST = "ResourceLoadsTest.txt";
+        private const string TEST_VALID_RESOURCE_PATH = "ResourceLoadsTest.txt";
+        /// <summary>Path to the embedded resource used to test that the <see cref="EmbeddedResourcesService" /> can actually load resources (nested version).</summary>
+        private const string TEST_VALID_NESTED_RESOURCE_PATH = "Nested/Path/Nested-ResourceLoadsTest.txt";
         /// <summary>Path to the embedded resource used to test that the <see cref="EmbeddedResourcesService" /> fails to load invalid resources.</summary>
-        private const string TEST_RESOURCE_ID_EMAIL_TEMPLATE_LOADS_TEST_INVALID = "INVALID-ResourceLoadsTest.txt";
+        private const string TEST_INVALID_RESOURCE_PATH = "INVALID-ResourceLoadsTest.txt";
+        /// <summary>Path to the embedded resource used to test that the <see cref="EmbeddedResourcesService" /> fails to load invalid resources (nested version).</summary>
+        private const string TEST_INVALID_NESTED_RESOURCE_PATH = "Nested/Path/INVALID-Nested-ResourceLoadsTest.txt";
 
 
 
@@ -44,7 +49,17 @@ namespace SimpleOidcOauth.Tests
         public void GetResourceStream_ValidResourcePath_ReturnsNonEmptyStream()
         {
             var resourceService = CreateEmbeddedResourcesService();
-            var resStream = resourceService.GetResourceStream(TEST_RESOURCE_ID_EMAIL_TEMPLATE_LOADS_TEST);
+            var resStream = resourceService.GetResourceStream(TEST_VALID_RESOURCE_PATH);
+
+            Assert.True(resStream.Length > 0);
+        }
+
+
+        [Fact]
+        public void GetResourceStream_ValidNestedResourcePath_ReturnsNonEmptyStream()
+        {
+            var resourceService = CreateEmbeddedResourcesService();
+            var resStream = resourceService.GetResourceStream(TEST_VALID_NESTED_RESOURCE_PATH);
 
             Assert.True(resStream.Length > 0);
         }
@@ -60,10 +75,20 @@ namespace SimpleOidcOauth.Tests
 
 
         [Fact]
-        public void GetResourceStream_EmptyResourcePath_ReturnsNull()
+        public void GetResourceStream_InvalidResourcePath_ReturnsNull()
         {
             var resourceService = CreateEmbeddedResourcesService();
-            var resStream = resourceService.GetResourceStream(TEST_RESOURCE_ID_EMAIL_TEMPLATE_LOADS_TEST_INVALID);
+            var resStream = resourceService.GetResourceStream(TEST_INVALID_RESOURCE_PATH);
+
+            Assert.Null(resStream);
+        }
+
+
+        [Fact]
+        public void GetResourceStream_InvalidNestedResourcePath_ReturnsNull()
+        {
+            var resourceService = CreateEmbeddedResourcesService();
+            var resStream = resourceService.GetResourceStream(TEST_INVALID_NESTED_RESOURCE_PATH);
 
             Assert.Null(resStream);
         }
@@ -73,7 +98,7 @@ namespace SimpleOidcOauth.Tests
         public async Task GetResourceAsString_ValidResourcePath_ReturnsNonEmptyStream()
         {
             var resourceService = CreateEmbeddedResourcesService();
-            var resString = await resourceService.GetResourceAsString(TEST_RESOURCE_ID_EMAIL_TEMPLATE_LOADS_TEST);
+            var resString = await resourceService.GetResourceAsStringAsync(TEST_VALID_RESOURCE_PATH);
 
             Assert.True(resString.Length > 0);
         }
@@ -84,7 +109,7 @@ namespace SimpleOidcOauth.Tests
         {
             var resourceService = CreateEmbeddedResourcesService();
 
-            await Assert.ThrowsAnyAsync<ArgumentNullException>(() => resourceService.GetResourceAsString(null));
+            await Assert.ThrowsAnyAsync<ArgumentNullException>(() => resourceService.GetResourceAsStringAsync(null));
         }
 
 
@@ -92,7 +117,7 @@ namespace SimpleOidcOauth.Tests
         public async Task GetResourceAsString_EmptyResourcePath_ReturnsNull()
         {
             var resourceService = CreateEmbeddedResourcesService();
-            var resString = await resourceService.GetResourceAsString(TEST_RESOURCE_ID_EMAIL_TEMPLATE_LOADS_TEST_INVALID);
+            var resString = await resourceService.GetResourceAsStringAsync(TEST_INVALID_RESOURCE_PATH);
 
             Assert.Null(resString);
         }

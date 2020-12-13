@@ -45,7 +45,7 @@ namespace SimpleOidcOauth.Services
 
 
 		/// <inheritdoc />
-		public async Task<string> GetResourceAsString(string resourcePath, Encoding encoding)
+		public async Task<string> GetResourceAsStringAsync(string resourcePath, Encoding encoding)
 		{
 			using (var resourceStream = GetResourceStream(resourcePath))
 			{

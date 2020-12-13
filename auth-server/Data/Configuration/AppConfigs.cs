@@ -53,5 +53,8 @@ namespace SimpleOidcOauth.Data.Configuration
 		/// <summary>Configurations for the <see cref="Services.IEmbeddedResourcesService">.</summary>
 		/// <value>An object holding all of the configurations for the <see cref="Services.IEmbeddedResourcesService">.</value>
 		public EmbeddedResourcesConfigs EmbeddedResources { get; set; }
+		/// <summary>Configurations for the <see cref="Services.IEmailService">.</summary>
+		/// <value>An object holding all of the configurations for the <see cref="Services.IEmailService">.</value>
+		public EmailConfigs Email { get; set; }
 	}
 }
