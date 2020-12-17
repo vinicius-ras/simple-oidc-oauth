@@ -1,12 +1,17 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using System.Linq;
-using SimpleOidcOauth.Models;
-using Microsoft.AspNetCore.Authorization;
 using IdentityModel;
 using IdentityServer4.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using SimpleOidcOauth.Data.Configuration;
+using SimpleOidcOauth.Models;
+using SimpleOidcOauth.Services;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SimpleOidcOauth.Controllers
 {
@@ -21,7 +26,45 @@ namespace SimpleOidcOauth.Controllers
 	[ApiController]
 	public class AccountController : ControllerBase
 	{
+		// CONSTANTS AND STATIC READONLY
+		/// <summary>
+		///     Maps the types of errors that can happen during user's registration to each
+		///     field to which these types of errors should be associated, allowing errors to be safely returned to client applications.
+		/// </summary>
+		/// <value>
+		///     <para>A map associating the types of the possibly returned errors to a field, so that errors can be displayed correctly in the client application's UI.</para>
+		///     <para>
+		///         The map keys refer to the type of errors that can be returned by a call to <see cref="UserManager{TUser}.CreateAsync(TUser, string)"/>.
+		///         The error names can be extracted from the <see cref="IdentityErrorDescriber"/> class to enable "type-safe" error checkings for the error names.
+		///     </para>
+		///     <para>
+		///         The map values refer to the fields that are required to be sent to the <see cref="Register(AccountRegisterInputModel)"/> action/endpoint.
+		///         These field names are described by and can be extracted from the <see cref="AccountRegisterInputModel"/> class.
+		///     </para>
+		/// </value>
+		private static readonly IDictionary<string, string> UserRegistrationErrorCodeToFieldMap = new Dictionary<string, string>
+		{
+				{ nameof(IdentityErrorDescriber.DuplicateEmail), nameof(AccountRegisterInputModel.Email) },
+				{ nameof(IdentityErrorDescriber.InvalidEmail), nameof(AccountRegisterInputModel.Email) },
+				{ nameof(IdentityErrorDescriber.DuplicateUserName), nameof(AccountRegisterInputModel.Email) },
+				{ nameof(IdentityErrorDescriber.InvalidUserName), nameof(AccountRegisterInputModel.Email) },
+				{ nameof(IdentityErrorDescriber.PasswordRequiresDigit), nameof(AccountRegisterInputModel.Password) },
+				{ nameof(IdentityErrorDescriber.PasswordRequiresLower), nameof(AccountRegisterInputModel.Password) },
+				{ nameof(IdentityErrorDescriber.PasswordRequiresNonAlphanumeric), nameof(AccountRegisterInputModel.Password) },
+				{ nameof(IdentityErrorDescriber.PasswordRequiresUniqueChars), nameof(AccountRegisterInputModel.Password) },
+				{ nameof(IdentityErrorDescriber.PasswordRequiresUpper), nameof(AccountRegisterInputModel.Password) },
+				{ nameof(IdentityErrorDescriber.PasswordTooShort), nameof(AccountRegisterInputModel.Password) },
+		};
+		/// <summary>The name of the field to be associated with a given error, when that error's code has no associations described in the <see cref="UserRegistrationErrorCodeToFieldMap"/>.</summary>
+		private const string UnknownErrorCodeFieldName = "_UNKNOWN_FIELDS";
+
+
+
+
+
 		// PRIVATE FIELDS
+		/// <summary>Container-injected application configurations.</summary>
+		private readonly AppConfigs _appConfigs;
 		/// <summary>Container-injected instance for the <see cref="ILogger{TCategoryName}" /> service.</summary>
 		private readonly ILogger<AccountController> _logger;
 		/// <summary>Container-injected instance for the <see cref="SignInManager{TUser}" /> service.</summary>
@@ -30,6 +73,8 @@ namespace SimpleOidcOauth.Controllers
 		private readonly UserManager<IdentityUser> _userManager;
 		/// <summary>Container-injected instance for the <see cref="IIdentityServerInteractionService" /> service.</summary>
 		private readonly IIdentityServerInteractionService _identServerInteractionService;
+		/// <summary>Container-injected instance for the <see cref="IEmailService" /> service.</summary>
+		private readonly IEmailService _emailService;
 
 
 
@@ -37,19 +82,26 @@ namespace SimpleOidcOauth.Controllers
 
 		// PUBLIC METHODS
 		/// <summary>Constructor.</summary>
+		/// <param name="appConfigs">Container-injected instance for the <see cref="IOptions{TOptions}" /> service.</param>
 		/// <param name="logger">Container-injected instance for the <see cref="ILogger{TCategoryName}" /> service.</param>
 		/// <param name="signInManager">Container-injected instance for the <see cref="SignInManager{TUser}" /> service.</param>
 		/// <param name="userManager">Container-injected instance for the <see cref="UserManager{TUser}" /> service.</param>
+		/// <param name="identServerInteractionService">Container-injected instance for the <see cref="IIdentityServerInteractionService" /> service.</param>
+		/// <param name="emailService">Container-injected instance for the <see cref="IEmailService" /> service.</param>
 		public AccountController(
+			IOptions<AppConfigs> appConfigs,
 			ILogger<AccountController> logger,
 			SignInManager<IdentityUser> signInManager,
 			UserManager<IdentityUser> userManager,
-			IIdentityServerInteractionService identServerInteractionService)
+			IIdentityServerInteractionService identServerInteractionService,
+			IEmailService emailService)
 		{
+			_appConfigs = appConfigs.Value;
 			_logger = logger;
 			_signInManager = signInManager;
 			_userManager = userManager;
 			_identServerInteractionService = identServerInteractionService;
+			_emailService = emailService;
 		}
 
 
@@ -167,6 +219,82 @@ namespace SimpleOidcOauth.Controllers
 				Email = userIdentity.Claims.First(c => c.Type == JwtClaimTypes.Email).Value,
 			};
 			return Ok(result);
+		}
+
+
+		/// <summary>Endpoint used to register new users.</summary>
+		/// <param name="registerData">Information about the user to be registered.</param>
+		/// <returns>
+		///     <para>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</para>
+		///
+		///     <para>In case of success, an HTTP 200 (Ok) will be returned, indicating that the new user has been registered.</para>
+		///
+		///     <para>
+		///         An HTTP 400 (Bad Request) with a Problem Details (RFC-7807) body will be returned if the user's data is incorrect
+		///         or not acceptable (e.g., malformed emails, weak passwords, etc). For security purposes, HTTP 400 (BadRequest) is also
+		///         the returned code when the user already exists in the database, so that an attacker can not try to exploit that fact.
+		///     </para>
+		/// </returns>
+		[HttpPost]
+		public async Task<IActionResult> Register([FromBody] AccountRegisterInputModel registerData) {
+			// Try to register the new user
+			var newUser = new IdentityUser(registerData.UserName)
+			{
+				Email = registerData.Email,
+			};
+			var userCreateResult = await _userManager.CreateAsync(newUser, registerData.Password);
+			if (userCreateResult.Succeeded == false)
+			{
+				var validationErrorsDictionary = userCreateResult.Errors
+					.GroupBy(
+						error => UserRegistrationErrorCodeToFieldMap[error.Code] ?? UnknownErrorCodeFieldName,
+						error => error.Description)
+					.ToDictionary(
+						group => group.Key,
+						group => group.ToArray()
+					);
+				var validationProblems = new ValidationProblemDetails(validationErrorsDictionary);
+				return ValidationProblem(validationProblems);
+			}
+
+			// Send an email containing an email verification link to the user
+			var verificationToken = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
+			var queryBuilder = new QueryBuilder();
+			queryBuilder.Add("user", newUser.Id);
+			queryBuilder.Add("token", verificationToken);
+
+			var accountVerificationLink = $"{Request.Scheme}://{Request.Host.Value}{Url.Action(nameof(VerifyAccount))}{queryBuilder.ToString()}";
+			bool result = await _emailService.SendMessageFromResourceAsync(
+				registerData.Email,
+				"simple-oidc-oauth: Account verification",
+				"EmailTemplates/AccountVerification.html",
+				new Dictionary<string, object> {
+					{"userName", registerData.UserName},
+					{"accountVerificationLink", accountVerificationLink},
+				});
+			return Ok();
+		}
+
+
+		/// <summary>Endpoint used to verify the user's email.</summary>
+		/// <param name="user">The identifier for the user that must be verified.</param>
+		/// <param name="token">The email verification token generated when the user registered his/her account.</param>
+		/// <returns>
+		///     <para>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</para>
+		///     <para>In case of success, this endpoint returns an HTTP 200 (Ok) response.</para>
+		///     <para>In case of failure, this endpoint returns an HTTP 403 (Forbidden) response.</para>
+		/// </returns>
+		[HttpGet("verify-account")]
+		public async Task<IActionResult> VerifyAccount([FromQuery] string user, [FromQuery] string token) {
+			var targetUser = await _userManager.FindByIdAsync(user);
+			if (targetUser == null)
+				return Forbid();
+
+			var emailConfirmationResult = await _userManager.ConfirmEmailAsync(targetUser, token);
+			if (emailConfirmationResult.Succeeded == false)
+				return Forbid();
+
+			return Ok();
 		}
 	}
 }

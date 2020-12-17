@@ -78,8 +78,13 @@ namespace SimpleOidcOauth
 
 
             // Add ASP.NET Core Identity and IdentityServer4 services
-            services.AddIdentity<IdentityUser, IdentityRole>()
-                .AddEntityFrameworkStores<AppDbContext>();
+            services.AddIdentity<IdentityUser, IdentityRole>(opts => {
+                    opts.SignIn.RequireConfirmedAccount = true;
+                    opts.SignIn.RequireConfirmedEmail = true;
+                    opts.SignIn.RequireConfirmedPhoneNumber = false;
+                })
+                .AddEntityFrameworkStores<AppDbContext>()
+                .AddDefaultTokenProviders();
 
 
             var identityServerBuilder = services.AddIdentityServer(opts => {

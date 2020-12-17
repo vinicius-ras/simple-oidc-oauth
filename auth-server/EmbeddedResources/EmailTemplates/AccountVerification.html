@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>simple-oidc-oauth: Email verification</title>
+</head>
+<body>
+	<p>Hi, <b>${userName}</b>!</p>
+	<p>
+		You have recently registered a new account in our services.<br />
+		Please, <b><a href="${accountVerificationLink}">click here</a></b> to verify and activate your account.
+	</p>
+	<p>If you are not able to follow the link above, please copy the following URL to your browser's address bar and follow that link:</p>
+	<p><b>${accountVerificationLink}</b></p>
+
+	<p>
+		Thank you for your interest in using our services.<br />
+		Best regards.
+	</p>
+</body>
+</html>
