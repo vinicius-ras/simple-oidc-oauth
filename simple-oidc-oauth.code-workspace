@@ -1,7 +1,8 @@
 {
 	"folders": [
 		{ "path": "auth-server" },
-		{ "path": "auth-server-tests" },
+		{ "path": "auth-server-integration-tests" },
+		{ "path": "auth-server-unit-tests" },
 		{ "path": "spa" }
 	],
 	"settings": {}

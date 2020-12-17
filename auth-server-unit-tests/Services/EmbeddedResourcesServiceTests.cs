@@ -5,7 +5,7 @@ using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Services;
 using Xunit;
 
-namespace SimpleOidcOauth.Tests.Services
+namespace SimpleOidcOauth.Tests.Unit.Services
 {
     /// <summary>Tests for the <see cref="EmbeddedResourcesService" /> class.</summary>
     public class EmbeddedResourcesServiceTests

@@ -16,7 +16,7 @@ using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Services;
 using Xunit;
 
-namespace SimpleOidcOauth.Tests.Services
+namespace SimpleOidcOauth.Tests.Unit.Services
 {
     /// <summary>Tests for the <see cref="EmailService" /> class.</summary>
     public class EmailServiceTests
@@ -45,9 +45,9 @@ namespace SimpleOidcOauth.Tests.Services
         ///     Notice that this value is actually a resource contained within the "auth-server-tests" project (not the main "auth-server" project).
         ///     A mock <see cref="IEmbeddedResourcesService" /> will be used and will actually load a valid email template for testing purposes.
         /// </summary>
-        private const string FAKE_VALID_EMAIL_RESOURCE_PATH = "SimpleOidcOauth.Tests.EmbeddedResources.FakeEmailContents.html";
+        private const string FAKE_VALID_EMAIL_RESOURCE_PATH = "SimpleOidcOauth.Tests.Unit.EmbeddedResources.FakeEmailContents.html";
         /// <summary>A resource path that should be considered as an invalid resource path during the tests.</summary>
-        private const string FAKE_INVALID_EMAIL_RESOURCE_PATH = "SimpleOidcOauth.Tests.EmbeddedResources.INVALID-FakeEmailContents.html";
+        private const string FAKE_INVALID_EMAIL_RESOURCE_PATH = "SimpleOidcOauth.Tests.Unit.EmbeddedResources.INVALID-FakeEmailContents.html";
         /// <summary>
         ///     This field will actually hold the email template's contents to be used during the tests.
         ///     For more information, see <see cref="FAKE_VALID_EMAIL_RESOURCE_PATH" />.
