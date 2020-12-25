@@ -9,7 +9,7 @@
 			"type": "coreclr",
 			"request": "launch",
 			"preLaunchTask": "build",
-			"program": "${workspaceFolder}/bin/Debug/netcoreapp3.1/auth-server.dll",
+			"program": "${workspaceFolder}/bin/Debug/net5.0/auth-server.dll",
 			"args": [],
 			"cwd": "${workspaceFolder}",
 			"stopAtEntry": false,

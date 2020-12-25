@@ -1,21 +1,21 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Security.Claims;
-using System.Threading.Tasks;
 using IdentityModel;
 using IdentityServer4;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
 using IdentityServer4.Test;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using SimpleOidcOauth.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
-namespace SimpleOidcOauth.Data
+namespace SimpleOidcOauth.Tests.Integration.Data
 {
 	/// <summary>A class containing constants and sample data to be used for testing/development purposes.</summary>
 	internal static class TestData
@@ -37,13 +37,21 @@ namespace SimpleOidcOauth.Data
 		public const string ScopeApiResourceUserManagement = "user-management-api";
 
 
+		/// <summary>A fake plain text password to be used for the "Client Credentials Flow" client.</summary>
+		public static readonly string PlainTextPasswordClientClientCredentialsFlow = "b22787170fdc45bfa22bbfc12e8776b2";
+
+
+		/// <summary>A fake plain text password to be used for the "MVC" client.</summary>
+		public static readonly string PlainTextPasswordClientMvc = "74d8fb7b96dc4760846b432c7397f629";
+
+
 		/// <summary>Stub collection of claims to be used as a placeholder for future improvements.</summary>
 		/// <value>An empty collection of strings, which will be used as a placeholder for a future claims list.</value>
 		public static readonly string[] EmptyClaimsCollection = new string[] {};
 
 
 		/// <summary>An API Resource representing an API that deals with products.</summary>
-		/// <returns>A pre-initialized <see cref={ApiResource} /> object representing an API that deals with products, and which can be used for testing/development purposes.</returns>
+		/// <returns>A pre-initialized <see cref="ApiResource" /> object representing an API that deals with products, and which can be used for testing/development purposes.</returns>
 		public static readonly ApiResource ApiResourceProducts = new ApiResource(
 			name: ScopeApiResourceProducts,
 			displayName: "Products API",
@@ -51,7 +59,7 @@ namespace SimpleOidcOauth.Data
 
 
 		/// <summary>An API Resource representing an API that deals with users management.</summary>
-		/// <returns>A pre-initialized <see cref={ApiResource} /> object representing an API that deals with users management, and which can be used for testing/development purposes.</returns>
+		/// <returns>A pre-initialized <see cref="ApiResource" /> object representing an API that deals with users management, and which can be used for testing/development purposes.</returns>
 		public static readonly ApiResource ApiResourceUserManagement = new ApiResource(
 			name: ScopeApiResourceUserManagement,
 			displayName: "User management API",
@@ -59,7 +67,7 @@ namespace SimpleOidcOauth.Data
 
 
 		/// <summary>An Identity Resource representing the basic information that can be obtained from a user.</summary>
-		/// <returns>A pre-initialized <see cref={IdentityResource} /> object representing the basic claims of a user, and which can be used for testing/development purposes.</returns>
+		/// <returns>A pre-initialized <see cref="IdentityResource" /> object representing the basic claims of a user, and which can be used for testing/development purposes.</returns>
 		public static readonly IdentityResource IdentityResourceBasicUserInfo = new IdentityResource(
 			name: ScopeIdentityResourceBasicUserInfo,
 			displayName: "Basic user information",
@@ -71,7 +79,7 @@ namespace SimpleOidcOauth.Data
 
 
 		/// <summary>An Identity Resource representing the private/confidential information that can be obtained from a user.</summary>
-		/// <returns>A pre-initialized <see cref={IdentityResource} /> object representing the private/confidential claims of a user, and which can be used for testing/development purposes.</returns>
+		/// <returns>A pre-initialized <see cref="IdentityResource" /> object representing the private/confidential claims of a user, and which can be used for testing/development purposes.</returns>
 		public static readonly IdentityResource IdentityResourceConfidentialUserInfo = new IdentityResource(
 			name: ScopeIdentityResourceConfidentialUserInfo,
 			displayName: "Private/confidential user information",
@@ -119,7 +127,7 @@ namespace SimpleOidcOauth.Data
 				new Claim(JwtClaimTypes.GivenName, "Bob"),
 				new Claim(JwtClaimTypes.FamilyName, "Smith"),
 				new Claim(JwtClaimTypes.Email, "BobSmith@email.com"),
-				new Claim(JwtClaimTypes.EmailVerified, "true", ClaimValueTypes.Boolean),
+				new Claim(JwtClaimTypes.EmailVerified, "false", ClaimValueTypes.Boolean),
 				new Claim(JwtClaimTypes.WebSite, "http://bob.com"),
 				new Claim(JwtClaimTypes.Address, @"{ 'street_address': 'One Hacker Way', 'locality': 'Heidelberg', 'postal_code': 69118, 'country': 'Germany' }", IdentityServer4.IdentityServerConstants.ClaimValueTypes.Json),
 				new Claim("location", "somewhere")
@@ -128,31 +136,32 @@ namespace SimpleOidcOauth.Data
 
 
 		/// <summary>Test client configured for using the OAuth 2.0 Client Credentials flow.</summary>
-		/// <returns>Returns a <see cref={Client} /> object configured for testing a Client Credentials flow.</returns>
+		/// <returns>Returns a <see cref="Client" /> object configured for testing a Client Credentials flow.</returns>
 		public static readonly Client ClientClientCredentialsFlow = new Client()
 		{
 			ClientId = "client-client-credentials",
 			ClientName = "Client-credentials Client (Client Credentials Grant Type)",
 			AllowedGrantTypes = GrantTypes.ClientCredentials,
-			ClientSecrets = { new Secret("client-client-credentials-secret-123".Sha256()) },
-			AllowedScopes = { ScopeIdentityResourceBasicUserInfo, ScopeApiResourceProducts },
+			ClientSecrets = { new Secret(PlainTextPasswordClientClientCredentialsFlow.Sha256()) },
+			AllowedScopes = { ScopeApiResourceUserManagement, ScopeApiResourceProducts },
 		};
 
 
 		/// <summary>Test client configured for using the OAuth 2.0 Authorization Code grant type on an MVC-like app.</summary>
-		/// <returns>Returns a <see cref={Client} /> object configured for testing a Authorization Code grant type on an MVC-like app.</returns>
+		/// <returns>Returns a <see cref="Client" /> object configured for testing a Authorization Code grant type on an MVC-like app.</returns>
         public static readonly Client ClientMvc = new Client
         {
             ClientId = "client-mvc",
 			ClientName = "MVC Client (Code Grant Type)",
-            ClientSecrets = { new Secret("client-mvc-secret-123".Sha256()) },
+            ClientSecrets = { new Secret(PlainTextPasswordClientMvc.Sha256()) },
 
             AllowedGrantTypes = GrantTypes.Code,
             RequireConsent = false,
             RequirePkce = true,
 
-            RedirectUris = { "http://localhost:5002/signin-oidc" },
-            PostLogoutRedirectUris = { "http://localhost:5002/signout-callback-oidc" },
+			AllowedCorsOrigins = { "https://localhost:5002" },
+            RedirectUris = { "https://localhost:5002/signin-oidc" },
+            PostLogoutRedirectUris = { "https://localhost:5002/signout-callback-oidc" },
 
             AllowedScopes = new List<string>
             {
@@ -164,7 +173,7 @@ namespace SimpleOidcOauth.Data
 
 
 		/// <summary>Test client configured for using the OAuth 2.0 implicit grant type on an SPA-like app.</summary>
-		/// <returns>Returns a <see cref={Client} /> object configured for testing a implicit grant type on an SPA-like app.</returns>
+		/// <returns>Returns a <see cref="Client" /> object configured for testing a implicit grant type on an SPA-like app.</returns>
         public static Client ClientSpa { get; } = new Client
 		{
 			ClientId = "client-spa",
@@ -188,7 +197,7 @@ namespace SimpleOidcOauth.Data
 
 
 		/// <summary>Collection of test Users.</summary>
-		/// <value>A list of pre-initialized <see cref={TestUser} /> objects to be used for testing purposes.</value>
+		/// <value>A list of pre-initialized <see cref="TestUser" /> objects to be used for testing purposes.</value>
 		public static readonly IEnumerable<TestUser> SampleUsers = new TestUser[]
 		{
 			UserAlice,
@@ -197,7 +206,7 @@ namespace SimpleOidcOauth.Data
 
 
 		/// <summary>Collection of test Clients.</summary>
-		/// <value>A list of pre-initialized <see cref={Client} /> objects to be used for testing purposes.</value>
+		/// <value>A list of pre-initialized <see cref="Client" /> objects to be used for testing purposes.</value>
 		public static readonly IEnumerable<Client> SampleClients = new Client[]
 		{
 			ClientClientCredentialsFlow,
@@ -206,8 +215,17 @@ namespace SimpleOidcOauth.Data
 		};
 
 
+		/// <summary>Collection of test API Scopes.</summary>
+		/// <value>A list of pre-initialized <see cref="ApiScope"/> objects to be used for testing purposes.</value>
+		public static readonly IEnumerable<ApiScope> SampleApiScopes = new ApiScope[]
+		{
+			new ApiScope(ScopeApiResourceProducts, "Products API Scope"),
+			new ApiScope(ScopeApiResourceUserManagement, "User Management API Scope"),
+		};
+
+
 		/// <summary>Collection of test API Resources.</summary>
-		/// <value>A list of pre-initialized <see cref={ApiResource} /> objects to be used for testing purposes.</value>
+		/// <value>A list of pre-initialized <see cref="ApiResource" /> objects to be used for testing purposes.</value>
 		public static readonly IEnumerable<ApiResource> SampleApiResources = new ApiResource[]
 		{
 			ApiResourceProducts,
@@ -216,7 +234,7 @@ namespace SimpleOidcOauth.Data
 
 
 		/// <summary>Collection of test Identity Resources.</summary>
-		/// <value>A list of pre-initialized <see cref={IdentityResource} /> objects to be used for testing purposes.</value>
+		/// <value>A list of pre-initialized <see cref="IdentityResource" /> objects to be used for testing purposes.</value>
 		public static readonly IEnumerable<IdentityResource> SampleIdentityResources = new IdentityResource[]
 		{
 			new IdentityResources.OpenId(),
@@ -238,7 +256,7 @@ namespace SimpleOidcOauth.Data
 		/// <typeparam name="TEntityFrameworkModel">The type which represents the entities to be saved on Entity Framework Core's model realm</typeparam>
 		/// <typeparam name="TKey">The type of a key which will be used to verify which of the entities are already present in the target database.</typeparam>
 		/// <param name="testEntities">A collection containing all of the test entities which can be persisted in the target database.</param>
-		/// <param name="databaseCollection">A <see cref={DbSet} /> object used to manage entities in the target database.</param>
+		/// <param name="databaseCollection">A <see cref="DbSet{TEntity}" /> object used to manage entities in the target database.</param>
 		/// <param name="identityServerModelKeySelector">A function which takes an object from the IdentityServer's model realm and extracts a key discriminator for comparing it to other entities.</param>
 		/// <param name="entityFrameworkModelKeySelector">A function which takes an object from the Entity Framework Core's model realm and extracts a key discriminator for comparing it to other entities.</param>
 		/// <param name="convertToEntityFrameworkModel">
@@ -273,12 +291,12 @@ namespace SimpleOidcOauth.Data
 
 
 		/// <summary>
-		///     Converts an IdentityServer <see cref={TestUser} /> object to the
+		///     Converts an IdentityServer <see cref="TestUser" /> object to the
 		///     corresponding ASP.NET Core Identity user model representation, as used by this application.
 		/// </summary>
-		/// <param name="testUser">The <see cref={TestUser} /> object to be converted.</param>
+		/// <param name="testUser">The <see cref="TestUser" /> object to be converted.</param>
 		/// <returns>
-		///     Returns an <see cref={IdentityUser} /> object containing the retrieved data
+		///     Returns an <see cref="IdentityUser" /> object containing the retrieved data
 		///     which was converted from the input object.
 		/// </returns>
 		private static IdentityUser ConvertTestUserToIdentityUser(TestUser testUser, UserManager<IdentityUser> userManager)
@@ -287,6 +305,12 @@ namespace SimpleOidcOauth.Data
 			{
 				UserName = testUser.Username,
 				Email = testUser.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.Email)?.Value,
+				EmailConfirmed = testUser.Claims
+					.FirstOrDefault(c => c.Type == JwtClaimTypes.EmailVerified)?.Value
+					switch {
+						null => false,
+						string claimValue => bool.Parse(claimValue),
+					},
 				PhoneNumber = testUser.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.PhoneNumber)?.Value,
 			};
 
@@ -298,66 +322,74 @@ namespace SimpleOidcOauth.Data
 
 
 
+
+
 		// PUBLIC METHODS
 		/// <summary>Initializes the database(s) with the test/development data.</summary>
-		/// <param name="appBuilder">
-		///    Reference to the application builder object, used for retrieving database-related services.
+		/// <param name="serviceProvider">
+		///    A service provider instance used to retrieve the required database-related services.
 		/// </param>
-		public static async Task InitializeDatabase(IApplicationBuilder appBuilder)
+		public static async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
 		{
-			var serviceScopeFactory = appBuilder.ApplicationServices.GetService<IServiceScopeFactory>();
-			using (var scope = serviceScopeFactory.CreateScope())
+			// Perform pending migrations for the IS4 operational database, the IS4 configuration database, and the application's database
+			var operationalDbContext = serviceProvider.GetRequiredService<PersistedGrantDbContext>();
+			var configsDbContext = serviceProvider.GetRequiredService<ConfigurationDbContext>();
+			var usersDbContext = serviceProvider.GetRequiredService<AppDbContext>();
+
+			var allDbContexts = new DbContext[] { operationalDbContext, configsDbContext, usersDbContext };
+			foreach (var curDbContext in allDbContexts)
 			{
-				// Perform pending migrations for both the operational and the configuration databases
-				var operationalDbContext = scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>();
-				var configsDbContext = scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
-				var usersDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+				await curDbContext.Database.EnsureCreatedAsync();
 
-				var allDbContexts = new DbContext [] { operationalDbContext, configsDbContext, usersDbContext };
-				foreach (var curDbContext in allDbContexts)
-				{
-					await curDbContext.Database.EnsureCreatedAsync();
+				var allMigrations = curDbContext.Database.GetMigrations().ToList();
+				var appliedMigrations = await curDbContext.Database.GetAppliedMigrationsAsync();
 
-					var pendingMigrations = await curDbContext.Database.GetPendingMigrationsAsync();
-					if (pendingMigrations.Any())
-						await curDbContext.Database.MigrateAsync();
-				}
-
-				// Save the test entities (Client`s, ApiResource`s, and IdentityResource`s) which are not yet present in the database
-				var savedClients = await SaveAllUnsavedTestEntities(
-					TestData.SampleClients.AsQueryable(),
-					configsDbContext.Clients,
-					idSrvClient => idSrvClient.ClientId,
-					efClient => efClient.ClientId,
-					idSrvClient => idSrvClient.ToEntity());
-
-				var savedApiResources = await SaveAllUnsavedTestEntities(
-					TestData.SampleApiResources.AsQueryable(),
-					configsDbContext.ApiResources,
-					idSrvApiResource => idSrvApiResource.Name,
-					efApiResource => efApiResource.Name,
-					idSrvApiResource => idSrvApiResource.ToEntity());
-
-				var savedIdentityResources = await SaveAllUnsavedTestEntities(
-					TestData.SampleIdentityResources.AsQueryable(),
-					configsDbContext.IdentityResources,
-					idSrvIdentityResource => idSrvIdentityResource.Name,
-					efIdentityResource => efIdentityResource.Name,
-					idSrvIdentityResource => idSrvIdentityResource.ToEntity());
-
-				var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-				var savedUsers = await SaveAllUnsavedTestEntities(
-					TestData.SampleUsers.AsQueryable(),
-					usersDbContext.Users,
-					idSrvUser => idSrvUser.Username,
-					efIdentityUser => efIdentityUser.UserName,
-					idSvrTestUser => ConvertTestUserToIdentityUser(idSvrTestUser, userManager)
-				);
-
-				// Commit changes to the respective database(s)
-				foreach (var curDbContext in allDbContexts)
-					await curDbContext.SaveChangesAsync();
+				var pendingMigrations = await curDbContext.Database.GetPendingMigrationsAsync();
+				if (pendingMigrations.Any())
+					await curDbContext.Database.MigrateAsync();
 			}
+
+			// Save the test entities (ApiScope`s, Client`s, ApiResource`s, and IdentityResource`s) which are not yet present in the database
+			var savedApiScopes = await SaveAllUnsavedTestEntities(
+				TestData.SampleApiScopes.AsQueryable(),
+				configsDbContext.ApiScopes,
+				idSrvApiScope => idSrvApiScope.Name,
+				efApiScope => efApiScope.Name,
+				idSrvApiScope => idSrvApiScope.ToEntity());
+
+			var savedClients = await SaveAllUnsavedTestEntities(
+				TestData.SampleClients.AsQueryable(),
+				configsDbContext.Clients,
+				idSrvClient => idSrvClient.ClientId,
+				efClient => efClient.ClientId,
+				idSrvClient => idSrvClient.ToEntity());
+
+			var savedApiResources = await SaveAllUnsavedTestEntities(
+				TestData.SampleApiResources.AsQueryable(),
+				configsDbContext.ApiResources,
+				idSrvApiResource => idSrvApiResource.Name,
+				efApiResource => efApiResource.Name,
+				idSrvApiResource => idSrvApiResource.ToEntity());
+
+			var savedIdentityResources = await SaveAllUnsavedTestEntities(
+				TestData.SampleIdentityResources.AsQueryable(),
+				configsDbContext.IdentityResources,
+				idSrvIdentityResource => idSrvIdentityResource.Name,
+				efIdentityResource => efIdentityResource.Name,
+				idSrvIdentityResource => idSrvIdentityResource.ToEntity());
+
+			var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
+			var savedUsers = await SaveAllUnsavedTestEntities(
+				TestData.SampleUsers.AsQueryable(),
+				usersDbContext.Users,
+				idSrvUser => idSrvUser.Username,
+				efIdentityUser => efIdentityUser.UserName,
+				idSvrTestUser => ConvertTestUserToIdentityUser(idSvrTestUser, userManager)
+			);
+
+			// Commit changes to the respective database(s)
+			foreach (var curDbContext in allDbContexts)
+				await curDbContext.SaveChangesAsync();
 		}
 	}
 }

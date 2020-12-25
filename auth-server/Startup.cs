@@ -118,7 +118,7 @@ namespace SimpleOidcOauth
                 opts.Cookie.Name = appConfigs.ApplicationCookieName;
                 opts.Cookie.SameSite = SameSiteMode.None;
 
-                // The following workarounds implemented below are described in: https://github.com/dotnet/aspnetcore/issues/9039
+                // The workarounds implemented below are described in: https://github.com/dotnet/aspnetcore/issues/9039
 
                 // On authentication failure when the clients try to access API endpoints,
                 // prevent HTTP 302 (Found) redirections to the "standard login page" and send HTTP 401 (Unauthorized) instead.
@@ -182,9 +182,6 @@ namespace SimpleOidcOauth
         public void Configure(IApplicationBuilder app)
         {
             app.UseExceptionHandler(UnhandledExceptionsController.EXCEPTION_HANDLER_ROUTE);
-            if (_webHostEnvironment.IsDevelopment())
-                TestData.InitializeDatabase(app).Wait();
-
             app.UseCookiePolicy();
             app.UseStaticFiles();
             app.UseRouting();
