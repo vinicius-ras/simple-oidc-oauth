@@ -1,9 +1,11 @@
 using IdentityModel;
 using IdentityModel.Client;
+using IdentityServer4.Services;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SimpleOidcOauth.Models;
+using SimpleOidcOauth.Tests.Integration.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,6 +41,8 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 		///     <para>In case of success, returns a <see cref="LoginOutputModel"/> containing the logged-in user's data.</para>
 		///     <para>In case of failure, returns <c>null</c>.</para>
 		/// </returns>
+		/// <exception cref="DiscoveryDocumentRetrieveErrorException">Thrown if there is any kind of error while trying to retrieve the IdP Discovery Document.</exception>
+		/// <exception cref="AuthorizeEndpointResponseException">Thrown if an invalid/erroneous response has been returned by the Authorization Endpoint.</exception>
 		public static async Task<LoginOutputModel> PerformUserLoginAsync<TStartup>(
 			WebApplicationFactory<TStartup> _webAppFactory, TestUser targetUser,
 			Dictionary<string, string> authorizeEndpointQueryParams, HttpClient httpClient = null)
@@ -51,7 +55,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			// Retrieve the discovery document from the proper IdP endpoint
 			var oidcDiscoveryDoc = await httpClient.GetDiscoveryDocumentAsync();
 			if (oidcDiscoveryDoc.IsError)
-				return null;
+				throw new DiscoveryDocumentRetrieveErrorException("Failed to retrieve information from the IdP Discovery Endpoint.") { DiscoveryDocumentResponse = oidcDiscoveryDoc };
 
 			// Perform a request to the Authorization Endpoint with the non-redirecting HTTP Client.
 			// This is expected to return an HTTP redirection which would normally redirect the unauthenticated user to a login page.
@@ -66,6 +70,14 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			// in order for the IdentityServer4 to be able to correctly perform the user's authentication
 			var authorizeRequestResponseQueryParams = HttpUtility.ParseQueryString(authorizeRequestResponseMessage.Headers.Location.Query);
 			var returnUrlAfterLogin = authorizeRequestResponseQueryParams[nameof(LoginInputModel.ReturnUrl)];
+			if (returnUrlAfterLogin == null)
+			{
+				throw new AuthorizeEndpointResponseException($@"Failed to extract ""{nameof(LoginInputModel.ReturnUrl)}"" from the Authorization Endpoint's response (""{nameof(authorizeRequestResponseMessage.Headers.Location)}"" HTTP header).")
+				{
+					Response = authorizeRequestResponseMessage,
+					RequestUri = uriToCall,
+				};
+			}
 
 			var targetUserEmail = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 			var loginInputData = new LoginInputModel
