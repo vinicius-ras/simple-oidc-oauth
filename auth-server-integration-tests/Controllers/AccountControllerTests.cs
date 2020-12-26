@@ -1,4 +1,5 @@
 using IdentityModel;
+using IdentityServer4.Test;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -9,9 +10,9 @@ using SimpleOidcOauth.Controllers;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,7 +25,22 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 		// CONSTANTS
 		/// <summary>A fake PKCE Code Challenge to be used during tests, whenever necessary.</summary>
 		private const string FakePkceCodeChallenge = "55ea0909dcb34a8182fd2c4a619aae0cc8a5074f08b545cd892a1f84e6c482e3e34cf9bbe0e7369f52b5219abda46c1155ea0909dcb34a8182fd2c4a619aae0c";
-
+		/// <summary>Data for a non-registered user to be used during the pertinent tests.</summary>
+		public static readonly TestUser NotRegisteredUser = new TestUser{
+			SubjectId = "6bd0fdfac61c498d86ab33019aae0b1c",
+			Username = "NotRegisteredUser",
+			Password = "484bb180411E41EC95B48E957A5febd6$",
+			Claims =
+			{
+				new Claim(JwtClaimTypes.Name, "Unregisteredon Turingson"),
+				new Claim(JwtClaimTypes.GivenName, "Unregisteredon"),
+				new Claim(JwtClaimTypes.FamilyName, "Turingson"),
+				new Claim(JwtClaimTypes.Email, "UnregisteredonTuringson@email.com"),
+				new Claim(JwtClaimTypes.EmailVerified, "false", ClaimValueTypes.Boolean),
+				new Claim(JwtClaimTypes.WebSite, "https://turingson.unregisteredon.b15879e860c84e03a0d9ff5446faf91c.com"),
+				new Claim(JwtClaimTypes.Address, @"{ 'street_address': 'Keeper Parkway', 'locality': 'Eversmile', 'postal_code': 66697, 'country': 'United Kingdom' }", IdentityServer4.IdentityServerConstants.ClaimValueTypes.Json),
+			}
+		};
 
 
 
@@ -141,6 +157,32 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 
 
 		[Fact]
+        public async Task Login_UnregisteredUserAuthorizationCodeFlowWithPkce_ReturnsFailure()
+        {
+			// Arrange
+			var targetClient = TestData.ClientAuthorizationCodeFlowWithPkce;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeChallenge },
+				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
+			};
+
+			var targetUser = NotRegisteredUser;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.Null(loggedInUser);
+        }
+
+
+		[Fact]
         public async Task Login_RequestMissingPkceAuthorizationCodeFlowWithPkce_ReturnsFailure()
         {
 			// Arrange
@@ -190,6 +232,32 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 			Assert.NotNull(loggedInUser);
 			Assert.Equal(targetUserEmail, loggedInUser.Email);
 			Assert.Equal(targetUser.Username, loggedInUser.Name);
+        }
+
+
+		[Fact]
+        public async Task Login_UnregisteredUserAuthorizationCodeFlowWithoutPkce_ReturnsFailure()
+        {
+			// Arrange
+			var targetClient = TestData.ClientAuthorizationCodeFlowWithoutPkce;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeChallenge },
+				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
+			};
+
+			var targetUser = NotRegisteredUser;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.Null(loggedInUser);
         }
 
 
@@ -288,6 +356,30 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 			};
 
 			var targetUser = TestData.UserBob;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.Null(loggedInUser);
+        }
+
+
+		[Fact]
+        public async Task Login_UnregisteredUserImplicitFlowAccessTokensOnly_ReturnsFailure()
+        {
+			// Arrange
+			var targetClient = TestData.ClientImplicitFlowAccessTokensOnly;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Token },
+			};
+
+			var targetUser = NotRegisteredUser;
 
 			// Act
 			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
