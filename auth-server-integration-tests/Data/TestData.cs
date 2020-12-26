@@ -41,8 +41,12 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 		public static readonly string PlainTextPasswordClientClientCredentialsFlow = "b22787170fdc45bfa22bbfc12e8776b2";
 
 
-		/// <summary>A fake plain text password to be used for the "MVC" client.</summary>
-		public static readonly string PlainTextPasswordClientMvc = "74d8fb7b96dc4760846b432c7397f629";
+		/// <summary>A fake plain text password to be used for the "Authorization Code (without PKCE)" client.</summary>
+		public static readonly string PlainTextPasswordClientAuthorizationCodeFlowWithoutPkce = "e42b6cf8a482444385c62e5ee440f910";
+
+
+		/// <summary>A fake plain text password to be used for the "Authorization Code (with PKCE)" client.</summary>
+		public static readonly string PlainTextPasswordClientAuthorizationCodeFlowWithPkce = "74d8fb7b96dc4760846b432c7397f629";
 
 
 		/// <summary>Stub collection of claims to be used as a placeholder for future improvements.</summary>
@@ -139,25 +143,25 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 		/// <returns>Returns a <see cref="Client" /> object configured for testing a Client Credentials flow.</returns>
 		public static readonly Client ClientClientCredentialsFlow = new Client()
 		{
-			ClientId = "client-client-credentials",
-			ClientName = "Client-credentials Client (Client Credentials Grant Type)",
+			ClientId = "client-client-credentials-flow",
+			ClientName = "Client Credentials Flow Client",
 			AllowedGrantTypes = GrantTypes.ClientCredentials,
 			ClientSecrets = { new Secret(PlainTextPasswordClientClientCredentialsFlow.Sha256()) },
 			AllowedScopes = { ScopeApiResourceUserManagement, ScopeApiResourceProducts },
 		};
 
 
-		/// <summary>Test client configured for using the OAuth 2.0 Authorization Code grant type on an MVC-like app.</summary>
-		/// <returns>Returns a <see cref="Client" /> object configured for testing a Authorization Code grant type on an MVC-like app.</returns>
-        public static readonly Client ClientMvc = new Client
+		/// <summary>Test client configured for using the OAuth 2.0 Authorization Code flow (without PKCE).</summary>
+		/// <returns>Returns a <see cref="Client" /> object configured for testing a Authorization Code flow (without PKCE).</returns>
+        public static readonly Client ClientAuthorizationCodeFlowWithoutPkce = new Client
         {
-            ClientId = "client-mvc",
-			ClientName = "MVC Client (Code Grant Type)",
-            ClientSecrets = { new Secret(PlainTextPasswordClientMvc.Sha256()) },
+            ClientId = "client-authorization-code-flow-no-pkce",
+			ClientName = "Authorization Code Flow Client (Without PKCE)",
+            ClientSecrets = { new Secret(PlainTextPasswordClientAuthorizationCodeFlowWithoutPkce.Sha256()) },
 
             AllowedGrantTypes = GrantTypes.Code,
             RequireConsent = false,
-            RequirePkce = true,
+            RequirePkce = false,
 
 			AllowedCorsOrigins = { "https://localhost:5002" },
             RedirectUris = { "https://localhost:5002/signin-oidc" },
@@ -172,25 +176,76 @@ namespace SimpleOidcOauth.Tests.Integration.Data
         };
 
 
-		/// <summary>Test client configured for using the OAuth 2.0 implicit grant type on an SPA-like app.</summary>
-		/// <returns>Returns a <see cref="Client" /> object configured for testing a implicit grant type on an SPA-like app.</returns>
-        public static Client ClientSpa { get; } = new Client
+		/// <summary>Test client configured for using the OAuth 2.0 Authorization Code flow (with PKCE).</summary>
+		/// <returns>Returns a <see cref="Client" /> object configured for testing a Authorization Code flow (with PKCE).</returns>
+        public static readonly Client ClientAuthorizationCodeFlowWithPkce = new Client
+        {
+            ClientId = "client-authorization-code-flow-with-pkce",
+			ClientName = "Authorization Code Flow Client (With PKCE)",
+            ClientSecrets = { new Secret(PlainTextPasswordClientAuthorizationCodeFlowWithPkce.Sha256()) },
+
+            AllowedGrantTypes = GrantTypes.Code,
+            RequireConsent = false,
+            RequirePkce = true,
+
+			AllowedCorsOrigins = { "https://localhost:5003" },
+            RedirectUris = { "https://localhost:5003/signin-oidc" },
+            PostLogoutRedirectUris = { "https://localhost:5003/signout-callback-oidc" },
+
+            AllowedScopes = new List<string>
+            {
+                IdentityServerConstants.StandardScopes.OpenId,
+                IdentityServerConstants.StandardScopes.Profile,
+				ScopeApiResourceProducts,
+            }
+        };
+
+
+		/// <summary>
+		///     Test client configured for using the OAuth 2.0 Implicit Flow, wich is configured to be able to request
+		///     both Access Tokens and Identity Tokens.
+		/// </summary>
+		/// <returns>Returns a <see cref="Client" /> object configured for testing a Implicit Flow.</returns>
+        public static Client ClientImplicitFlowAccessAndIdTokens { get; } = new Client
 		{
-			ClientId = "client-spa",
-			ClientName = "SPA Client (Code Grant Type)",
-			AllowedGrantTypes = GrantTypes.Code,
-			RequirePkce = true,
+			ClientId = "client-implicit-flow-access-and-id-tokens",
+			ClientName = "Implicit Flow Client (Access Tokens and ID Tokens)",
+			AllowedGrantTypes = GrantTypes.Implicit,
+			AllowAccessTokensViaBrowser = true,
 			RequireClientSecret = false,
 
-			RedirectUris =           { "http://localhost:5003/callback.html" },
-			PostLogoutRedirectUris = { "http://localhost:5003/index.html" },
-			AllowedCorsOrigins =     { "http://localhost:5003" },
+			RedirectUris =           { "http://localhost:5004/callback.html" },
+			PostLogoutRedirectUris = { "http://localhost:5004/index.html" },
+			AllowedCorsOrigins =     { "http://localhost:5004" },
 
 			AllowedScopes =
 			{
 				IdentityServerConstants.StandardScopes.OpenId,
 				IdentityServerConstants.StandardScopes.Profile,
-				ScopeApiResourceProducts,
+				ScopeApiResourceUserManagement,
+			}
+		};
+
+
+		/// <summary>
+		///     Test client configured for using the OAuth 2.0 Implicit Flow, wich is configured to be able to request
+		///     only Access Tokens (not Identity Tokens, nor Authorization Codes).
+		/// </summary>
+		/// <returns>Returns a <see cref="Client" /> object configured for testing a Implicit Flow.</returns>
+        public static Client ClientImplicitFlowAccessTokensOnly { get; } = new Client
+		{
+			ClientId = "client-implicit-flow-access-tokens-only",
+			ClientName = "Implicit Flow Client (Access Tokens only)",
+			AllowedGrantTypes = GrantTypes.Implicit,
+			AllowAccessTokensViaBrowser = true,
+			RequireClientSecret = false,
+
+			RedirectUris =           { "http://localhost:5005/callback.html" },
+			PostLogoutRedirectUris = { "http://localhost:5005/index.html" },
+			AllowedCorsOrigins =     { "http://localhost:5005" },
+
+			AllowedScopes =
+			{
 				ScopeApiResourceUserManagement,
 			}
 		};
@@ -210,8 +265,10 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 		public static readonly IEnumerable<Client> SampleClients = new Client[]
 		{
 			ClientClientCredentialsFlow,
-			ClientMvc,
-			ClientSpa,
+			ClientAuthorizationCodeFlowWithPkce,
+			ClientAuthorizationCodeFlowWithoutPkce,
+			ClientImplicitFlowAccessTokensOnly,
+			ClientImplicitFlowAccessAndIdTokens,
 		};
 
 
@@ -321,6 +378,28 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 		}
 
 
+		/// <summary>
+		///     Ensures the given database contexts have their respective databases created, and that these
+		///     databases have their respective migrations applied and up-to-date.
+		/// </summary>
+		/// <param name="dbContexts">The contexts of the databases where the operations will be performed.</param>
+		/// <returns>Returns a task representing the underlying asynchronous operation.</returns>
+		private static async Task EnsureDatabasesCreatedAndMigrationsAppliedAsync(params DbContext[] dbContexts)
+		{
+			foreach (var curDbContext in dbContexts)
+			{
+				await curDbContext.Database.EnsureCreatedAsync();
+
+				var allMigrations = curDbContext.Database.GetMigrations().ToList();
+				var appliedMigrations = await curDbContext.Database.GetAppliedMigrationsAsync();
+
+				var pendingMigrations = await curDbContext.Database.GetPendingMigrationsAsync();
+				if (pendingMigrations.Any())
+					await curDbContext.Database.MigrateAsync();
+			}
+		}
+
+
 
 
 
@@ -337,17 +416,8 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 			var usersDbContext = serviceProvider.GetRequiredService<AppDbContext>();
 
 			var allDbContexts = new DbContext[] { operationalDbContext, configsDbContext, usersDbContext };
-			foreach (var curDbContext in allDbContexts)
-			{
-				await curDbContext.Database.EnsureCreatedAsync();
+			await EnsureDatabasesCreatedAndMigrationsAppliedAsync(allDbContexts);
 
-				var allMigrations = curDbContext.Database.GetMigrations().ToList();
-				var appliedMigrations = await curDbContext.Database.GetAppliedMigrationsAsync();
-
-				var pendingMigrations = await curDbContext.Database.GetPendingMigrationsAsync();
-				if (pendingMigrations.Any())
-					await curDbContext.Database.MigrateAsync();
-			}
 
 			// Save the test entities (ApiScope`s, Client`s, ApiResource`s, and IdentityResource`s) which are not yet present in the database
 			var savedApiScopes = await SaveAllUnsavedTestEntities(
@@ -386,6 +456,30 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 				efIdentityUser => efIdentityUser.UserName,
 				idSvrTestUser => ConvertTestUserToIdentityUser(idSvrTestUser, userManager)
 			);
+
+			// Commit changes to the respective database(s)
+			foreach (var curDbContext in allDbContexts)
+				await curDbContext.SaveChangesAsync();
+		}
+
+
+		public static async Task ClearDatabaseAsync(IServiceProvider serviceProvider)
+		{
+			// Perform pending migrations for the IS4 operational database, the IS4 configuration database, and the application's database
+			var operationalDbContext = serviceProvider.GetRequiredService<PersistedGrantDbContext>();
+			var configsDbContext = serviceProvider.GetRequiredService<ConfigurationDbContext>();
+			var usersDbContext = serviceProvider.GetRequiredService<AppDbContext>();
+
+			var allDbContexts = new DbContext[] { operationalDbContext, configsDbContext, usersDbContext };
+			await EnsureDatabasesCreatedAndMigrationsAppliedAsync(allDbContexts);
+
+
+			// Remove all entities
+			configsDbContext.ApiScopes.RemoveRange(configsDbContext.ApiScopes);
+			configsDbContext.Clients.RemoveRange(configsDbContext.Clients);
+			configsDbContext.ApiResources.RemoveRange(configsDbContext.ApiResources);
+			configsDbContext.IdentityResources.RemoveRange(configsDbContext.IdentityResources);
+			usersDbContext.Users.RemoveRange(usersDbContext.Users);
 
 			// Commit changes to the respective database(s)
 			foreach (var curDbContext in allDbContexts)

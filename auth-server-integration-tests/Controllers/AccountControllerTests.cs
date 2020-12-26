@@ -1,7 +1,5 @@
 using IdentityModel;
-using IdentityModel.Client;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -9,15 +7,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SimpleOidcOauth.Controllers;
 using SimpleOidcOauth.Data.Configuration;
-using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Tests.Integration.Data;
+using SimpleOidcOauth.Tests.Integration.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
-using System.Web;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -72,6 +67,7 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 				builder.ConfigureTestServices(services => {
 					using (var serviceProvider = services.BuildServiceProvider())
 					{
+						TestData.ClearDatabaseAsync(serviceProvider).Wait();
 						TestData.InitializeDatabaseAsync(serviceProvider).Wait();
 					}
 				});
@@ -90,57 +86,214 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 
 		// TESTS
 		[Fact]
-        public async Task Login_CorrectCredentials_ReturnsSuccess()
+        public async Task Login_ConfirmedUserAuthorizationCodeFlowWithPkce_ReturnsSuccess()
         {
-            HttpClient httpDefaultClient = _webAppFactory.CreateClient(),
-				httpNonFollowingClient = _webAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-
-
-			// Retrieve the discovery document from the proper IdP endpoint
-			var oidcDiscoveryDoc = await httpDefaultClient.GetDiscoveryDocumentAsync();
-			bool discoveryDocRequestHasError = oidcDiscoveryDoc.IsError;
-
-			// Perform a request to the Authorization Endpoint with the non-redirecting HTTP Client.
-			// This is expected to return an HTTP redirection which would normally redirect the unauthenticated user to a login page.
-			var queryParams = new Dictionary<string, string>
+			// Arrange
+			var targetClient = TestData.ClientAuthorizationCodeFlowWithPkce;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
 			{
-				{ OidcConstants.AuthorizeRequest.ClientId, TestData.ClientMvc.ClientId },
-				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", TestData.ClientMvc.AllowedScopes) },
-				{ OidcConstants.AuthorizeRequest.RedirectUri, TestData.ClientMvc.RedirectUris.First() },
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
 				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
 				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeChallenge },
 				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
 			};
-			var queryBuilder = new QueryBuilder(queryParams);
-			var authorizeEndpointUri = new Uri(oidcDiscoveryDoc.AuthorizeEndpoint);
-			var uriToCall = $"{authorizeEndpointUri.AbsolutePath}{queryBuilder.ToQueryString()}";
-
-			var authorizeRequestResponseMessage = await httpNonFollowingClient.GetAsync(uriToCall);
-
-			// The "Location" HTTP Header in the response will contain the target URL for the redirection. From this target URL,
-			// we must extract the "return URL" query parameter, which must be passed along with the user's credentials during login
-			// in order for the IdentityServer4 to be able to correctly perform the user's authentication
-			var authorizeRequestResponseQueryParams = HttpUtility.ParseQueryString(authorizeRequestResponseMessage.Headers.Location.Query);
-			var returnUrlAfterLogin = authorizeRequestResponseQueryParams[nameof(LoginInputModel.ReturnUrl)];
 
 			var targetUser = TestData.UserAlice;
 			var targetUserEmail = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
-			var targetUserName = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Name).Value;
-			var loginInputData = new LoginInputModel
-			{
-				Email = targetUserEmail,
-				Password = targetUser.Password,
-				ReturnUrl = returnUrlAfterLogin,
-			};
-			var loginResult = await httpDefaultClient.PostAsync("/api/Account/login", JsonContent.Create(loginInputData));
-			var loginResultObj = await loginResult.Content.ReadFromJsonAsync<LoginOutputModel>();
 
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
 
 			// Assert
-			Assert.True(loginResult.IsSuccessStatusCode);
-			Assert.Equal(targetUserEmail, loginResultObj.Email);
-			Assert.Equal(targetUser.Username, loginResultObj.Name);
-			Assert.Equal(returnUrlAfterLogin, loginResultObj.ReturnUrl);
+			Assert.NotNull(loggedInUser);
+			Assert.Equal(targetUserEmail, loggedInUser.Email);
+			Assert.Equal(targetUser.Username, loggedInUser.Name);
+        }
+
+
+		[Fact]
+        public async Task Login_UnconfirmedUserAuthorizationCodeFlowWithPkce_ReturnsFailure()
+        {
+			// Arrange
+			var targetClient = TestData.ClientAuthorizationCodeFlowWithPkce;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeChallenge },
+				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
+			};
+
+			var targetUser = TestData.UserBob;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.Null(loggedInUser);
+        }
+
+
+		[Fact]
+        public async Task Login_RequestMissingPkceAuthorizationCodeFlowWithPkce_ReturnsFailure()
+        {
+			// Arrange
+			var targetClient = TestData.ClientAuthorizationCodeFlowWithPkce;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
+			};
+
+			var targetUser = TestData.UserAlice;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.Null(loggedInUser);
+        }
+
+
+		[Fact]
+        public async Task Login_ConfirmedUserAuthorizationCodeFlowWithoutPkce_ReturnsSuccess()
+        {
+			// Arrange
+			var targetClient = TestData.ClientAuthorizationCodeFlowWithoutPkce;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeChallenge },
+				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
+			};
+
+			var targetUser = TestData.UserAlice;
+			var targetUserEmail = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.NotNull(loggedInUser);
+			Assert.Equal(targetUserEmail, loggedInUser.Email);
+			Assert.Equal(targetUser.Username, loggedInUser.Name);
+        }
+
+
+		[Fact]
+        public async Task Login_UnconfirmedUserAuthorizationCodeFlowWithoutPkce_ReturnsFailure()
+        {
+			// Arrange
+			var targetClient = TestData.ClientAuthorizationCodeFlowWithoutPkce;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeChallenge },
+				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
+			};
+
+			var targetUser = TestData.UserBob;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.Null(loggedInUser);
+        }
+
+
+		[Fact]
+        public async Task Login_RequestMissingPkceAuthorizationCodeFlowWithoutPkce_ReturnsSuccess()
+        {
+			// Arrange
+			var targetClient = TestData.ClientAuthorizationCodeFlowWithoutPkce;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
+			};
+
+			var targetUser = TestData.UserAlice;
+			var targetUserEmail = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.NotNull(loggedInUser);
+			Assert.Equal(targetUserEmail, loggedInUser.Email);
+			Assert.Equal(targetUser.Username, loggedInUser.Name);
+        }
+
+
+		[Fact]
+        public async Task Login_ConfirmedUserImplicitFlowAccessTokensOnly_ReturnsSuccess()
+        {
+			// Arrange
+			var targetClient = TestData.ClientImplicitFlowAccessTokensOnly;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Token },
+			};
+
+			var targetUser = TestData.UserAlice;
+			var targetUserEmail = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.NotNull(loggedInUser);
+			Assert.Equal(targetUserEmail, loggedInUser.Email);
+			Assert.Equal(targetUser.Username, loggedInUser.Name);
+        }
+
+
+		[Fact]
+        public async Task Login_UnconfirmedUserImplicitFlowAccessTokensOnly_ReturnsFailure()
+        {
+			// Arrange
+			var targetClient = TestData.ClientImplicitFlowAccessTokensOnly;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Token },
+			};
+
+			var targetUser = TestData.UserBob;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(_webAppFactory, targetUser, queryParams);
+
+			// Assert
+			Assert.Null(loggedInUser);
         }
 	}
 }
