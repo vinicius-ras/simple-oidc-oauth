@@ -72,7 +72,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
 				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
 				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
-				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeVerifier },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, AuthenticationUtilities.TransformPkceCodeVerifierIntoCodeChallenge(FakePkceCodeVerifier) },
 				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
 			};
 
@@ -101,7 +101,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
 				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
 				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
-				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeVerifier },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, AuthenticationUtilities.TransformPkceCodeVerifierIntoCodeChallenge(FakePkceCodeVerifier) },
 				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
 			};
 
@@ -127,7 +127,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
 				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
 				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
-				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeVerifier },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, AuthenticationUtilities.TransformPkceCodeVerifierIntoCodeChallenge(FakePkceCodeVerifier) },
 				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
 			};
 
@@ -177,7 +177,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				{ OidcConstants.AuthorizeRequest.Scope, TestData.ScopeApiResourceUserManagement },
 				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
 				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
-				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeVerifier },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, AuthenticationUtilities.TransformPkceCodeVerifierIntoCodeChallenge(FakePkceCodeVerifier) },
 				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
 			};
 
@@ -203,7 +203,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
 				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
 				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
-				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeVerifier },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, AuthenticationUtilities.TransformPkceCodeVerifierIntoCodeChallenge(FakePkceCodeVerifier) },
 				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
 			};
 
@@ -232,7 +232,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
 				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
 				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
-				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeVerifier },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, AuthenticationUtilities.TransformPkceCodeVerifierIntoCodeChallenge(FakePkceCodeVerifier) },
 				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
 			};
 
@@ -258,7 +258,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
 				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
 				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Code },
-				{ OidcConstants.AuthorizeRequest.CodeChallenge, FakePkceCodeVerifier },
+				{ OidcConstants.AuthorizeRequest.CodeChallenge, AuthenticationUtilities.TransformPkceCodeVerifierIntoCodeChallenge(FakePkceCodeVerifier) },
 				{ OidcConstants.AuthorizeRequest.CodeChallengeMethod, OidcConstants.CodeChallengeMethods.Sha256 },
 			};
 
