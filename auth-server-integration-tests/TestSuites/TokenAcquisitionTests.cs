@@ -55,5 +55,20 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 			// Assert
 			Assert.False(acquiredToken.IsError);
 		}
+
+
+		[Fact]
+		public async Task RetrieveToken_ImplicitFlow_ReturnsValidToken()
+		{
+			// Arrange
+			var targetUser = TestData.UserAlice;
+			var targetClient = TestData.ClientImplicitFlowAccessTokensOnly;
+
+			// Act
+			var acquiredToken = await AuthenticationUtilities.RetrieveUserTokenForImplicitFlowAsync(WebAppFactory, targetUser, targetClient);
+
+			// Assert
+			Assert.NotEmpty(acquiredToken);
+		}
 	}
 }
