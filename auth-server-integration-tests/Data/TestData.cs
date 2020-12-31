@@ -41,6 +41,10 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 		public static readonly string PlainTextPasswordClientClientCredentialsFlow = "b22787170fdc45bfa22bbfc12e8776b2";
 
 
+		/// <summary>A fake plain text password to be used for the "Resource Owner Password Flow" client.</summary>
+		public static readonly string PlainTextPasswordClientResourceOwnerPasswordFlow = "930151c01fde4c7e9fe91ce56638e952";
+
+
 		/// <summary>A fake plain text password to be used for the "Authorization Code (without PKCE)" client.</summary>
 		public static readonly string PlainTextPasswordClientAuthorizationCodeFlowWithoutPkce = "e42b6cf8a482444385c62e5ee440f910";
 
@@ -148,6 +152,18 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 			AllowedGrantTypes = GrantTypes.ClientCredentials,
 			ClientSecrets = { new Secret(PlainTextPasswordClientClientCredentialsFlow.Sha256()) },
 			AllowedScopes = { ScopeApiResourceUserManagement, ScopeApiResourceProducts },
+		};
+
+
+		/// <summary>Test client configured for using the OAuth 2.0 Resource Owner Password flow.</summary>
+		/// <returns>Returns a <see cref="Client" /> object configured for testing a Resource Owner Password flow.</returns>
+		public static readonly Client ClientResourceOwnerPasswordFlow = new Client()
+		{
+			ClientId = "client-resource-owner-password-flow",
+			ClientName = "Resource Owner Password Flow Client",
+			AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
+			ClientSecrets = { new Secret(PlainTextPasswordClientResourceOwnerPasswordFlow.Sha256()) },
+			AllowedScopes = { ScopeApiResourceUserManagement },
 		};
 
 
@@ -265,6 +281,7 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 		public static readonly IEnumerable<Client> SampleClients = new Client[]
 		{
 			ClientClientCredentialsFlow,
+			ClientResourceOwnerPasswordFlow,
 			ClientAuthorizationCodeFlowWithPkce,
 			ClientAuthorizationCodeFlowWithoutPkce,
 			ClientImplicitFlowAccessTokensOnly,

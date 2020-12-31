@@ -78,10 +78,25 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 			// Arrange
 			var targetClient = TestData.ClientClientCredentialsFlow;
 			var clientSecret = TestData.PlainTextPasswordClientClientCredentialsFlow;
-			var scopesToRequest = string.Join(" ", targetClient.AllowedScopes);
 
 			// Act
 			var acquiredToken = await AuthenticationUtilities.RetrieveTokenForClientCredentialsFlowAsync(WebAppFactory, targetClient, clientSecret);
+
+			// Assert
+			Assert.False(acquiredToken.IsError);
+		}
+
+
+		[Fact]
+		public async Task RetrieveToken_ResourceOwnerPasswordFlow_ReturnsValidToken()
+		{
+			// Arrange
+			var targetClient = TestData.ClientResourceOwnerPasswordFlow;
+			var targetUser = TestData.UserAlice;
+			var clientSecret = TestData.PlainTextPasswordClientResourceOwnerPasswordFlow;
+
+			// Act
+			var acquiredToken = await AuthenticationUtilities.RetrieveTokenForResourceOwnerPasswordFlowAsync(WebAppFactory, targetClient, clientSecret, targetUser.Username, targetUser.Password);
 
 			// Assert
 			Assert.False(acquiredToken.IsError);
