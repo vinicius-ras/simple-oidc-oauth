@@ -70,5 +70,21 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 			// Assert
 			Assert.NotEmpty(acquiredToken);
 		}
+
+
+		[Fact]
+		public async Task RetrieveToken_ClientCredentialsFlow_ReturnsValidToken()
+		{
+			// Arrange
+			var targetClient = TestData.ClientClientCredentialsFlow;
+			var clientSecret = TestData.PlainTextPasswordClientClientCredentialsFlow;
+			var scopesToRequest = string.Join(" ", targetClient.AllowedScopes);
+
+			// Act
+			var acquiredToken = await AuthenticationUtilities.RetrieveTokenForClientCredentialsFlowAsync(WebAppFactory, targetClient, clientSecret);
+
+			// Assert
+			Assert.False(acquiredToken.IsError);
+		}
 	}
 }

@@ -394,5 +394,52 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 
 			return accessToken;
 		}
+
+
+		/// <summary>Performs the Client Credentials Flow and retrieves a token for a client.</summary>
+		/// <param name="webAppFactory">
+		///     Reference to the <see cref="WebApplicationFactory{TEntryPoint}"/> used in the test.
+		///     This will be used to generate clients as necessary to perform the correct calls to the target endpoints.
+		/// </param>
+		/// <param name="targetClient">The OIDC/OAuth Client for which the token is being retrieved.</param>
+		/// <param name="clientSecret">Secret for the OIDC/OAuth Client.</param>
+		/// <param name="httpClient">
+		///     <para>Optional reference to an <see cref="HttpClient"/> which will be used during the login operation.</para>
+		///     <para>
+		///         If this reference is specified, the HttpClient can have it's internal cookies modified by the
+		///         authentication procedure. Also, this instance is expected to be configured to NOT automatically follow HTTP redirections,
+		///         as these will be treated internally.
+		///     </para>
+		///     <para>If this reference is not provided, the <paramref name="webAppFactory"/> argument will be used to generate HTTP clients as necessary.</para>
+		/// </param>
+		/// <typeparam name="TStartup">The type of the startup class used by the test server.</typeparam>
+		/// <returns>
+		///     <para>In case of success, returns a string containing the obtained token.</para>
+		///     <para>In case of failure, returns <c>null</c>.</para>
+		/// </returns>
+		public static async Task<TokenResponse> RetrieveTokenForClientCredentialsFlowAsync<TStartup>(
+			WebApplicationFactory<TStartup> webAppFactory,
+			Client targetClient,
+			string clientSecret,
+			HttpClient httpClient = null)
+			where TStartup : class
+		{
+			// Prepare the data
+			httpClient = httpClient ?? webAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+			string tokenScopes = string.Join(" ", targetClient.AllowedScopes);
+
+			// Request the token
+			var discoveryDocument = GetDiscoveryDocumentResponse(webAppFactory);
+			var tokenResult = await httpClient.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+			{
+				Address = discoveryDocument.TokenEndpoint,
+
+				ClientId = targetClient.ClientId,
+				ClientSecret = clientSecret,
+				Scope = tokenScopes,
+			});
+
+			return tokenResult;
+		}
 	}
 }

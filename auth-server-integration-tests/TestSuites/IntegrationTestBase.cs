@@ -44,7 +44,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerUsers}", $"Data Source={testSuiteName}-IdentityServerUsers.sqlite;" },
 
 						{ $"App:AuthServerBaseUrl", "http://localhost" },
-						{ $"App:Spa:ErrorUrl", "http://localhost/api/account/error" },
+						{ $"App:Spa:ErrorUrl", "http://localhost/api/idp-error" },
 					};
 					configurationBuilder.AddInMemoryCollection(customConfigs);
 				});

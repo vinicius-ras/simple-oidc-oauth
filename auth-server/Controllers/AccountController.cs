@@ -145,15 +145,6 @@ namespace SimpleOidcOauth.Controllers
 
 
 
-		[HttpGet("error")]
-		public async Task<IActionResult> Error(string errorId)
-		{
-			var errorCtx = await _identServerInteractionService.GetErrorContextAsync(errorId);
-			return new JsonResult(errorCtx);
-		}
-
-
-
 		/// <summary>Endpoint to be called to sign a user out.</summary>
 		/// <param name="logoutId">
 		///     The identifier of the logout request.
