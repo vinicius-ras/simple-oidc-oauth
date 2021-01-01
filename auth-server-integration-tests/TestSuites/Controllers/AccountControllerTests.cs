@@ -8,6 +8,7 @@ using SimpleOidcOauth.Tests.Integration.Exceptions;
 using SimpleOidcOauth.Tests.Integration.Utilities;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
@@ -524,5 +525,52 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			// Assert
 			await Assert.ThrowsAsync<AuthorizeEndpointResponseException>(() => loginTask);
         }
+
+
+		[Fact]
+		public async Task CheckLogin_UserNotLoggedIn_ReturnsUnauthorizedStatusCode()
+		{
+			// Arange
+			var httpClient = WebAppFactory.CreateClient();
+			var targetUser = TestData.UserAlice;
+
+			// Act
+			var response = await httpClient.GetAsync("/api/account/check-login");
+
+			// Assert
+			Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+		}
+
+
+		[Fact]
+		public async Task CheckLogin_UserLoggedIn_ReturnsOkStatusCodeWithJson()
+		{
+			// Arrange
+			var targetClient = TestData.ClientImplicitFlowAccessAndIdTokens;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.IdTokenToken },
+				{ OidcConstants.AuthorizeRequest.Nonce, FakeNonceValue },
+			};
+
+			var targetUser = TestData.UserAlice;
+			var targetUserEmail = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+			var httpClient = WebAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(WebAppFactory, targetUser, queryParams, httpClient);
+			var response = await httpClient.GetAsync("/api/account/check-login");
+
+			// Assert
+			Assert.NotNull(loggedInUser);
+			Assert.Equal(targetUserEmail, loggedInUser.Email);
+			Assert.Equal(targetUser.Username, loggedInUser.Name);
+			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		}
 	}
 }
