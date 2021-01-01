@@ -90,7 +90,7 @@ namespace SimpleOidcOauth
             var identityServerBuilder = services.AddIdentityServer(opts => {
                     opts.UserInteraction.LoginUrl = appConfigs.Spa.LoginUrl;
                     opts.UserInteraction.LogoutUrl = appConfigs.Spa.LogoutUrl;
-                    opts.UserInteraction.ErrorUrl = appConfigs.Spa.ErrorUrl;
+                    opts.UserInteraction.ErrorUrl = appConfigs.AuthServer.IdentityProviderErrorUrl;
                 })
                 .AddConfigurationStore(configStoreOptions => {
                     configStoreOptions.ConfigureDbContext = genericDbOptions => {
@@ -115,7 +115,7 @@ namespace SimpleOidcOauth
 
             // Configures the cookies used by the application
             services.ConfigureApplicationCookie(opts => {
-                opts.Cookie.Name = appConfigs.ApplicationCookieName;
+                opts.Cookie.Name = appConfigs.AuthServer.ApplicationCookieName;
                 opts.Cookie.SameSite = SameSiteMode.None;
 
                 // The workarounds implemented below are described in: https://github.com/dotnet/aspnetcore/issues/9039

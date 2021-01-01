@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -34,6 +33,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 			TestOutputHelper = testOutputHelper;
 
 			// Reconfigure the test host to prepare it for the tests
+			var testServerBaseUri = webAppFactory.Server.BaseAddress;
 			WebAppFactory = webAppFactory.WithWebHostBuilder(builder => {
 				// Use a custom/separate SQLite file to store the database for this class, and update the base-url to be considered for the Auth Server
 				builder.ConfigureAppConfiguration((builderContext, configurationBuilder) => {
@@ -43,15 +43,14 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerOperational}", $"Data Source={testSuiteName}-IdentityServerOperational.sqlite;" },
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerUsers}", $"Data Source={testSuiteName}-IdentityServerUsers.sqlite;" },
 
-						{ $"App:AuthServerBaseUrl", "http://localhost" },
-						{ $"App:Spa:ErrorUrl", "http://localhost/api/idp-error" },
+						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.AuthServer)}:{nameof(AppConfigs.AuthServer.BaseUrl)}", testServerBaseUri.AbsoluteUri.TrimEnd('/') },
 					};
 					configurationBuilder.AddInMemoryCollection(customConfigs);
 				});
 
 
 				// Initialize the test database
-				builder.ConfigureTestServices(services => {
+				builder.ConfigureServices(services => {
 					using (var serviceProvider = services.BuildServiceProvider())
 					{
 						TestData.ClearDatabaseAsync(serviceProvider).Wait();

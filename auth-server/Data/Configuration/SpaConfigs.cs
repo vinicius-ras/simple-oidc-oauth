@@ -9,17 +9,25 @@ namespace SimpleOidcOauth.Data.Configuration
 		/// <summary>The base URL for the auth server's SPA.</summary>
 		/// <value>The base URL where the auth server's SPA should be running.</value>
 		public string BaseUrl { get; set; }
-		/// <summary>The SPA's login page URL.</summary>
-		/// <value>The URL where auth server's SPA displays its login screen.</value>
-		public string LoginUrl { get; set; }
-		/// <summary>The SPA's logout page URL.</summary>
-		/// <value>The URL where auth server's SPA displays its logout screen.</value>
-		public string LogoutUrl { get; set; }
-		/// <summary>The SPA's error page URL.</summary>
+		/// <summary>The path to the SPA's login page.</summary>
 		/// <value>
-		///     The URL where auth server's SPA displays a screen provinding error
-		///     feedbacks to the user.
+		///     <para>The path where auth server's SPA displays its login screen.</para>
+		///     <para>Paths should start with a slash ('/') character.</para>
 		/// </value>
-		public string ErrorUrl { get; set; }
+		public string LoginPath { get; set; }
+		/// <summary>The full URL to the SPA's Login page.</summary>
+		/// <value>A concatenation of <see cref="BaseUrl"/> and <see cref="LoginPath"/>.</value>
+		public string LoginUrl => $"{BaseUrl}{LoginPath}";
+
+		/// <summary>The path to the SPA's logout page.</summary>
+		/// <value>
+		///     <para>The path where auth server's SPA displays its logout screen.</para>
+		///     <para>Paths should start with a slash ('/') character.</para>
+		/// </value>
+		public string LogoutPath { get; set; }
+		/// <summary>The full URL to the SPA's Logout page.</summary>
+		/// <value>A concatenation of <see cref="BaseUrl"/> and <see cref="LogoutPath"/>.</value>
+		public string LogoutUrl => $"{BaseUrl}{LogoutPath}";
+
 	}
 }

@@ -240,7 +240,7 @@ namespace SimpleOidcOauth.IdentityServer
 				try
 				{
 					returnUrlUri = new Uri(returnUrl);
-					authServerUri = new Uri(_appConfigs.Value.AuthServerBaseUrl);
+					authServerUri = new Uri(_appConfigs.Value.AuthServer.BaseUrl);
 				}
 				catch (UriFormatException ex)
 				{
