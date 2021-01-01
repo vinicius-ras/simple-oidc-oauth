@@ -1,6 +1,7 @@
 using IdentityModel;
 using IdentityServer4;
 using IdentityServer4.Test;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SimpleOidcOauth.Controllers;
@@ -15,6 +16,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Web;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -71,6 +73,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		private const string FakeValidUserNameStartingWithUnderscore = "_new_user_name_c94492088c854f7f998eea5997d7e132";
 		/// <summary>A fake and invalid user name to be used in the tests. This user name is considered invalid because it starts with a number.</summary>
 		private const string FakeInvalidUserNameStartingWithNumber = "5new_user_name54333f0cc82242918dd0e99555410527";
+		/// <summary>A fake and invalid user identifier to be used in the tests.</summary>
+		private const string FakeUserId = "fake-user-id-9c717870b04146bf95a1811d87805ab2";
+		/// <summary>A fake and invalid account verification token to be used in the tests.</summary>
+		private const string FakeAccountVerificationToken = "fake-account-verification-token-765986ff8df0429a9bd8555180f61f45";
 		/// <summary>The list of emails that should be considered "valid emails" for the tests.</summary>
 		private static readonly string[] FakeValidEmails = { FakeValidEmail };
 		/// <summary>The list of emails that should be considered "invalid emails" for the tests.</summary>
@@ -705,6 +711,80 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			Assert.Equal("application/problem+json", response.Content.Headers.ContentType.MediaType);
 			foreach (var expectedErrorKey in expectedReturnedErrorFields)
 				Assert.Contains(expectedErrorKey, responseJson.Errors.Keys);
+		}
+
+
+		[Fact]
+		public async Task VerifyAccount_ValidInputData_ReturnsOkStatusCode()
+		{
+			// Arrange
+			var httpClient = WebAppFactory.CreateClient();
+			var newUserData = new AccountRegisterInputModel
+			{
+				Email = FakeValidEmail,
+				Password = FakeValidPassword,
+				UserName = FakeValidUserNameStartingWithLowercaseLetter,
+			};
+
+			// Act
+			var responseRegister = await httpClient.PostAsJsonAsync("/api/account", newUserData);
+			var lastEmailData = this.MockEmailService.LastSentEmailData;
+
+			var emailUserName = lastEmailData["userName"] as string;
+			var emailVerificationLink = lastEmailData["accountVerificationLink"] as string;
+
+			var emailVerificationLinkUri = new Uri(emailVerificationLink);
+			var emailVerificationLinkPath = emailVerificationLinkUri.PathAndQuery;
+			var responseVerifyAccount = await httpClient.GetAsync(emailVerificationLinkPath);
+
+			// Assert
+			Assert.Equal(HttpStatusCode.OK, responseRegister.StatusCode);
+			Assert.Equal(emailUserName, newUserData.UserName);
+			Assert.True(emailVerificationLink?.Length > 0);
+			Assert.Equal(HttpStatusCode.OK, responseVerifyAccount.StatusCode);
+		}
+
+
+		[Theory]
+		[InlineData(FakeUserId, null)]
+		[InlineData(null, FakeAccountVerificationToken)]
+		[InlineData(FakeUserId, FakeAccountVerificationToken)]
+		public async Task VerifyAccount_InvalidData_ReturnsForbidden(string replacementUserId, string replacementToken)
+		{
+			// Arrange
+			var httpClient = WebAppFactory.CreateClient();
+			var newUserData = new AccountRegisterInputModel
+			{
+				Email = FakeValidEmail,
+				Password = FakeValidPassword,
+				UserName = FakeValidUserNameStartingWithLowercaseLetter,
+			};
+
+			// Act
+			var responseRegister = await httpClient.PostAsJsonAsync("/api/account", newUserData);
+			var lastEmailData = this.MockEmailService.LastSentEmailData;
+
+			var emailUserName = lastEmailData["userName"] as string;
+			var emailVerificationLink = lastEmailData["accountVerificationLink"] as string;
+
+			var emailVerificationLinkUri = new Uri(emailVerificationLink);
+
+			var parsedQueryString = HttpUtility.ParseQueryString(emailVerificationLinkUri.Query);
+			if (replacementUserId != null)
+				parsedQueryString.Set("user", replacementUserId);
+			if (replacementToken != null)
+				parsedQueryString.Set("token", replacementToken);
+
+			var newQueryString = new QueryBuilder(parsedQueryString.ToDictionary());
+
+			var emailVerificationLinkPath = $"{emailVerificationLinkUri.AbsolutePath}{newQueryString.ToString()}";
+			var responseVerifyAccount = await httpClient.GetAsync(emailVerificationLinkPath);
+
+			// Assert
+			Assert.Equal(HttpStatusCode.OK, responseRegister.StatusCode);
+			Assert.Equal(emailUserName, newUserData.UserName);
+			Assert.True(emailVerificationLink?.Length > 0);
+			Assert.Equal(HttpStatusCode.Forbidden, responseVerifyAccount.StatusCode);
 		}
 	}
 }

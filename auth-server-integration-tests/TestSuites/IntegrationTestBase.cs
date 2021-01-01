@@ -22,6 +22,8 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 		protected WebApplicationFactory<Startup> WebAppFactory { get; }
 		/// <summary>Reference to an <see cref="ITestOutputHelper"/>, injected by the test engine.</summary>
 		protected ITestOutputHelper TestOutputHelper { get; }
+		/// <summary>A <see cref="MockEmailService"/>, created for accessing sent email data during the tests (when necessary).</summary>
+		protected MockEmailService MockEmailService { get; } = new MockEmailService();
 
 
 
@@ -60,7 +62,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 						.ToList();
 					foreach (var curService in emailServices)
 						services.Remove(curService);
-					services.AddTransient<IEmailService, StubEmailService>();
+					services.AddSingleton<IEmailService>(this.MockEmailService);
 
 					// Initialize the test database
 					using (var serviceProvider = services.BuildServiceProvider())
