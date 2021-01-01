@@ -659,6 +659,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		[InlineData(FakeValidEmail, FakeInvalidPasswordTooShort, FakeValidUserNameStartingWithLowercaseLetter)]
 		[InlineData(FakeValidEmail, FakeValidPassword, FakeInvalidUserNameStartingWithNumber)]
 		[InlineData(FakeInvalidEmail, FakeValidPassword, FakeInvalidUserNameStartingWithNumber)]
+		[InlineData(null, FakeValidPassword, FakeValidUserNameStartingWithLowercaseLetter)]
+		[InlineData(FakeValidEmail, null, FakeValidUserNameStartingWithLowercaseLetter)]
+		[InlineData(FakeValidEmail, FakeValidPassword, null)]
+		[InlineData(null, FakeValidPassword, null)]
 		public async Task Register_InvalidUserData_ReturnsValidationProblemDetails(string email, string password, string userName)
 		{
 			// Arrange
@@ -671,11 +675,11 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			};
 
 			var expectedReturnedErrorFields = new List<string>();
-			bool hasInvalidEmail = FakeInvalidEmails.Contains(email),
+			bool hasInvalidEmail = email == null || FakeInvalidEmails.Contains(email),
 				hasValidEmail = FakeValidEmails.Contains(email);
-			bool hasInvalidPassword = FakeInvalidPasswords.Contains(password),
+			bool hasInvalidPassword = password == null || FakeInvalidPasswords.Contains(password),
 				hasValidPassword = FakeValidPasswords.Contains(password);
-			bool hasInvalidUserName = FakeInvalidUserNames.Contains(userName),
+			bool hasInvalidUserName = userName == null || FakeInvalidUserNames.Contains(userName),
 				hasValidUserName = FakeValidUserNames.Contains(userName);
 
 			if (hasInvalidEmail == hasValidEmail)
