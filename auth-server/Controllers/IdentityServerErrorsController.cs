@@ -8,7 +8,7 @@ namespace SimpleOidcOauth.Controllers
 {
 	/// <summary>A controller which handles errors returned by the IdentityServer4 infrastructure.</summary>
 	[Route("/api/idp-error")]
-	class IdentityServerErrorsController : ControllerBase
+	public class IdentityServerErrorsController : ControllerBase
 	{
 		// INSTANCE FIELDS
 		/// <summary>Container-injected instance for the <see cref="IIdentityServerInteractionService" /> service.</summary>
@@ -37,16 +37,13 @@ namespace SimpleOidcOauth.Controllers
 		///     <para>In case of success, this endpoint returns an HTTP 200 (Ok) response.</para>
 		///     <para>In case of failure, this endpoint returns an HTTP 400 (Bad Request) response.</para>
 		/// </returns>
-		[HttpGet("error")]
+		[HttpGet]
 		public async Task<IActionResult> Error(string errorId)
 		{
 			var errorCtx = await _identServerInteractionService.GetErrorContextAsync(errorId);
-			return new JsonResult(errorCtx) {
-				StatusCode = (errorCtx != null)
-					? (int) HttpStatusCode.OK
-					: (int) HttpStatusCode.BadRequest
-			};
+			if (errorCtx == null)
+				return Problem(title: "Unknown IdP error.", detail: "Failed to recover IdP error information.");
+			return new JsonResult(errorCtx);
 		}
-
 	}
 }
