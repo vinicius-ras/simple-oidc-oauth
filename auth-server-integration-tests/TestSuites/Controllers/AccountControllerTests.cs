@@ -1,14 +1,18 @@
 using IdentityModel;
 using IdentityServer4;
 using IdentityServer4.Test;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SimpleOidcOauth.Controllers;
+using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Exceptions;
 using SimpleOidcOauth.Tests.Integration.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
@@ -43,6 +47,55 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				new Claim(JwtClaimTypes.Address, @"{ 'street_address': 'Keeper Parkway', 'locality': 'Eversmile', 'postal_code': 66697, 'country': 'United Kingdom' }", IdentityServer4.IdentityServerConstants.ClaimValueTypes.Json),
 			}
 		};
+		/// <summary>A fake, but valid email to be used in the tests.</summary>
+		private const string FakeValidEmail = "new-user-2532aced1bf24a1b9ed489ddc3f66555@fakemail-c2e25b70cbc74c14ba29415ca56614b0.com";
+		/// <summary>A fake and invalid email to be used in the tests.</summary>
+		private const string FakeInvalidEmail = "invalid-mail-01cd98b2a65240199e778d85d90eb4d1$%!^";
+		/// <summary>A fake, but valid password to be used in the tests.</summary>
+		private const string FakeValidPassword = "40ba5670336a4a2996a075850a8fff93_ABCDEF%$";
+		/// <summary>A fake and invalid password to be used in the tests. This password is invalid because it is considered too short to be accepted by the IdP.</summary>
+		private const string FakeInvalidPasswordTooShort = "abc";
+		/// <summary>A fake and invalid password to be used in the tests. This password is considered invalid by the IdP because it contains no lowercase letters.</summary>
+		private const string FakeInvalidPasswordMissingLowercaseLetters = "ABCDEFG1234_$";
+		/// <summary>A fake and invalid password to be used in the tests. This password is considered invalid by the IdP because it contains no uppercase letters.</summary>
+		private const string FakeInvalidPasswordMissingUppercaseLetters = "abcdefg1234_$";
+		/// <summary>A fake and invalid password to be used in the tests. This password is considered invalid by the IdP because it contains no symbols characters.</summary>
+		private const string FakeInvalidPasswordMissingSymbols = "abcdefg1234ABCD";
+		/// <summary>A fake and invalid password to be used in the tests. This password is considered invalid by the IdP because it contains no numeric digits.</summary>
+		private const string FakeInvalidPasswordMissingNumbers = "abcdefgABCD";
+		/// <summary>A fake, but valid user name to be used in the tests, starting with a lowercase letter.</summary>
+		private const string FakeValidUserNameStartingWithLowercaseLetter = "new_user_name_61a10697fb6447758a60be1f219e6c0b";
+		/// <summary>A fake, but valid user name to be used in the tests, starting with an uppercase letter.</summary>
+		private const string FakeValidUserNameStartingWithUppercaseLetter = "New_user_name_ed73ad2e17f844f4a2f620070968477e";
+		/// <summary>A fake, but valid user name to be used in the tests, starting with an underscore letter.</summary>
+		private const string FakeValidUserNameStartingWithUnderscore = "_new_user_name_c94492088c854f7f998eea5997d7e132";
+		/// <summary>A fake and invalid user name to be used in the tests. This user name is considered invalid because it starts with a number.</summary>
+		private const string FakeInvalidUserNameStartingWithNumber = "5new_user_name54333f0cc82242918dd0e99555410527";
+		/// <summary>The list of emails that should be considered "valid emails" for the tests.</summary>
+		private static readonly string[] FakeValidEmails = { FakeValidEmail };
+		/// <summary>The list of emails that should be considered "invalid emails" for the tests.</summary>
+		private static readonly string[] FakeInvalidEmails = { FakeInvalidEmail };
+		/// <summary>The list of emails that should be considered "valid passwords" for the tests.</summary>
+		private static readonly string[] FakeValidPasswords = { FakeValidPassword };
+		/// <summary>The list of emails that should be considered "invalid passwords" for the tests.</summary>
+		private static readonly string[] FakeInvalidPasswords =
+		{
+			FakeInvalidPasswordMissingLowercaseLetters,
+			FakeInvalidPasswordMissingNumbers,
+			FakeInvalidPasswordMissingSymbols,
+			FakeInvalidPasswordMissingUppercaseLetters,
+			FakeInvalidPasswordTooShort
+		};
+		/// <summary>The list of emails that should be considered "valid user names" for the tests.</summary>
+		private static readonly string[] FakeValidUserNames =
+		{
+			FakeValidUserNameStartingWithLowercaseLetter,
+			FakeValidUserNameStartingWithUnderscore,
+			FakeValidUserNameStartingWithUppercaseLetter
+		};
+		/// <summary>The list of emails that should be considered "invalid user names" for the tests.</summary>
+		private static readonly string[] FakeInvalidUserNames = { FakeInvalidUserNameStartingWithNumber };
+
 
 
 
@@ -571,6 +624,83 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			Assert.Equal(targetUserEmail, loggedInUser.Email);
 			Assert.Equal(targetUser.Username, loggedInUser.Name);
 			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		}
+
+
+		[Theory]
+		[InlineData(FakeValidEmail, FakeValidPassword, FakeValidUserNameStartingWithLowercaseLetter)]
+		[InlineData(FakeValidEmail, FakeValidPassword, FakeValidUserNameStartingWithUppercaseLetter)]
+		[InlineData(FakeValidEmail, FakeValidPassword, FakeValidUserNameStartingWithUnderscore)]
+		public async Task Register_ValidUserData_ReturnsOkStatusCodeWithJson(string email, string password, string userName)
+		{
+			// Arrange
+			var httpClient = WebAppFactory.CreateClient();
+			var newUserData = new AccountRegisterInputModel
+			{
+				Email = email,
+				Password = password,
+				UserName = userName,
+			};
+
+			// Act
+			var response = await httpClient.PostAsync("/api/account", JsonContent.Create(newUserData));
+
+			// Assert
+			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		}
+
+
+		[Theory]
+		[InlineData(FakeInvalidEmail, FakeValidPassword, FakeValidUserNameStartingWithLowercaseLetter)]
+		[InlineData(FakeValidEmail, FakeInvalidPasswordMissingLowercaseLetters, FakeValidUserNameStartingWithLowercaseLetter)]
+		[InlineData(FakeValidEmail, FakeInvalidPasswordMissingNumbers, FakeValidUserNameStartingWithLowercaseLetter)]
+		[InlineData(FakeValidEmail, FakeInvalidPasswordMissingSymbols, FakeValidUserNameStartingWithLowercaseLetter)]
+		[InlineData(FakeValidEmail, FakeInvalidPasswordMissingUppercaseLetters, FakeValidUserNameStartingWithLowercaseLetter)]
+		[InlineData(FakeValidEmail, FakeInvalidPasswordTooShort, FakeValidUserNameStartingWithLowercaseLetter)]
+		[InlineData(FakeValidEmail, FakeValidPassword, FakeInvalidUserNameStartingWithNumber)]
+		[InlineData(FakeInvalidEmail, FakeValidPassword, FakeInvalidUserNameStartingWithNumber)]
+		public async Task Register_InvalidUserData_ReturnsValidationProblemDetails(string email, string password, string userName)
+		{
+			// Arrange
+			var httpClient = WebAppFactory.CreateClient();
+			var newUserData = new AccountRegisterInputModel
+			{
+				Email = email,
+				Password = password,
+				UserName = userName,
+			};
+
+			var expectedReturnedErrorFields = new List<string>();
+			bool hasInvalidEmail = FakeInvalidEmails.Contains(email),
+				hasValidEmail = FakeValidEmails.Contains(email);
+			bool hasInvalidPassword = FakeInvalidPasswords.Contains(password),
+				hasValidPassword = FakeValidPasswords.Contains(password);
+			bool hasInvalidUserName = FakeInvalidUserNames.Contains(userName),
+				hasValidUserName = FakeValidUserNames.Contains(userName);
+
+			if (hasInvalidEmail == hasValidEmail)
+				throw new NotImplementedException($@"Implementation error in test: the email ""{email}"" must be placed either in the {nameof(FakeInvalidEmails)} or in the {nameof(FakeValidEmails)} array.");
+			if (hasInvalidPassword == hasValidPassword)
+				throw new NotImplementedException($@"Implementation error in test: the email ""{email}"" must be placed either in the {nameof(FakeInvalidPasswords)} or in the {nameof(FakeValidPasswords)} array.");
+			if (hasInvalidUserName == hasValidUserName)
+				throw new NotImplementedException($@"Implementation error in test: the email ""{email}"" must be placed either in the {nameof(FakeInvalidUserNames)} or in the {nameof(FakeValidUserNames)} array.");
+
+			if (hasInvalidEmail)
+				expectedReturnedErrorFields.Add(nameof(AccountRegisterInputModel.Email));
+			if (hasInvalidPassword)
+				expectedReturnedErrorFields.Add(nameof(AccountRegisterInputModel.Password));
+			if (hasInvalidUserName)
+				expectedReturnedErrorFields.Add(nameof(AccountRegisterInputModel.UserName));
+
+
+			// Act
+			var response = await httpClient.PostAsync("/api/account", JsonContent.Create(newUserData));
+			var responseJson = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+
+			// Assert
+			Assert.Equal("application/problem+json", response.Content.Headers.ContentType.MediaType);
+			foreach (var expectedErrorKey in expectedReturnedErrorFields)
+				Assert.Contains(expectedErrorKey, responseJson.Errors.Keys);
 		}
 	}
 }

@@ -1,11 +1,14 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SimpleOidcOauth.Data.Configuration;
+using SimpleOidcOauth.Services;
 using SimpleOidcOauth.Tests.Integration.Data;
+using SimpleOidcOauth.Tests.Integration.Services;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -49,8 +52,17 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 				});
 
 
-				// Initialize the test database
+				// Configure custom services and database initialization for the Test Server
 				builder.ConfigureServices(services => {
+					// Configure the Test Server to use a stub email sevice
+					var emailServices = services
+						.Where(svc => svc.ServiceType == typeof(IEmailService))
+						.ToList();
+					foreach (var curService in emailServices)
+						services.Remove(curService);
+					services.AddTransient<IEmailService, StubEmailService>();
+
+					// Initialize the test database
 					using (var serviceProvider = services.BuildServiceProvider())
 					{
 						TestData.ClearDatabaseAsync(serviceProvider).Wait();

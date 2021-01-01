@@ -110,8 +110,6 @@ namespace SimpleOidcOauth
                 })
                 .AddAspNetIdentity<IdentityUser>();
 
-            services.AddTransient<IReturnUrlParser, CustomReturnUrlParser>();
-
 
             // Configures the cookies used by the application
             services.ConfigureApplicationCookie(opts => {
@@ -163,6 +161,7 @@ namespace SimpleOidcOauth
 
 
             // Configure custom services
+            services.AddTransient<IReturnUrlParser, CustomReturnUrlParser>();
             services.AddTransient<IEmbeddedResourcesService, EmbeddedResourcesService>();
 
             services.AddTransient<ISmtpClient, SmtpClient>();
