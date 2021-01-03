@@ -1,5 +1,4 @@
 using IdentityModel;
-using IdentityModel.Client;
 using IdentityServer4;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Http.Extensions;

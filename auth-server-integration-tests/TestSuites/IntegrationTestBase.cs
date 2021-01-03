@@ -19,7 +19,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 	{
 		// INSTANCE PROPERTIES
 		/// <summary>Reference to an <see cref="WebApplicationFactory{TEntryPoint}"/>, injected by the test engine.</summary>
-		protected WebApplicationFactory<Startup> WebAppFactory { get; }
+		protected WebApplicationFactory<Startup> WebAppFactory { get; init; }
 		/// <summary>Reference to an <see cref="ITestOutputHelper"/>, injected by the test engine.</summary>
 		protected ITestOutputHelper TestOutputHelper { get; }
 		/// <summary>A <see cref="MockEmailService"/>, created for accessing sent email data during the tests (when necessary).</summary>
