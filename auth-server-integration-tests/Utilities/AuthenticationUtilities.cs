@@ -6,110 +6,36 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
 using SimpleOidcOauth.Models;
+using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace SimpleOidcOauth.Tests.Integration.Utilities
 {
-	/// <summary>Utility class with methods make it easier to deal with user authentication matters during the tests.</summary>
+	/// <summary>Utility class with methods to make it easier to deal with user authentication matters during the tests.</summary>
 	static class AuthenticationUtilities
 	{
 		// CONSTANTS
 		/// <summary>A fake PKCE Code Verifier to be used during tests, whenever necessary.</summary>
 		private const string FakePkceCodeVerifier = "ac325f2bb2014cc697a45ecbacf17f0aa919aa6530994452879e277241cf2ee3782f061367244726a6dfec1ffee28a26e8549e153234463297c11a727ba44649";
-
-
-
-
-
-		// STATIC FIELDS
 		/// <summary>
-		///     A lock used to initialize and fetch a cached <see cref="DiscoveryDocumentResponse"/>.
-		///     See <see cref="_cachedDiscoveryDocumentResponse"/> for more information.
+		///     <para>A fake "nonce" value to be used in tests.</para>
+		///     <para>A "nonce" value is required to be sent to the Authorization Endpoint for both the Implicit Flow and the Hybrid Flow.</para>
 		/// </summary>
-		private static object _lockDoscoveryDocumentResponse = new object();
-		/// <summary>
-		///    A cached instance of a fetched <see cref="DiscoveryDocumentResponse"/>.
-		///    The OpenID Connect Discovery Document should be immutable in our Integration Tests, so a cache is kept
-		///    and accessed by all running tests.
-		/// </summary>
-		private static DiscoveryDocumentResponse _cachedDiscoveryDocumentResponse = null;
+		private const string FakeNonceValue = "6ebf5d23db884e39b2871f5b88fd3155020a1956ceaa418eadc8cf2276817ea58cab272c84c247c9b99a748273fff757513b4e899c804cfc8eaf9d26a3938821";
 
 
 
 
 
 		// STATIC METHODS
-		/// <summary>Retrieves (or builds) the cached Discovery Document for the tests.</summary>
-		/// <param name="webAppFactory">
-		///     Reference to the <see cref="WebApplicationFactory{TEntryPoint}"/> used in the test.
-		///     This will be used to generate clients as necessary to perform the correct calls to the target endpoints.
-		/// </param>
-		/// <returns>Returns a representation of the Discovery Document's response.</returns>
-		private static DiscoveryDocumentResponse GetDiscoveryDocumentResponse<TStartup>(WebApplicationFactory<TStartup> webAppFactory)
-			where TStartup : class
-		{
-			lock (_lockDoscoveryDocumentResponse)
-			{
-				if (_cachedDiscoveryDocumentResponse == null)
-				{
-					using var httpClient = webAppFactory.CreateClient();
-					_cachedDiscoveryDocumentResponse = httpClient.GetDiscoveryDocumentAsync().Result;
-				}
-			}
-			return _cachedDiscoveryDocumentResponse;
-		}
-
-
-		/// <summary>
-		///     Parses a received HTTP Redirection response, extracting a specific value from the query parameters of the
-		///     target redirection location's URL.
-		/// </summary>
-		/// <param name="redirectResponse">The HTTP redirection response whose "Location" header will be parsed.</param>
-		/// <param name="queryParameterName">The name of the query parameter to be extracted from the "Location" header's URL.</param>
-		/// <returns>
-		///     <para>In case of success, returns the extracted query parameter's value.</para>
-		///     <para>In case of failure, returns <c>null</c>.</para>
-		/// </returns>
-		private static string ReadRedirectLocationQueryParameter(HttpResponseMessage redirectResponse, string queryParameterName)
-		{
-			string locationQueryString = redirectResponse?.Headers?.Location?.Query;
-			if (locationQueryString == null)
-				return null;
-
-			var authorizeRequestResponseQueryParams = HttpUtility.ParseQueryString(locationQueryString);
-			return authorizeRequestResponseQueryParams[queryParameterName];
-		}
-
-
-		/// <summary>
-		///     Parses a received HTTP Redirection response, extracting a specific value from the fragment part of the
-		///     target redirection location's URL.
-		/// </summary>
-		/// <param name="redirectResponse">The HTTP redirection response whose "Location" header will be parsed.</param>
-		/// <param name="fragmentParameterName">The name of the fragment parameter to be extracted from the "Location" header's URL.</param>
-		/// <returns>
-		///     <para>In case of success, returns the extracted fragment parameter's value.</para>
-		///     <para>In case of failure, returns <c>null</c>.</para>
-		/// </returns>
-		private static string ReadRedirectLocationFragmentParameter(HttpResponseMessage redirectResponse, string fragmentParameterName)
-		{
-			string locationFragmentString = redirectResponse?.Headers?.Location?.Fragment?.TrimStart('#');
-			if (locationFragmentString == null)
-				return null;
-
-			var authorizeRequestResponseQueryParams = HttpUtility.ParseQueryString(locationFragmentString);
-			return authorizeRequestResponseQueryParams[fragmentParameterName];
-		}
-
-
 		/// <summary>
 		///     <para>Converts a given PKCE Code Verifier value into a PKCE Code Challenge.</para>
 		///     <para>
@@ -178,7 +104,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 
 
 			// Retrieve the discovery document from the proper IdP endpoint
-			var oidcDiscoveryDoc = GetDiscoveryDocumentResponse(webAppFactory);
+			var oidcDiscoveryDoc = DiscoveryDocumentUtilities.GetDiscoveryDocumentResponse(webAppFactory);
 			if (oidcDiscoveryDoc.IsError)
 				throw new DiscoveryDocumentRetrieveErrorException("Failed to retrieve information from the IdP Discovery Endpoint.") { DiscoveryDocumentResponse = oidcDiscoveryDoc };
 
@@ -193,12 +119,27 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			// The "Location" HTTP Header in the response will contain the target URL for the redirection. From this target URL,
 			// we must extract the "return URL" query parameter, which must be passed along with the user's credentials during login
 			// in order for the IdentityServer4 to be able to correctly perform the user's authentication
-			string returnUrlAfterLogin = ReadRedirectLocationQueryParameter(authorizeRequestResponseMessage, nameof(LoginInputModel.ReturnUrl));
+			string returnUrlAfterLogin = WebUtilities.ReadRedirectLocationQueryParameter(authorizeRequestResponseMessage, nameof(LoginInputModel.ReturnUrl));
 			if (returnUrlAfterLogin == null)
 			{
+				// If the returned answer was a redirection, it was probably a redirection to the IdP Error Endpoint.
+				// Let's use that information to generate an exception.
+				if (authorizeRequestResponseMessage.StatusCode == HttpStatusCode.Found)
+				{
+					var errorRedirectionResponse = await httpClient.ManuallyFollowRedirectResponse(authorizeRequestResponseMessage);
+					var errorRedirectionResponseStr = await errorRedirectionResponse.Content.ReadAsStringAsync();
+					throw new AuthorizeEndpointResponseException($@"Failed to extract ""{nameof(LoginInputModel.ReturnUrl)}"" from the Authorization Endpoint's response (""{nameof(authorizeRequestResponseMessage.Headers.Location)}"" HTTP header).")
+					{
+						AuthorizeEndpointResponse = authorizeRequestResponseMessage,
+						ErrorEndpointResponse = errorRedirectionResponse,
+						ErrorEndpointResponseString = errorRedirectionResponseStr,
+						RequestUri = uriToCall,
+					};
+				}
+
 				throw new AuthorizeEndpointResponseException($@"Failed to extract ""{nameof(LoginInputModel.ReturnUrl)}"" from the Authorization Endpoint's response (""{nameof(authorizeRequestResponseMessage.Headers.Location)}"" HTTP header).")
 				{
-					Response = authorizeRequestResponseMessage,
+					AuthorizeEndpointResponse = authorizeRequestResponseMessage,
 					RequestUri = uriToCall,
 				};
 			}
@@ -321,11 +262,11 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			var loggedInUser = await PerformUserLoginAsync(webAppFactory, targetUser, authorizeEndpointQueryParams, httpClient);
 
 			var returnToClientResponse = await httpClient.GetAsync(loggedInUser.ReturnUrl);
-			string authorizationCode = ReadRedirectLocationQueryParameter(returnToClientResponse, OidcConstants.AuthorizeResponse.Code);
+			string authorizationCode = WebUtilities.ReadRedirectLocationQueryParameter(returnToClientResponse, OidcConstants.AuthorizeResponse.Code);
 
 
 			// Request the token
-			var discoveryDocument = GetDiscoveryDocumentResponse(webAppFactory);
+			var discoveryDocument = DiscoveryDocumentUtilities.GetDiscoveryDocumentResponse(webAppFactory);
 			var tokenRequestData = new AuthorizationCodeTokenRequest
 			{
 				Address = discoveryDocument.TokenEndpoint,
@@ -381,8 +322,15 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
 				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
 				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
-				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Token },
+				{ OidcConstants.AuthorizeRequest.Nonce, FakeNonceValue },
 			};
+
+			if (targetClient.ClientId == TestData.ClientImplicitFlowAccessTokensOnly.ClientId)
+				authorizeEndpointQueryParams.Add(OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.Token);
+			else if (targetClient.ClientId == TestData.ClientImplicitFlowAccessAndIdTokens.ClientId)
+				authorizeEndpointQueryParams.Add(OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.IdTokenToken);
+			else
+				throw new NotImplementedException($@"Failed to retrieve Implicit Flow token: specific configurations not implemented for client with ID ""{targetClient.ClientId}"".");
 
 
 
@@ -390,7 +338,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			var loggedInUser = await PerformUserLoginAsync(webAppFactory, targetUser, authorizeEndpointQueryParams, httpClient);
 
 			var returnToClientResponse = await httpClient.GetAsync(loggedInUser.ReturnUrl);
-			string accessToken = ReadRedirectLocationFragmentParameter(returnToClientResponse, OidcConstants.AuthorizeResponse.AccessToken);
+			string accessToken = WebUtilities.ReadRedirectLocationFragmentParameter(returnToClientResponse, OidcConstants.AuthorizeResponse.AccessToken);
 
 			return accessToken;
 		}
@@ -429,7 +377,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			string tokenScopes = string.Join(" ", targetClient.AllowedScopes);
 
 			// Request the token
-			var discoveryDocument = GetDiscoveryDocumentResponse(webAppFactory);
+			var discoveryDocument = DiscoveryDocumentUtilities.GetDiscoveryDocumentResponse(webAppFactory);
 			var tokenResult = await httpClient.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
 			{
 				Address = discoveryDocument.TokenEndpoint,
@@ -480,7 +428,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			string tokenScopes = string.Join(" ", targetClient.AllowedScopes);
 
 			// Request the token
-			var discoveryDocument = GetDiscoveryDocumentResponse(webAppFactory);
+			var discoveryDocument = DiscoveryDocumentUtilities.GetDiscoveryDocumentResponse(webAppFactory);
 			var tokenResult = await httpClient.RequestPasswordTokenAsync(new PasswordTokenRequest
 			{
 				Address = discoveryDocument.TokenEndpoint,

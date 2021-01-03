@@ -1,4 +1,5 @@
 using IdentityModel;
+using IdentityModel.Client;
 using IdentityServer4;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Http.Extensions;
@@ -77,6 +78,8 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		private const string FakeUserId = "fake-user-id-9c717870b04146bf95a1811d87805ab2";
 		/// <summary>A fake and invalid account verification token to be used in the tests.</summary>
 		private const string FakeAccountVerificationToken = "fake-account-verification-token-765986ff8df0429a9bd8555180f61f45";
+		/// <summary>A fake and invalid logout ID to be used in the tests.</summary>
+		private const string FakeInvalidLogoutId = "fake-invalid-logout-id-ed0636a471dc41ff9b91cda58d4f59df";
 		/// <summary>The list of emails that should be considered "valid emails" for the tests.</summary>
 		private static readonly string[] FakeValidEmails = { FakeValidEmail };
 		/// <summary>The list of emails that should be considered "invalid emails" for the tests.</summary>
@@ -785,6 +788,85 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			Assert.Equal(emailUserName, newUserData.UserName);
 			Assert.True(emailVerificationLink?.Length > 0);
 			Assert.Equal(HttpStatusCode.Forbidden, responseVerifyAccount.StatusCode);
+		}
+
+
+		[Fact]
+		public async Task Logout_NotLoggedIn_ReturnsOkStatusCode()
+		{
+			// Arrange
+			var httpClient = WebAppFactory.CreateClient();
+
+			// Act
+			var response = await httpClient.PostAsync("/api/account/logout", null);
+
+			// Assert
+			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		}
+
+
+		[Fact]
+		public async Task Logout_NullLogoutId_ReturnsBadRequestStatusCode()
+		{
+			// Arrange
+			var httpClient = WebAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+			var targetClient = TestData.ClientImplicitFlowAccessAndIdTokens;
+			var returnUrlAfterLogin = targetClient.RedirectUris.First();
+            var queryParams = new Dictionary<string, string>
+			{
+				{ OidcConstants.AuthorizeRequest.ClientId, targetClient.ClientId },
+				{ OidcConstants.AuthorizeRequest.Scope, string.Join(" ", targetClient.AllowedScopes) },
+				{ OidcConstants.AuthorizeRequest.RedirectUri, returnUrlAfterLogin },
+				{ OidcConstants.AuthorizeRequest.ResponseType, OidcConstants.ResponseTypes.IdTokenToken },
+				{ OidcConstants.AuthorizeRequest.Nonce, FakeNonceValue },
+			};
+
+			var targetUser = TestData.UserAlice;
+			var targetUserEmail = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+			// Act
+			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(WebAppFactory, targetUser, queryParams, httpClient);
+			var response = await httpClient.PostAsync("/api/account/logout", null);
+
+			// Assert
+			Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+		}
+
+
+		[Fact]
+		public async Task Logout_LoggedIn_ReturnsOkWithJsonResponse()
+		{
+			// Arrange
+			var httpClient = WebAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+			var targetClient = TestData.ClientImplicitFlowAccessTokensOnly;
+			var targetClientPostLogoutRedirectUri = targetClient.PostLogoutRedirectUris.First();
+
+			var targetUser = TestData.UserAlice;
+
+			// Act
+			var checkLoginBeforeLoginResponse = await httpClient.GetAsync("/api/account/check-login");
+
+			var token = await AuthenticationUtilities.RetrieveUserTokenForImplicitFlowAsync(WebAppFactory, targetUser, targetClient, httpClient);
+			var checkLoginAfterLoginResponse = await httpClient.GetAsync("/api/account/check-login");
+
+			var discoveryDocument = DiscoveryDocumentUtilities.GetDiscoveryDocumentResponse(WebAppFactory);
+			var endSessionEndpointResponse = await httpClient.GetAsync(discoveryDocument.EndSessionEndpoint);
+
+			const string logoutIdParameterName = "logoutId";
+			string logoutIdValue = WebUtilities.ReadRedirectLocationQueryParameter(endSessionEndpointResponse, logoutIdParameterName);
+			var logoutEndpointResponse = await httpClient.PostAsync($"/api/account/logout?{logoutIdParameterName}={logoutIdValue}", null);
+			var logoutEndpointResponseObject = await logoutEndpointResponse.Content.ReadFromJsonAsync<LogoutPostOutputModel>();
+			var checkLoginAfterLogoutResponse = await httpClient.GetAsync("/api/account/check-login");
+
+			var signOutIframeRenderResponse = await httpClient.GetAsync(logoutEndpointResponseObject.SignOutIFrameUrl);
+
+
+			// Assert
+			Assert.Equal(HttpStatusCode.Unauthorized, checkLoginBeforeLoginResponse.StatusCode);
+			Assert.Equal(HttpStatusCode.OK, checkLoginAfterLoginResponse.StatusCode);
+			Assert.Equal(HttpStatusCode.Unauthorized, checkLoginAfterLogoutResponse.StatusCode);
 		}
 	}
 }

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -162,7 +163,7 @@ namespace SimpleOidcOauth.Controllers
 		{
 			// Verify if there is a user logged in, and if a logout context can be acquired
 			// from the given "logout ID"
-			if (User == null)
+			if (User == null || User.Identities.All(userIdent => userIdent.IsAuthenticated == false))
 				return Ok();
 
 			if (logoutId == null)
@@ -170,7 +171,11 @@ namespace SimpleOidcOauth.Controllers
 
 			var logoutContext = await _identServerInteractionService.GetLogoutContextAsync(logoutId);
 			if (logoutContext == null)
-				return BadRequest();
+			{
+				// IdentityServer4 always returns an object, even though it might be empty.
+				// The code should never enter this branch.
+				throw new InvalidOperationException("Failed to retrieve logout context: IdentityServer4 returned NULL context.");
+			}
 
 
 			// Sign the user out

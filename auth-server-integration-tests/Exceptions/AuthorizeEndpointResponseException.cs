@@ -7,8 +7,12 @@ namespace SimpleOidcOauth.Tests.Integration.Exceptions
 	class AuthorizeEndpointResponseException : IntegrationTestsBaseException
 	{
 		// INSTANCE PROPERTIES
-		/// <summary>Reference to the response that generated this exception.</summary>
-		public HttpResponseMessage Response { get; init; }
+		/// <summary>Reference to the response returned by the Authorize Endpoint, which will be a redirection to the IdP Error Endpoint.</summary>
+		public HttpResponseMessage AuthorizeEndpointResponse { get; init; }
+		/// <summary>Reference to the response returned by the IdP Error Endpoint, possibly having JSON data contents returned by the IdP Error Endpoint.</summary>
+		public HttpResponseMessage ErrorEndpointResponse { get; init; }
+		/// <summary>Contents of the response returned by the IdP Error Endpoint, in form of a string.</summary>
+		public string ErrorEndpointResponseString { get; init; }
 		/// <summary>Reference to the request URI which was used and led to the response that generated this exception.</summary>
 		public string RequestUri { get; init; }
 
