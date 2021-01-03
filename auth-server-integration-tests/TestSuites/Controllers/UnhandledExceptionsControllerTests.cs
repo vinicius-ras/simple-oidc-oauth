@@ -24,9 +24,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			WebAppFactory = WebAppFactory.WithWebHostBuilder(builder => {
 				builder.ConfigureServices(services => {
 					services.AddControllers()
-						.AddApplicationPart(typeof(TestExceptionThrowingController).Assembly)
-						.AddControllersAsServices();
-					services.AddTransient<TestExceptionThrowingController>(context => new TestExceptionThrowingController());
+						.AddApplicationPart(typeof(TestExceptionThrowingController).Assembly);
 				});
 			});
 		}
