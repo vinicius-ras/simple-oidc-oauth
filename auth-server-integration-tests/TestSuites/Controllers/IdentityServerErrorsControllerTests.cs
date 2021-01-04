@@ -1,16 +1,8 @@
-using IdentityModel;
-using IdentityServer4;
-using IdentityServer4.Test;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SimpleOidcOauth.Controllers;
-using SimpleOidcOauth.Tests.Integration.Data;
-using SimpleOidcOauth.Tests.Integration.Exceptions;
-using SimpleOidcOauth.Tests.Integration.Utilities;
-using System.Collections.Generic;
-using System.Linq;
+using SimpleOidcOauth.Data;
 using System.Net;
 using System.Net.Mime;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -49,7 +41,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var httpClient = WebAppFactory.CreateClient();
 
 			// Act
-			var response = await httpClient.GetAsync($"/api/idp-error?errorId={InvalidErrorId}");
+			var response = await httpClient.GetAsync($"{AppEndpoints.IdpErrorUri}?errorId={InvalidErrorId}");
 			string responseContentType = response.Content?.Headers?.ContentType?.MediaType;
 
 			// Assert

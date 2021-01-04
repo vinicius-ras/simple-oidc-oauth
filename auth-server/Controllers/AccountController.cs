@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Services;
@@ -23,7 +24,7 @@ namespace SimpleOidcOauth.Controllers
 	///    Notice this class uses the default name expected by ASP.NET Core default configurations for a controller that manages
 	///    user account information.
 	/// </summary>
-	[Route("/api/account")]
+	[Route(AppEndpoints.AccountControllerUri)]
 	[ApiController]
 	public class AccountController : ControllerBase
 	{
@@ -114,7 +115,7 @@ namespace SimpleOidcOauth.Controllers
 		///     In case of success, an HTTP 200 (Ok) will be returned, wrapping a <see cref="LoginOutputModel" /> instance.
 		///     In case of login failure (e.g., due to invalid credentials), an HTTP 401 (Unauthorized) response will be returned.
 		/// </returns>
-		[HttpPost("login")]
+		[HttpPost(AppEndpoints.LoginUri)]
 		public async Task<IActionResult> Login([FromBody] LoginInputModel inputData)
 		{
 			// Retrieve the authorization context, and verify if it is valid
@@ -158,7 +159,7 @@ namespace SimpleOidcOauth.Controllers
 		///     that the is currently (already) logged out.
 		///     This endpoint returns an HTTP 400 (Bad Request) response when an invalid <paramref name="logoutId"/> is provided.
 		/// </returns>
-		[HttpPost("logout")]
+		[HttpPost(AppEndpoints.LogoutUri)]
 		public async Task<IActionResult> Logout(string logoutId)
 		{
 			// Verify if there is a user logged in, and if a logout context can be acquired
@@ -204,7 +205,7 @@ namespace SimpleOidcOauth.Controllers
 		///     In case of success, an HTTP 200 (Ok) will be returned, wrapping a <see cref="LoginOutputModel" /> instance.
 		/// </returns>
 		[Authorize]
-		[HttpGet("check-login")]
+		[HttpGet(AppEndpoints.CheckLoginUri)]
 		public IActionResult CheckLogin()
 		{
 			var userIdentity = User.Identities
@@ -231,7 +232,7 @@ namespace SimpleOidcOauth.Controllers
 		///         the returned code when the user already exists in the database, so that an attacker can not try to exploit that fact.
 		///     </para>
 		/// </returns>
-		[HttpPost]
+		[HttpPost(AppEndpoints.RegisterUri)]
 		public async Task<IActionResult> Register([FromBody] AccountRegisterInputModel registerData) {
 			// Try to register the new user
 			var newUser = new IdentityUser(registerData.UserName)
@@ -280,7 +281,7 @@ namespace SimpleOidcOauth.Controllers
 		///     <para>In case of success, this endpoint returns an HTTP 200 (Ok) response.</para>
 		///     <para>In case of failure, this endpoint returns an HTTP 403 (Forbidden) response.</para>
 		/// </returns>
-		[HttpGet("verify-account")]
+		[HttpGet(AppEndpoints.VerifyAccountUri)]
 		public async Task<IActionResult> VerifyAccount([FromQuery] string user, [FromQuery] string token) {
 			var targetUser = await _userManager.FindByIdAsync(user);
 			if (targetUser == null)

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using SimpleOidcOauth.Data;
 using System.Text;
 
 namespace SimpleOidcOauth.Controllers
@@ -19,8 +20,6 @@ namespace SimpleOidcOauth.Controllers
 	public class UnhandledExceptionsController : ControllerBase
 	{
 		// CONSTANTS
-		/// <summary>The route which will be associated to the endpoint that treats errors and converts them to RFC 7807 compliant messages.</summary>
-		public const string EXCEPTION_HANDLER_ROUTE = "/unhandled-exception";
 		/// <summary>The default error title to be returned to the clients for reporting unhandled/unexpected exceptions.</summary>
 		private const string DEFAULT_ERROR_TITLE = "Generic error.";
 		/// <summary>The default error message to be returned to the clients for reporting unhandled/unexpected exceptions.</summary>
@@ -52,7 +51,7 @@ namespace SimpleOidcOauth.Controllers
 
 		/// <summary>Called whenever an unhandled exception is fired and caught by the Exception Handler Middleware.</summary>
 		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
-		[Route(EXCEPTION_HANDLER_ROUTE)]
+		[Route(AppEndpoints.UnhandledExceptionUri)]
 		public IActionResult OnUnhandledException()
 		{
 			// Retrieve and log the exception which generated the error

@@ -123,7 +123,7 @@ namespace SimpleOidcOauth
                 var originalRedirectToLogin = opts.Events.OnRedirectToLogin;
                 opts.Events.OnRedirectToLogin = (context) => {
                     var requestPath = context.Request.Path;
-                    if (requestPath.StartsWithSegments("/api"))
+                    if (requestPath.StartsWithSegments(AppEndpoints.ApiUriPrefix))
                     {
                         context.Response.StatusCode = (int) HttpStatusCode.Unauthorized;
                         return Task.CompletedTask;
@@ -137,7 +137,7 @@ namespace SimpleOidcOauth
                 var originalRedirectToAccessDenied = opts.Events.OnRedirectToAccessDenied;
                 opts.Events.OnRedirectToAccessDenied = (context) => {
                     var requestPath = context.Request.Path;
-                    if (requestPath.StartsWithSegments("/api"))
+                    if (requestPath.StartsWithSegments(AppEndpoints.ApiUriPrefix))
                     {
                         context.Response.StatusCode = (int) HttpStatusCode.Forbidden;
                         return Task.CompletedTask;
@@ -180,7 +180,7 @@ namespace SimpleOidcOauth
         /// <param name="app">An object which can be used for configuring the application's HTTP request processing pipeline.</param>
         public void Configure(IApplicationBuilder app)
         {
-            app.UseExceptionHandler(UnhandledExceptionsController.EXCEPTION_HANDLER_ROUTE);
+            app.UseExceptionHandler(AppEndpoints.UnhandledExceptionUri);
             app.UseCookiePolicy();
             app.UseStaticFiles();
             app.UseRouting();

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SimpleOidcOauth.Controllers;
+using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Exceptions;
@@ -596,7 +597,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var targetUser = TestData.UserAlice;
 
 			// Act
-			var response = await httpClient.GetAsync("/api/account/check-login");
+			var response = await httpClient.GetAsync(AppEndpoints.CheckLoginUri);
 
 			// Assert
 			Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -625,7 +626,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			// Act
 			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(WebAppFactory, targetUser, queryParams, httpClient);
-			var response = await httpClient.GetAsync("/api/account/check-login");
+			var response = await httpClient.GetAsync(AppEndpoints.CheckLoginUri);
 
 			// Assert
 			Assert.NotNull(loggedInUser);
@@ -651,7 +652,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			};
 
 			// Act
-			var response = await httpClient.PostAsync("/api/account", JsonContent.Create(newUserData));
+			var response = await httpClient.PostAsync(AppEndpoints.RegisterUri, JsonContent.Create(newUserData));
 
 			// Assert
 			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -706,7 +707,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 
 			// Act
-			var response = await httpClient.PostAsync("/api/account", JsonContent.Create(newUserData));
+			var response = await httpClient.PostAsync(AppEndpoints.RegisterUri, JsonContent.Create(newUserData));
 			var responseJson = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
 
 			// Assert
@@ -729,7 +730,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			};
 
 			// Act
-			var responseRegister = await httpClient.PostAsJsonAsync("/api/account", newUserData);
+			var responseRegister = await httpClient.PostAsJsonAsync(AppEndpoints.RegisterUri, newUserData);
 			var lastEmailData = this.MockEmailService.LastSentEmailData;
 
 			var emailUserName = lastEmailData["userName"] as string;
@@ -763,7 +764,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			};
 
 			// Act
-			var responseRegister = await httpClient.PostAsJsonAsync("/api/account", newUserData);
+			var responseRegister = await httpClient.PostAsJsonAsync(AppEndpoints.RegisterUri, newUserData);
 			var lastEmailData = this.MockEmailService.LastSentEmailData;
 
 			var emailUserName = lastEmailData["userName"] as string;
@@ -797,7 +798,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var httpClient = WebAppFactory.CreateClient();
 
 			// Act
-			var response = await httpClient.PostAsync("/api/account/logout", null);
+			var response = await httpClient.PostAsync(AppEndpoints.LogoutUri, null);
 
 			// Assert
 			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -826,7 +827,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			// Act
 			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(WebAppFactory, targetUser, queryParams, httpClient);
-			var response = await httpClient.PostAsync("/api/account/logout", null);
+			var response = await httpClient.PostAsync(AppEndpoints.LogoutUri, null);
 
 			// Assert
 			Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -845,19 +846,19 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var targetUser = TestData.UserAlice;
 
 			// Act
-			var checkLoginBeforeLoginResponse = await httpClient.GetAsync("/api/account/check-login");
+			var checkLoginBeforeLoginResponse = await httpClient.GetAsync(AppEndpoints.CheckLoginUri);
 
 			var token = await AuthenticationUtilities.RetrieveUserTokenForImplicitFlowAsync(WebAppFactory, targetUser, targetClient, httpClient);
-			var checkLoginAfterLoginResponse = await httpClient.GetAsync("/api/account/check-login");
+			var checkLoginAfterLoginResponse = await httpClient.GetAsync(AppEndpoints.CheckLoginUri);
 
 			var discoveryDocument = DiscoveryDocumentUtilities.GetDiscoveryDocumentResponse(WebAppFactory);
 			var endSessionEndpointResponse = await httpClient.GetAsync(discoveryDocument.EndSessionEndpoint);
 
 			const string logoutIdParameterName = "logoutId";
 			string logoutIdValue = WebUtilities.ReadRedirectLocationQueryParameter(endSessionEndpointResponse, logoutIdParameterName);
-			var logoutEndpointResponse = await httpClient.PostAsync($"/api/account/logout?{logoutIdParameterName}={logoutIdValue}", null);
+			var logoutEndpointResponse = await httpClient.PostAsync($"{AppEndpoints.LogoutUri}?{logoutIdParameterName}={logoutIdValue}", null);
 			var logoutEndpointResponseObject = await logoutEndpointResponse.Content.ReadFromJsonAsync<LogoutPostOutputModel>();
-			var checkLoginAfterLogoutResponse = await httpClient.GetAsync("/api/account/check-login");
+			var checkLoginAfterLogoutResponse = await httpClient.GetAsync(AppEndpoints.CheckLoginUri);
 
 			var signOutIframeRenderResponse = await httpClient.GetAsync(logoutEndpointResponseObject.SignOutIFrameUrl);
 

@@ -1,13 +1,12 @@
-
-using System.Net;
-using System.Threading.Tasks;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Mvc;
+using SimpleOidcOauth.Data;
+using System.Threading.Tasks;
 
 namespace SimpleOidcOauth.Controllers
 {
 	/// <summary>A controller which handles errors returned by the IdentityServer4 infrastructure.</summary>
-	[Route("/api/idp-error")]
+	[Route(AppEndpoints.IdentityServerErrorsControllerUri)]
 	public class IdentityServerErrorsController : ControllerBase
 	{
 		// INSTANCE FIELDS
@@ -37,7 +36,7 @@ namespace SimpleOidcOauth.Controllers
 		///     <para>In case of success, this endpoint returns an HTTP 200 (Ok) response.</para>
 		///     <para>In case of failure, this endpoint returns an HTTP 400 (Bad Request) response.</para>
 		/// </returns>
-		[HttpGet]
+		[HttpGet(AppEndpoints.IdpErrorUri)]
 		public async Task<IActionResult> Error(string errorId)
 		{
 			var errorCtx = await _identServerInteractionService.GetErrorContextAsync(errorId);

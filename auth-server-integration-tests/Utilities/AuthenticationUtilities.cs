@@ -5,6 +5,7 @@ using IdentityServer4.Test;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
+using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Exceptions;
@@ -201,7 +202,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 				Password = targetUser.Password,
 				ReturnUrl = returnUrlAfterLogin,
 			};
-			var loginResult = await httpClient.PostAsync("/api/Account/login", JsonContent.Create(loginInputData));
+			var loginResult = await httpClient.PostAsync(AppEndpoints.LoginUri, JsonContent.Create(loginInputData));
 
 			// Return the result to the client code as appropriate
 			if (loginResult.IsSuccessStatusCode)
