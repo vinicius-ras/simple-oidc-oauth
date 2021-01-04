@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SimpleOidcOauth.Controllers;
 using SimpleOidcOauth.Data;
+using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Exceptions;
@@ -711,7 +712,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var responseJson = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
 
 			// Assert
-			Assert.Equal("application/problem+json", response.Content.Headers.ContentType.MediaType);
+			Assert.Equal(AppConfigs.MediaTypeApplicationProblemJson, response.Content.Headers.ContentType.MediaType);
 			foreach (var expectedErrorKey in expectedReturnedErrorFields)
 				Assert.Contains(expectedErrorKey, responseJson.Errors.Keys);
 		}

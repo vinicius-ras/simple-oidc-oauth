@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleOidcOauth.Controllers;
+using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Tests.Integration.Controllers;
 using System.Linq;
 using System.Net;
@@ -45,7 +46,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			// Assert
 			Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-			Assert.Equal("application/problem+json", response.Content.Headers.ContentType.MediaType);
+			Assert.Equal(AppConfigs.MediaTypeApplicationProblemJson, response.Content.Headers.ContentType.MediaType);
 		}
 	}
 }

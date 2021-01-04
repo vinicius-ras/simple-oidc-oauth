@@ -28,6 +28,11 @@ namespace SimpleOidcOauth.Data.Configuration
 		///     the connection string used to connect to the IdentityServer's operational store.
 		/// </summary>
 		public const string ConnectionStringIdentityServerOperational = "IdentityServerOperational";
+		/// <summary>
+		///     Media type and HTTP content header value for the content type that carries a JSON formatted problem
+		///     report, according to RFC 7807 ("Problem Details for HTTP APIs").
+		/// </summary>
+		public const string MediaTypeApplicationProblemJson = "application/problem+json";
 
 
 
