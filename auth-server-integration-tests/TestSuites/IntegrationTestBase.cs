@@ -24,6 +24,8 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 		protected ITestOutputHelper TestOutputHelper { get; }
 		/// <summary>A <see cref="MockEmailService"/>, created for accessing sent email data during the tests (when necessary).</summary>
 		protected MockEmailService MockEmailService { get; } = new MockEmailService();
+		/// <summary>The base address used by the Test Server.</summary>
+		protected string TestServerBaseAddress { get; }
 
 
 
@@ -38,7 +40,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 			TestOutputHelper = testOutputHelper;
 
 			// Reconfigure the test host to prepare it for the tests
-			var testServerBaseUri = webAppFactory.Server.BaseAddress;
+			TestServerBaseAddress = webAppFactory.Server.BaseAddress.AbsoluteUri.TrimEnd('/');
 			WebAppFactory = webAppFactory.WithWebHostBuilder(builder => {
 				// Use a custom/separate SQLite file to store the database for this class, and update the base-url to be considered for the Auth Server
 				builder.ConfigureAppConfiguration((builderContext, configurationBuilder) => {
@@ -48,7 +50,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerOperational}", $"Data Source={testSuiteName}-IdentityServerOperational.sqlite;" },
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerUsers}", $"Data Source={testSuiteName}-IdentityServerUsers.sqlite;" },
 
-						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.AuthServer)}:{nameof(AppConfigs.AuthServer.BaseUrl)}", testServerBaseUri.AbsoluteUri.TrimEnd('/') },
+						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.AuthServer)}:{nameof(AppConfigs.AuthServer.BaseUrl)}", TestServerBaseAddress },
 					};
 					configurationBuilder.AddInMemoryCollection(customConfigs);
 				});

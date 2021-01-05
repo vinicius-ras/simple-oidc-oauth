@@ -738,7 +738,8 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var emailVerificationLink = lastEmailData["accountVerificationLink"] as string;
 
 			var emailVerificationLinkUri = new Uri(emailVerificationLink);
-			var emailVerificationLinkPath = emailVerificationLinkUri.PathAndQuery;
+			string emailVerificationLinkPath = emailVerificationLinkUri.PathAndQuery,
+				emailVerificationLinkBaseUri = emailVerificationLinkUri.GetLeftPart(UriPartial.Authority);
 			var responseVerifyAccount = await httpClient.GetAsync(emailVerificationLinkPath);
 
 			// Assert
@@ -746,6 +747,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			Assert.Equal(emailUserName, newUserData.UserName);
 			Assert.True(emailVerificationLink?.Length > 0);
 			Assert.Equal(HttpStatusCode.OK, responseVerifyAccount.StatusCode);
+			Assert.Equal(TestServerBaseAddress, emailVerificationLinkBaseUri);
 		}
 
 
