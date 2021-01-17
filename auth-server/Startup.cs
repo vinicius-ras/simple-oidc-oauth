@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using SimpleOidcOauth.Controllers;
+using Microsoft.Extensions.Options;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.IdentityServer;
@@ -193,6 +193,23 @@ namespace SimpleOidcOauth
             {
                endpoints.MapDefaultControllerRoute();
             });
+
+
+            // Initialize the database with required clients (if any)
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var appConfigs = scope.ServiceProvider
+                    .GetRequiredService<IOptions<AppConfigs>>()
+                    .Value;
+                var requiredClients = appConfigs?.AuthServer?.RequiredClients;
+                if (requiredClients != null)
+                {
+                    var initializeDbTask = DatabaseInitializer.InitializeDatabaseAsync(
+                        scope.ServiceProvider,
+                        clients: requiredClients);
+                    initializeDbTask.Wait();
+                }
+            }
         }
     }
 }
