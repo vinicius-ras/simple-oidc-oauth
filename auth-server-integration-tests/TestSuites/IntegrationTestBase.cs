@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Services;
 using SimpleOidcOauth.Tests.Integration.Data;
@@ -69,8 +70,14 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 					// Initialize the test database
 					using (var serviceProvider = services.BuildServiceProvider())
 					{
-						TestData.ClearDatabaseAsync(serviceProvider).Wait();
-						TestData.InitializeDatabaseAsync(serviceProvider).Wait();
+						DatabaseInitializer.ClearDatabaseAsync(serviceProvider).Wait();
+						DatabaseInitializer.InitializeDatabaseAsync(
+							serviceProvider,
+							clients: TestData.SampleClients,
+							apiScopes: TestData.SampleApiScopes,
+							apiResources: TestData.SampleApiResources,
+							identityResources: TestData.SampleIdentityResources,
+							users: TestData.SampleUsers).Wait();
 					}
 				});
 
