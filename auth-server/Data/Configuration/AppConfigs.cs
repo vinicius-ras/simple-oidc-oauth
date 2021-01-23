@@ -51,5 +51,14 @@ namespace SimpleOidcOauth.Data.Configuration
 		/// <summary>Configurations for the <see cref="Services.IEmailService">.</summary>
 		/// <value>An object holding all of the configurations for the <see cref="Services.IEmailService">.</value>
 		public EmailConfigs Email { get; set; }
+		/// <summary>
+		///     <para>Data used to initialize the database during application's startup.</para>
+		///     <para>Using this configuration is not recommended for production systems, as it was designed for testing purposes only.</para>
+		/// </summary>
+		/// <value>
+		///     <para>A set of properties containing predefined application data (users, clients, API scopes, etc) used to initialize the database when the IdP server starts.</para>
+		///     <para>This data is optional, and can be <c>null</c> if no predefined data is needed. Nested properties can also be set to <c>null</c> if not needed.</para>
+		/// </value>
+		public DatabaseInitializationConfigs DatabaseInitialization { get; set; }
 	}
 }

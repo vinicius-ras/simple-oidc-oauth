@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using IdentityModel;
 using IdentityServer4.EntityFramework.DbContexts;
@@ -11,6 +13,8 @@ using IdentityServer4.Test;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using SimpleOidcOauth.Extensions;
 
 namespace SimpleOidcOauth.Data
 {
@@ -28,8 +32,8 @@ namespace SimpleOidcOauth.Data
 		/// <typeparam name="TIdentityServerModel">The type which represents the entities to be saved on IdentityServer's model realm.</typeparam>
 		/// <typeparam name="TEntityFrameworkModel">The type which represents the entities to be saved on Entity Framework Core's model realm</typeparam>
 		/// <typeparam name="TKey">The type of a key which will be used to verify which of the entities are already present in the target database.</typeparam>
-		/// <param name="testEntities">
-		///     <para>A collection containing all of the test entities which can be persisted in the target database.</para>
+		/// <param name="entities">
+		///     <para>A collection containing all of the entities which can be persisted in the target database.</para>
 		///     <para>If this parameter is set to <c>null</c>, this method does nothing and returns immediately with an empty <see cref="IEnumerable{T}"/> result.</para>
 		/// </param>
 		/// <param name="databaseCollection">A <see cref="DbSet{TEntity}" /> object used to manage entities in the target database.</param>
@@ -40,32 +44,77 @@ namespace SimpleOidcOauth.Data
 		///     This function is used to convert entities to the right class before saving them to the target database.
 		/// </param>
 		/// <return>Returns a list saved entities.</return>
-		private static async Task<IEnumerable<TEntityFrameworkModel>> SaveAllUnsavedTestEntities<TIdentityServerModel, TEntityFrameworkModel, TKey>(
-			IQueryable<TIdentityServerModel> testEntities,
+		private static async Task<IEnumerable<TEntityFrameworkModel>> SaveAllUnsavedTestEntities<TIdentityServerModel, TEntityFrameworkModel, TKey, TEntityFrameworkModelId>(
+			IQueryable<TIdentityServerModel> entities,
+			DbContext databaseContext,
 			DbSet<TEntityFrameworkModel> databaseCollection,
+			ILogger logger,
 			Expression<Func<TIdentityServerModel, TKey>> identityServerModelKeySelector,
 			Expression<Func<TEntityFrameworkModel, TKey>> entityFrameworkModelKeySelector,
+			Expression<Func<TEntityFrameworkModel, TEntityFrameworkModelId>> entityFrameworkModelIdSelector,
 			Expression<Func<TIdentityServerModel, TEntityFrameworkModel>> convertToEntityFrameworkModel) where TEntityFrameworkModel : class
 		{
-			if (testEntities == null)
+			if (entities == null)
 				return Enumerable.Empty<TEntityFrameworkModel>();
 
-			TKey[] testEntitiesKeys = testEntities
+
+			// Separate entities to be created from entities to be updated in the database
+			TKey[] entityKeys = entities
 				.Select(identityServerModelKeySelector)
 				.ToArray();
 			var alreadyRegisteredEntityKeys = await databaseCollection
 				.Select(entityFrameworkModelKeySelector)
-				.Where(databaseEntityKey => testEntitiesKeys.Contains(databaseEntityKey))
+				.Where(databaseEntityKey => entityKeys.Contains(databaseEntityKey))
 				.ToArrayAsync();
-			var notRegisteredEntityKeys = testEntitiesKeys.Except(alreadyRegisteredEntityKeys);
+			var notRegisteredEntityKeys = entityKeys
+				.Except(alreadyRegisteredEntityKeys)
+				.ToArray();
 
-			var compiledKeyExtractor = identityServerModelKeySelector.Compile();
-			var entitiesToSave = testEntities
-				.Where(testEntity => notRegisteredEntityKeys.Contains(compiledKeyExtractor(testEntity)))
+
+			// Create unregistered entities
+			var entitiesToCreate = entities
+				.WhereIn(notRegisteredEntityKeys, identityServerModelKeySelector)
 				.Select(convertToEntityFrameworkModel)
 				.ToList();
-			await databaseCollection.AddRangeAsync(entitiesToSave);
-			return entitiesToSave;
+			await databaseCollection.AddRangeAsync(entitiesToCreate);
+			try
+			{
+				await databaseContext.SaveChangesAsync();
+			}
+			catch (DbUpdateException ex)
+			{
+				// Catches possible "UNIQUE" constraint failures.
+				// This will be logged as a warning (and not an error) bercause it might happen due to multiple instances of this application running in parallel,
+				// and in this case it would not actually be an error.
+				logger.LogWarning(ex, $"Database initialization failure: failed to register one or more {typeof(TEntityFrameworkModel).Name} objects in the database.");
+			}
+
+			// Update entities that were already registered in the database
+			var entityFrameworkModelIdPropertyName = ((MemberExpression) entityFrameworkModelIdSelector.Body).Member.Name;
+			var propertiesToCopy = typeof(TEntityFrameworkModel)
+				.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+				.Where(prop => prop.Name != entityFrameworkModelIdPropertyName)
+				.ToArray();
+
+			var entitiesToUpdate = await databaseCollection
+				.WhereIn(alreadyRegisteredEntityKeys, entityFrameworkModelKeySelector)
+				.ToListAsync();
+			var compiledEntityFrameworkModelKeySelector = entityFrameworkModelKeySelector.Compile();
+			var compiledIdentityServerModelKeySelector = identityServerModelKeySelector.Compile();
+			var compiledConvertToEntityFrameworkModel = convertToEntityFrameworkModel.Compile();
+			foreach (var entity in entitiesToUpdate)
+			{
+				var entityToUpdateKey = compiledEntityFrameworkModelKeySelector(entity);
+				var newEntityInputData = entities.Single(updatedEntity => compiledIdentityServerModelKeySelector(updatedEntity).Equals(entityToUpdateKey));
+				var newEntityData = compiledConvertToEntityFrameworkModel(newEntityInputData);
+
+				foreach (var property in propertiesToCopy)
+				{
+					var newValue = property.GetValue(newEntityData);
+					property.SetValue(entity, newValue);
+				}
+			}
+			return entitiesToCreate;
 		}
 
 
@@ -151,40 +200,58 @@ namespace SimpleOidcOauth.Data
 
 
 			// Save the test entities (ApiScope`s, Client`s, ApiResource`s, and IdentityResource`s) which are not yet present in the database
+			var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+			var logger = loggerFactory.CreateLogger(typeof(DatabaseInitializer).FullName);
+
 			var savedApiScopes = await SaveAllUnsavedTestEntities(
 				apiScopes?.AsQueryable(),
+				configsDbContext,
 				configsDbContext.ApiScopes,
+				logger,
 				idSrvApiScope => idSrvApiScope.Name,
 				efApiScope => efApiScope.Name,
+				efApiScope => efApiScope.Id,
 				idSrvApiScope => idSrvApiScope.ToEntity());
 
 			var savedClients = await SaveAllUnsavedTestEntities(
 				clients?.AsQueryable(),
+				configsDbContext,
 				configsDbContext.Clients,
+				logger,
 				idSrvClient => idSrvClient.ClientId,
 				efClient => efClient.ClientId,
+				efClient => efClient.Id,
 				idSrvClient => idSrvClient.ToEntity());
 
 			var savedApiResources = await SaveAllUnsavedTestEntities(
 				apiResources?.AsQueryable(),
+				configsDbContext,
 				configsDbContext.ApiResources,
+				logger,
 				idSrvApiResource => idSrvApiResource.Name,
 				efApiResource => efApiResource.Name,
+				efApiResource => efApiResource.Id,
 				idSrvApiResource => idSrvApiResource.ToEntity());
 
 			var savedIdentityResources = await SaveAllUnsavedTestEntities(
 				identityResources?.AsQueryable(),
+				configsDbContext,
 				configsDbContext.IdentityResources,
+				logger,
 				idSrvIdentityResource => idSrvIdentityResource.Name,
 				efIdentityResource => efIdentityResource.Name,
+				efIdentityResource => efIdentityResource.Id,
 				idSrvIdentityResource => idSrvIdentityResource.ToEntity());
 
 			var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
 			var savedUsers = await SaveAllUnsavedTestEntities(
 				users?.AsQueryable(),
+				usersDbContext,
 				usersDbContext.Users,
+				logger,
 				idSrvUser => idSrvUser.Username,
 				efIdentityUser => efIdentityUser.UserName,
+				efIdentityUser => efIdentityUser.Id,
 				idSvrTestUser => ConvertTestUserToIdentityUser(idSvrTestUser, userManager)
 			);
 

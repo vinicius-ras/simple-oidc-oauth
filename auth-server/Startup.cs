@@ -201,14 +201,16 @@ namespace SimpleOidcOauth
                 var appConfigs = scope.ServiceProvider
                     .GetRequiredService<IOptions<AppConfigs>>()
                     .Value;
-                var requiredClients = appConfigs?.AuthServer?.RequiredClients;
-                if (requiredClients != null)
-                {
-                    var initializeDbTask = DatabaseInitializer.InitializeDatabaseAsync(
-                        scope.ServiceProvider,
-                        clients: requiredClients);
-                    initializeDbTask.Wait();
-                }
+                var databaseInitializationConfigs = appConfigs?.DatabaseInitialization;
+
+                var initializeDbTask = DatabaseInitializer.InitializeDatabaseAsync(
+                    scope.ServiceProvider,
+                    clients: databaseInitializationConfigs?.Clients,
+                    apiScopes: databaseInitializationConfigs?.ApiScopes,
+                    apiResources: databaseInitializationConfigs?.ApiResources,
+                    identityResources: databaseInitializationConfigs?.IdentityResources,
+                    users: databaseInitializationConfigs?.Users);
+                initializeDbTask.Wait();
             }
         }
     }
