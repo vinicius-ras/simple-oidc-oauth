@@ -115,7 +115,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		/// <param name="webAppFactory">Injected instance for the <see cref="WebApplicationFactory{TEntryPoint}"/> service.</param>
 		/// <param name="testOutputHelper">Injected instance for the <see cref="ITestOutputHelper"/> service.</param>
 		public AccountControllerTests(WebApplicationFactory<Startup> webAppFactory, ITestOutputHelper testOutputHelper)
-			: base(webAppFactory, testOutputHelper)
+			: base(webAppFactory, testOutputHelper, true)
 		{
 		}
 

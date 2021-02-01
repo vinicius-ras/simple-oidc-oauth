@@ -267,6 +267,14 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 		};
 
 
+		/// <summary>An API Scope representing an imaginary "Products API".</summary>
+		public static ApiScope ApiScopeProductsApi = new ApiScope(ScopeApiResourceProducts, "Products API Scope");
+
+
+		/// <summary>An API Scope representing an imaginary "User Management API".</summary>
+		public static ApiScope ApiScopeUserManagementApi = new ApiScope(ScopeApiResourceUserManagement, "User Management API Scope");
+
+
 		/// <summary>Collection of test Users.</summary>
 		/// <value>A list of pre-initialized <see cref="TestUser" /> objects to be used for testing purposes.</value>
 		public static readonly IEnumerable<TestUser> SampleUsers = new TestUser[]
@@ -293,8 +301,8 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 		/// <value>A list of pre-initialized <see cref="ApiScope"/> objects to be used for testing purposes.</value>
 		public static readonly IEnumerable<ApiScope> SampleApiScopes = new ApiScope[]
 		{
-			new ApiScope(ScopeApiResourceProducts, "Products API Scope"),
-			new ApiScope(ScopeApiResourceUserManagement, "User Management API Scope"),
+			ApiScopeProductsApi,
+			ApiScopeUserManagementApi,
 		};
 
 

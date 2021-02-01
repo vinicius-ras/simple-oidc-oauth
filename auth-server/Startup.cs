@@ -1,8 +1,4 @@
-﻿using System;
-using System.Net;
-using System.Reflection;
-using System.Threading.Tasks;
-using IdentityServer4.Services;
+﻿using IdentityServer4.Services;
 using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -12,11 +8,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.IdentityServer;
 using SimpleOidcOauth.Services;
+using System;
+using System.Net;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace SimpleOidcOauth
 {
@@ -167,6 +166,8 @@ namespace SimpleOidcOauth
             services.AddTransient<ISmtpClient, SmtpClient>();
             services.AddTransient<IEmailService, EmailService>();
 
+            services.AddTransient<IDatabaseInitializerService, DatabaseInitializerService>();
+            services.AddHostedService<DatabaseInitializerHostedService>();
 
             // Configure key/signing material
             if (_webHostEnvironment.IsDevelopment())
@@ -193,25 +194,6 @@ namespace SimpleOidcOauth
             {
                endpoints.MapDefaultControllerRoute();
             });
-
-
-            // Initialize the database with required clients (if any)
-            using (var scope = app.ApplicationServices.CreateScope())
-            {
-                var appConfigs = scope.ServiceProvider
-                    .GetRequiredService<IOptions<AppConfigs>>()
-                    .Value;
-                var databaseInitializationConfigs = appConfigs?.DatabaseInitialization;
-
-                var initializeDbTask = DatabaseInitializer.InitializeDatabaseAsync(
-                    scope.ServiceProvider,
-                    clients: databaseInitializationConfigs?.Clients,
-                    apiScopes: databaseInitializationConfigs?.ApiScopes,
-                    apiResources: databaseInitializationConfigs?.ApiResources,
-                    identityResources: databaseInitializationConfigs?.IdentityResources,
-                    users: databaseInitializationConfigs?.Users);
-                initializeDbTask.Wait();
-            }
         }
     }
 }

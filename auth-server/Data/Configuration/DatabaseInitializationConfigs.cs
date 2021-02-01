@@ -14,6 +14,8 @@ namespace SimpleOidcOauth.Data.Configuration
 	public class DatabaseInitializationConfigs
 	{
 		// PROPERTIES
+		/// <summary>A flag indicating if database initialization through the configuration infrastructure is enabled.</summary>
+		public bool Enabled { get; set; }
 		/// <summary>
 		///     <para>An optional collection of users that the IdP server will ensure exist in the database, during the server's startup.</para>
 		///     <para>

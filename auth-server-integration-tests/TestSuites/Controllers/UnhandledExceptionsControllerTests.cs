@@ -19,15 +19,8 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		/// <param name="webAppFactory">Injected instance for the <see cref="WebApplicationFactory{TEntryPoint}"/> service.</param>
 		/// <param name="testOutputHelper">Injected instance for the <see cref="ITestOutputHelper"/> service.</param>
 		public UnhandledExceptionsControllerTests(WebApplicationFactory<Startup> webAppFactory, ITestOutputHelper testOutputHelper)
-			: base(webAppFactory, testOutputHelper)
+			: base(webAppFactory, testOutputHelper, false)
 		{
-			// Configure the Test Host to add a new, custom controller, whose only purpose is to fire an Unhandled Exception
-			WebAppFactory = WebAppFactory.WithWebHostBuilder(builder => {
-				builder.ConfigureServices(services => {
-					services.AddControllers()
-						.AddApplicationPart(typeof(TestExceptionThrowingController).Assembly);
-				});
-			});
 		}
 
 

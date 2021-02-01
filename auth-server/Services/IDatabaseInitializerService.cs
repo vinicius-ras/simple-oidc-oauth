@@ -1,0 +1,32 @@
+using IdentityServer4.Models;
+using IdentityServer4.Test;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace SimpleOidcOauth.Services
+{
+	/// <summary>A service which can be used to initialize the application's database with configuration-based data.</summary>
+	public interface IDatabaseInitializerService
+	{
+		/// <summary>
+		///     Clears all of the entries of the database, leaving it completely empty (while preserving its table structures).
+		///     This method should be used with caution, as it might lead to data loss.
+		/// </summary>
+		/// <returns>Returns a <see cref="Task"/> representing the asynchronous operation.</returns>
+		public Task ClearDatabaseAsync();
+
+
+		/// <summary>Initializes the database(s) with the test/development data.</summary>
+		/// <param name="clients">A collection of clients to be saved to the database.</param>
+		/// <param name="apiScopes">A collection of API Scopes to be saved to the database.</param>
+		/// <param name="apiResources">A collection of API Resources to be saved to the database.</param>
+		/// <param name="identityResources">A collection of Identity Resources to be saved to the database.</param>
+		/// <param name="users">A collection of users to be saved to the database.</param>
+		public Task InitializeDatabaseAsync(
+			IEnumerable<Client> clients = default,
+			IEnumerable<ApiScope> apiScopes = default,
+			IEnumerable<ApiResource> apiResources = default,
+			IEnumerable<IdentityResource> identityResources = default,
+			IEnumerable<TestUser> users = default);
+	}
+}

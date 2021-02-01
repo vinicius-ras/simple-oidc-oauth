@@ -36,7 +36,11 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 		/// <summary>Constructor.</summary>
 		/// <param name="webAppFactory">Injected instance for the <see cref="WebApplicationFactory{TEntryPoint}"/> service.</param>
 		/// <param name="testOutputHelper">Injected instance for the <see cref="ITestOutputHelper"/> service.</param>
-		public IntegrationTestBase(WebApplicationFactory<Startup> webAppFactory, ITestOutputHelper testOutputHelper)
+		/// <param name="initializeDefaultTestDatabase">
+		///     A flag indicating if the default test database should be initialized for the current test suite.
+		///     The default test database's data is contained in the internal <see cref="TestData"/> class.
+		/// </param>
+		public IntegrationTestBase(WebApplicationFactory<Startup> webAppFactory, ITestOutputHelper testOutputHelper, bool initializeDefaultTestDatabase)
 		{
 			TestOutputHelper = testOutputHelper;
 
@@ -52,6 +56,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerUsers}", $"Data Source={testSuiteName}-IdentityServerUsers.sqlite;" },
 
 						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.AuthServer)}:{nameof(AppConfigs.AuthServer.BaseUrl)}", TestServerBaseAddress },
+						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.DatabaseInitialization)}:{nameof(AppConfigs.DatabaseInitialization.Enabled)}", "false" },
 					};
 					configurationBuilder.AddInMemoryCollection(customConfigs);
 				});
@@ -59,6 +64,11 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 
 				// Configure custom services and database initialization for the Test Server
 				builder.ConfigureServices(services => {
+					// Adds an Application Part referencing the Integration Tests project's assembly.
+					// This allows us to inject special/customized test controllers, used by some of the Integration Tests.
+					services.AddControllers()
+						.AddApplicationPart(typeof(IntegrationTestBase).Assembly);
+
 					// Configure the Test Server to use a stub email sevice
 					var emailServices = services
 						.Where(svc => svc.ServiceType == typeof(IEmailService))
@@ -68,16 +78,20 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 					services.AddSingleton<IEmailService>(this.MockEmailService);
 
 					// Initialize the test database
-					using (var serviceProvider = services.BuildServiceProvider())
+					if (initializeDefaultTestDatabase)
 					{
-						DatabaseInitializer.ClearDatabaseAsync(serviceProvider).Wait();
-						DatabaseInitializer.InitializeDatabaseAsync(
-							serviceProvider,
-							clients: TestData.SampleClients,
-							apiScopes: TestData.SampleApiScopes,
-							apiResources: TestData.SampleApiResources,
-							identityResources: TestData.SampleIdentityResources,
-							users: TestData.SampleUsers).Wait();
+						using (var serviceProvider = services.BuildServiceProvider())
+						using (var serviceScope = serviceProvider.CreateScope())
+						{
+							var databaseInitializerService = serviceScope.ServiceProvider.GetRequiredService<IDatabaseInitializerService>();
+							databaseInitializerService.ClearDatabaseAsync().Wait();
+							databaseInitializerService.InitializeDatabaseAsync(
+								clients: TestData.SampleClients,
+								apiScopes: TestData.SampleApiScopes,
+								apiResources: TestData.SampleApiResources,
+								identityResources: TestData.SampleIdentityResources,
+								users: TestData.SampleUsers).Wait();
+						}
 					}
 				});
 
