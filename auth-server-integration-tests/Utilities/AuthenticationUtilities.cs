@@ -9,6 +9,7 @@ using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Exceptions;
+using SimpleOidcOauth.Tests.Integration.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -191,7 +192,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			where TStartup : class
 		{
 			// Call the Authorize Endpoint to retrieve a post-login return URL
-			httpClient = httpClient ?? webAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+			httpClient = httpClient ?? webAppFactory.CreateIntegrationTestClient(false);;
 			string returnUrlAfterLogin = await CallAuthorizeEndpointAsync(webAppFactory, authorizeEndpointQueryParams, httpClient);
 
 			// Send the user credentials and post-login return URL to the login endpoint
@@ -239,7 +240,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			where TStartup : class
 		{
 			// Prepare the data
-			httpClient = httpClient ?? webAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+			httpClient = httpClient ?? webAppFactory.CreateIntegrationTestClient(false);
 
 			var returnUrlAfterLogin = targetClient.RedirectUris.First();
 			var authorizeEndpointQueryParams = new Dictionary<string, string>
@@ -315,7 +316,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			where TStartup : class
 		{
 			// Prepare the data
-			httpClient = httpClient ?? webAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+			httpClient = httpClient ?? webAppFactory.CreateIntegrationTestClient(false);
 
 			var returnUrlAfterLogin = targetClient.RedirectUris.First();
 			var authorizeEndpointQueryParams = new Dictionary<string, string>
@@ -374,7 +375,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			where TStartup : class
 		{
 			// Prepare the data
-			httpClient = httpClient ?? webAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+			httpClient = httpClient ?? webAppFactory.CreateIntegrationTestClient(false);
 			string tokenScopes = string.Join(" ", targetClient.AllowedScopes);
 
 			// Request the token
@@ -425,7 +426,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			where TStartup : class
 		{
 			// Prepare the data
-			httpClient = httpClient ?? webAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+			httpClient = httpClient ?? webAppFactory.CreateIntegrationTestClient(false);
 			string tokenScopes = string.Join(" ", targetClient.AllowedScopes);
 
 			// Request the token

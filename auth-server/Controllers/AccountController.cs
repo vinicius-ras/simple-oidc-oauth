@@ -113,17 +113,23 @@ namespace SimpleOidcOauth.Controllers
 		/// <returns>
 		///     Returns an <see cref="IActionResult" /> object representing the server's response to the client.
 		///     In case of success, an HTTP 200 (Ok) will be returned, wrapping a <see cref="LoginOutputModel" /> instance.
-		///     In case of login failure (e.g., due to invalid credentials), an HTTP 401 (Unauthorized) response will be returned.
+		///     In case of login failure (e.g., due to invalid credentials, invalid redirection target, etc), a generic HTTP 401 (Unauthorized) response will be returned.
 		/// </returns>
 		[HttpPost(AppEndpoints.LoginUri)]
 		public async Task<IActionResult> Login([FromBody] LoginInputModel inputData)
 		{
-			// Retrieve the authorization context, and verify if it is valid
-			var authorizationContext = await _identServerInteractionService.GetAuthorizationContextAsync(inputData.ReturnUrl);
-			if (authorizationContext == null)
-				return Unauthorized();
+			// If there is a return URL, then there must be a valid Authorization Context (else, this might be a malicious redirection attempt)
+			if (string.IsNullOrWhiteSpace(inputData.ReturnUrl) == false)
+			{
+				var authorizationContext = await _identServerInteractionService.GetAuthorizationContextAsync(inputData.ReturnUrl);
+				if (authorizationContext == null)
+				{
+					_logger.LogDebug($"Failed to retrieve Authorization Context for return URL: {inputData.ReturnUrl}");
+					return Unauthorized();
+				}
+			}
 
-			// Sign out the user, if he/she is currently logged in
+			// Sign the user out, if he/she is currently logged in
 			var loggedInUser = User.Identities.Any(i => i.IsAuthenticated);
 			if (loggedInUser)
 				await _signInManager.SignOutAsync();

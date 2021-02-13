@@ -1,5 +1,5 @@
 using IdentityServer4.EntityFramework.Entities;
-using SimpleOidcOauth.Tests.Integration.Models.DTO;
+using SimpleOidcOauth.Data.Serialization;
 using System.Collections.Generic;
 
 namespace SimpleOidcOauth.Tests.Integration.Models
@@ -9,14 +9,14 @@ namespace SimpleOidcOauth.Tests.Integration.Models
 	{
 		// INSTANCE PROPERTIES
 		/// <summary>A collection of all <see cref="ClientDto"/> objects which were obtained from the database.</summary>
-		public IEnumerable<ClientDto> Clients { get; init; }
+		public IEnumerable<SerializableClient> Clients { get; init; }
 		/// <summary>A collection of all <see cref="ApiScope"/> objects which were obtained from the database.</summary>
-		public IEnumerable<ApiScope> ApiScopes { get; init; }
+		public IEnumerable<SerializableApiScope> ApiScopes { get; init; }
 		/// <summary>A collection of all <see cref="ApiResource"/> objects which were obtained from the database.</summary>
-		public IEnumerable<ApiResource> ApiResources { get; init; }
+		public IEnumerable<SerializableApiResource> ApiResources { get; init; }
 		/// <summary>A collection of all <see cref="IdentityResource"/> objects which were obtained from the database.</summary>
-		public IEnumerable<IdentityResource> IdentityResources { get; init; }
+		public IEnumerable<SerializableIdentityResource> IdentityResources { get; init; }
 		/// <summary>A collection of all <see cref="UserDto"/> objects which were obtained from the database.</summary>
-		public IEnumerable<UserDto> Users { get; init; }
+		public IEnumerable<SerializableTestUser> Users { get; init; }
 	}
 }

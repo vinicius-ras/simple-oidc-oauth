@@ -1,12 +1,16 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
+using AutoMapper;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
+using SimpleOidcOauth.Data.Serialization;
 using SimpleOidcOauth.Services;
 using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Services;
@@ -18,6 +22,27 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 	/// <summary>Base class for all implemented Integration Tests.</summary>
 	public abstract class IntegrationTestBase : IClassFixture<WebApplicationFactory<Startup>>
 	{
+		// CONSTANTS
+		/// <summary>The base address used by the Test Server.</summary>
+		public const string TestServerOrigin = "https://simple-oidc-oauth-test-server-9cad20d0e9244c5691cb49222cbd09b1";
+		/// <summary>An <see cref="Uri"/> representation of the base address (<see cref="TestServerOrigin"/>) used by the Test Server.</summary>
+		public static readonly Uri TestServerBaseUri = new Uri($"{TestServerOrigin}");
+		/// <summary>
+		///     <para>A name for a JSON file that gets created to hold test data (see <see cref="TestData"/>) for the tests that rely on it.</para>
+		///     <para>
+		///         This file gets created/updated everytime the Integration Tests are run, containing a serialized form of the <see cref="TestData"/> data.
+		///         It is then added to the list of Configuration Providers for the Test Server, which in turn allows the <see cref="DatabaseInitializerHostedService"/> to
+		///         pick it up and configure a sample database for the Integration Tests.
+		///     </para>
+		/// </summary>
+		public const string TestDataJsonFileName = "serialized-test-data.json";
+		/// <summary>Full/absolute path to the <see cref="TestDataJsonFileName"/>.</summary>
+		public static string TestDataJsonFullPath => Path.Combine(Directory.GetCurrentDirectory(), TestDataJsonFileName);
+
+
+
+
+
 		// INSTANCE PROPERTIES
 		/// <summary>Reference to an <see cref="WebApplicationFactory{TEntryPoint}"/>, injected by the test engine.</summary>
 		protected WebApplicationFactory<Startup> WebAppFactory { get; init; }
@@ -25,8 +50,44 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 		protected ITestOutputHelper TestOutputHelper { get; }
 		/// <summary>A <see cref="MockEmailService"/>, created for accessing sent email data during the tests (when necessary).</summary>
 		protected MockEmailService MockEmailService { get; } = new MockEmailService();
-		/// <summary>The base address used by the Test Server.</summary>
-		protected string TestServerBaseAddress { get; }
+		/// <summary>An <see cref="IMapper"/>, with the same configuration specified by the <see cref="AutoMapperProfile"/> class.</summary>
+		protected static IMapper Mapper { get; }
+
+
+
+
+
+		// STATIC METHODS
+		/// <summary>Static constructor.</summary>
+		static IntegrationTestBase()
+		{
+			// Create a mapper object
+			var mapperConfigs = new MapperConfiguration(configs =>
+			{
+				configs.AddProfile<AutoMapperProfile>();
+			});
+			mapperConfigs.AssertConfigurationIsValid();
+			Mapper = mapperConfigs.CreateMapper();
+
+
+			// Write the Test Data used by integration tests into a configuration file
+			using (var file = File.Create(TestDataJsonFullPath))
+			using (var jsonWriter = new Utf8JsonWriter(file))
+			{
+				var configToSave = new {
+					App = new {
+						DatabaseInitialization = new {
+							Clients = TestData.SampleClients.Select(model => Mapper.Map<SerializableClient>(model)),
+							ApiScopes = TestData.SampleApiScopes.Select(model => Mapper.Map<SerializableApiScope>(model)),
+							ApiResources = TestData.SampleApiResources.Select(model => Mapper.Map<SerializableApiResource>(model)),
+							IdentityResources = TestData.SampleIdentityResources.Select(model => Mapper.Map<SerializableIdentityResource>(model)),
+							Users = TestData.SampleUsers.Select(model => Mapper.Map<SerializableTestUser>(model)),
+						},
+					},
+				};
+				JsonSerializer.Serialize(jsonWriter, configToSave);
+			}
+		}
 
 
 
@@ -36,29 +97,36 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 		/// <summary>Constructor.</summary>
 		/// <param name="webAppFactory">Injected instance for the <see cref="WebApplicationFactory{TEntryPoint}"/> service.</param>
 		/// <param name="testOutputHelper">Injected instance for the <see cref="ITestOutputHelper"/> service.</param>
-		/// <param name="initializeDefaultTestDatabase">
-		///     A flag indicating if the default test database should be initialized for the current test suite.
+		/// <param name="databaseInitializationType">
+		///     A value indicating if and how a default test database should be initialized for the current test suite.
 		///     The default test database's data is contained in the internal <see cref="TestData"/> class.
 		/// </param>
-		public IntegrationTestBase(WebApplicationFactory<Startup> webAppFactory, ITestOutputHelper testOutputHelper, bool initializeDefaultTestDatabase)
+		public IntegrationTestBase(WebApplicationFactory<Startup> webAppFactory, ITestOutputHelper testOutputHelper, TestDatabaseInitializationType databaseInitializationType)
 		{
 			TestOutputHelper = testOutputHelper;
 
 			// Reconfigure the test host to prepare it for the tests
-			TestServerBaseAddress = webAppFactory.Server.BaseAddress.AbsoluteUri.TrimEnd('/');
 			WebAppFactory = webAppFactory.WithWebHostBuilder(builder => {
 				// Use a custom/separate SQLite file to store the database for this class, and update the base-url to be considered for the Auth Server
 				builder.ConfigureAppConfiguration((builderContext, configurationBuilder) => {
+					bool initializeDatabaseStructure = (databaseInitializationType != TestDatabaseInitializationType.None),
+						initializeDatabaseWithTestData = (databaseInitializationType == TestDatabaseInitializationType.StructureAndTestData);
 					string testSuiteName = this.GetType().Name;
 					var customConfigs = new Dictionary<string,string> {
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerConfiguration}", $"Data Source={testSuiteName}-IdentityServerConfigs.sqlite;" },
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerOperational}", $"Data Source={testSuiteName}-IdentityServerOperational.sqlite;" },
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerUsers}", $"Data Source={testSuiteName}-IdentityServerUsers.sqlite;" },
 
-						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.AuthServer)}:{nameof(AppConfigs.AuthServer.BaseUrl)}", TestServerBaseAddress },
-						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.DatabaseInitialization)}:{nameof(AppConfigs.DatabaseInitialization.Enabled)}", "false" },
+						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.AuthServer)}:{nameof(AppConfigs.AuthServer.BaseUrl)}", $"{TestServerOrigin}" },
+						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.DatabaseInitialization)}:{nameof(AppConfigs.DatabaseInitialization.CleanBeforeInitialize)}", "true" },
+						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.DatabaseInitialization)}:{nameof(AppConfigs.DatabaseInitialization.InitializeStructure)}", initializeDatabaseStructure.ToString().ToLower() },
+						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.DatabaseInitialization)}:{nameof(AppConfigs.DatabaseInitialization.InitializeData)}", initializeDatabaseWithTestData.ToString().ToLower() },
 					};
 					configurationBuilder.AddInMemoryCollection(customConfigs);
+
+					// Add test data to the configuration (if required)
+					if (initializeDatabaseWithTestData)
+						configurationBuilder.AddJsonFile(TestDataJsonFullPath);
 				});
 
 
@@ -76,23 +144,6 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 					foreach (var curService in emailServices)
 						services.Remove(curService);
 					services.AddSingleton<IEmailService>(this.MockEmailService);
-
-					// Initialize the test database
-					if (initializeDefaultTestDatabase)
-					{
-						using (var serviceProvider = services.BuildServiceProvider())
-						using (var serviceScope = serviceProvider.CreateScope())
-						{
-							var databaseInitializerService = serviceScope.ServiceProvider.GetRequiredService<IDatabaseInitializerService>();
-							databaseInitializerService.ClearDatabaseAsync().Wait();
-							databaseInitializerService.InitializeDatabaseAsync(
-								clients: TestData.SampleClients,
-								apiScopes: TestData.SampleApiScopes,
-								apiResources: TestData.SampleApiResources,
-								identityResources: TestData.SampleIdentityResources,
-								users: TestData.SampleUsers).Wait();
-						}
-					}
 				});
 
 				// Configure ILogger objects to use the ITestOutputHelper, which collects logs for unit/integration tests
@@ -101,6 +152,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 					loggingBuilder.AddXUnit(TestOutputHelper);
 				});
 			});
+
+			// Set the base address of the Test Host and its clients
+			WebAppFactory.Server.BaseAddress = TestServerBaseUri;
+			WebAppFactory.ClientOptions.BaseAddress = TestServerBaseUri;
 		}
 	}
 }

@@ -159,6 +159,10 @@ namespace SimpleOidcOauth
             });
 
 
+            // Configure AutoMapper
+            services.AddAutoMapper(typeof(AutoMapperProfile));
+
+
             // Configure custom services
             services.AddTransient<IReturnUrlParser, CustomReturnUrlParser>();
             services.AddTransient<IEmbeddedResourcesService, EmbeddedResourcesService>();

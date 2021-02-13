@@ -71,64 +71,81 @@ namespace SimpleOidcOauth.Services
 			if (entities == null)
 				return Enumerable.Empty<TEntityFrameworkModel>();
 
-
-			// Separate entities to be created from entities to be updated in the database
-			TKey[] entityKeys = entities
-				.Select(identityServerModelKeySelector)
-				.ToArray();
-			var alreadyRegisteredEntityKeys = await databaseCollection
-				.Select(entityFrameworkModelKeySelector)
-				.Where(databaseEntityKey => entityKeys.Contains(databaseEntityKey))
-				.ToArrayAsync();
-			var notRegisteredEntityKeys = entityKeys
-				.Except(alreadyRegisteredEntityKeys)
-				.ToArray();
-
-
-			// Create unregistered entities
-			var entitiesToCreate = entities
-				.WhereIn(notRegisteredEntityKeys, identityServerModelKeySelector)
-				.Select(convertToEntityFrameworkModel)
-				.ToList();
-			await databaseCollection.AddRangeAsync(entitiesToCreate);
 			try
 			{
+				// Start a transaction
+				await databaseContext.Database.BeginTransactionAsync();
+
+				// Separate entities to be created from entities to be updated in the database
+				TKey[] entityKeys = entities
+					.Select(identityServerModelKeySelector)
+					.ToArray();
+				var alreadyRegisteredEntityKeys = await databaseCollection
+					.Select(entityFrameworkModelKeySelector)
+					.Where(databaseEntityKey => entityKeys.Contains(databaseEntityKey))
+					.ToArrayAsync();
+				var notRegisteredEntityKeys = entityKeys
+					.Except(alreadyRegisteredEntityKeys)
+					.ToArray();
+
+
+				// Create unregistered entities
+				var entitiesToCreate = entities
+					.WhereIn(notRegisteredEntityKeys, identityServerModelKeySelector)
+					.Select(convertToEntityFrameworkModel)
+					.ToList();
+				await databaseCollection.AddRangeAsync(entitiesToCreate);
 				await databaseContext.SaveChangesAsync();
+
+				// Update entities that were already registered in the database
+				var entityFrameworkModelIdPropertyName = ((MemberExpression) entityFrameworkModelIdSelector.Body).Member.Name;
+				var propertiesToCopy = typeof(TEntityFrameworkModel)
+					.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+					.Where(prop => prop.Name != entityFrameworkModelIdPropertyName)
+					.ToArray();
+
+				var entitiesToUpdate = await databaseCollection
+					.WhereIn(alreadyRegisteredEntityKeys, entityFrameworkModelKeySelector)
+					.ToListAsync();
+				var compiledEntityFrameworkModelKeySelector = entityFrameworkModelKeySelector.Compile();
+				var compiledIdentityServerModelKeySelector = identityServerModelKeySelector.Compile();
+				var compiledConvertToEntityFrameworkModel = convertToEntityFrameworkModel.Compile();
+				foreach (var entity in entitiesToUpdate)
+				{
+					var entityToUpdateKey = compiledEntityFrameworkModelKeySelector(entity);
+					var newEntityInputData = entities.Single(updatedEntity => compiledIdentityServerModelKeySelector(updatedEntity) != null && compiledIdentityServerModelKeySelector(updatedEntity).Equals(entityToUpdateKey));
+					var newEntityData = compiledConvertToEntityFrameworkModel(newEntityInputData);
+
+					foreach (var property in propertiesToCopy)
+					{
+						var newValue = property.GetValue(newEntityData);
+						property.SetValue(entity, newValue);
+					}
+				}
+
+				// Commit the transaction and end
+				await databaseContext.Database.CommitTransactionAsync();
+				return entitiesToCreate;
 			}
 			catch (DbUpdateException ex)
 			{
-				// Catches possible "UNIQUE" constraint failures.
-				// This will be logged as a warning (and not an error) bercause it might happen due to multiple instances of this application running in parallel,
-				// and in this case it would not actually be an error.
+				// Catches possible failures (e.g., violated "UNIQUE" constraints).
+				// This will be logged as a warning (and not an error) bercause it might happen due to multiple instances of this
+				// application running in parallel (e.g., in a cluster), and in this case it would not actually be an error.
+
+				// In this case, a warning will be issued, the transaction will be rolled back, and involved entities will be cleared from the change tracker
 				_logger.LogWarning(ex, $"Database initialization failure: failed to register one or more {typeof(TEntityFrameworkModel).Name} objects in the database.");
-			}
+				await databaseContext.Database.RollbackTransactionAsync();
 
-			// Update entities that were already registered in the database
-			var entityFrameworkModelIdPropertyName = ((MemberExpression) entityFrameworkModelIdSelector.Body).Member.Name;
-			var propertiesToCopy = typeof(TEntityFrameworkModel)
-				.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-				.Where(prop => prop.Name != entityFrameworkModelIdPropertyName)
-				.ToArray();
-
-			var entitiesToUpdate = await databaseCollection
-				.WhereIn(alreadyRegisteredEntityKeys, entityFrameworkModelKeySelector)
-				.ToListAsync();
-			var compiledEntityFrameworkModelKeySelector = entityFrameworkModelKeySelector.Compile();
-			var compiledIdentityServerModelKeySelector = identityServerModelKeySelector.Compile();
-			var compiledConvertToEntityFrameworkModel = convertToEntityFrameworkModel.Compile();
-			foreach (var entity in entitiesToUpdate)
-			{
-				var entityToUpdateKey = compiledEntityFrameworkModelKeySelector(entity);
-				var newEntityInputData = entities.Single(updatedEntity => compiledIdentityServerModelKeySelector(updatedEntity).Equals(entityToUpdateKey));
-				var newEntityData = compiledConvertToEntityFrameworkModel(newEntityInputData);
-
-				foreach (var property in propertiesToCopy)
+				foreach (var entityEntry in ex.Entries)
 				{
-					var newValue = property.GetValue(newEntityData);
-					property.SetValue(entity, newValue);
+					// Revert any entity changes
+					entityEntry.CurrentValues.SetValues(entityEntry.OriginalValues);
+					entityEntry.State = EntityState.Detached;
+					entityEntry.DetectChanges();
 				}
 			}
-			return entitiesToCreate;
+			return Enumerable.Empty<TEntityFrameworkModel>();
 		}
 
 

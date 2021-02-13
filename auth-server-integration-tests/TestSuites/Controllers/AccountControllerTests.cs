@@ -10,6 +10,7 @@ using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Exceptions;
+using SimpleOidcOauth.Tests.Integration.Extensions;
 using SimpleOidcOauth.Tests.Integration.Utilities;
 using System;
 using System.Collections.Generic;
@@ -115,7 +116,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		/// <param name="webAppFactory">Injected instance for the <see cref="WebApplicationFactory{TEntryPoint}"/> service.</param>
 		/// <param name="testOutputHelper">Injected instance for the <see cref="ITestOutputHelper"/> service.</param>
 		public AccountControllerTests(WebApplicationFactory<Startup> webAppFactory, ITestOutputHelper testOutputHelper)
-			: base(webAppFactory, testOutputHelper, true)
+			: base(webAppFactory, testOutputHelper, TestDatabaseInitializationType.StructureAndTestData)
 		{
 		}
 
@@ -623,7 +624,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var targetUser = TestData.UserAlice;
 			var targetUserEmail = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
-			var httpClient = WebAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+			var httpClient = WebAppFactory.CreateIntegrationTestClient(false);
 
 			// Act
 			var loggedInUser = await AuthenticationUtilities.PerformUserLoginAsync(WebAppFactory, targetUser, queryParams, httpClient);
@@ -747,7 +748,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			Assert.Equal(emailUserName, newUserData.UserName);
 			Assert.True(emailVerificationLink?.Length > 0);
 			Assert.Equal(HttpStatusCode.OK, responseVerifyAccount.StatusCode);
-			Assert.Equal(TestServerBaseAddress, emailVerificationLinkBaseUri);
+			Assert.Equal(TestServerOrigin, emailVerificationLinkBaseUri);
 		}
 
 
@@ -812,7 +813,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		public async Task Logout_NullLogoutId_ReturnsBadRequestStatusCode()
 		{
 			// Arrange
-			var httpClient = WebAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+			var httpClient = WebAppFactory.CreateIntegrationTestClient(false);
 
 			var targetClient = TestData.ClientImplicitFlowAccessAndIdTokens;
 			var returnUrlAfterLogin = targetClient.RedirectUris.First();
@@ -841,7 +842,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		public async Task Logout_LoggedIn_ReturnsOkWithJsonResponse()
 		{
 			// Arrange
-			var httpClient = WebAppFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+			var httpClient = WebAppFactory.CreateIntegrationTestClient(false);
 
 			var targetClient = TestData.ClientImplicitFlowAccessTokensOnly;
 			var targetClientPostLogoutRedirectUri = targetClient.PostLogoutRedirectUris.First();

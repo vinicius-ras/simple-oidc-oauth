@@ -16,7 +16,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 		/// <param name="webAppFactory">Injected instance for the <see cref="WebApplicationFactory{TEntryPoint}"/> service.</param>
 		/// <param name="testOutputHelper">Injected instance for the <see cref="ITestOutputHelper"/> service.</param>
 		public TokenAcquisitionTests(WebApplicationFactory<Startup> webAppFactory, ITestOutputHelper testOutputHelper)
-			: base(webAppFactory, testOutputHelper, true)
+			: base(webAppFactory, testOutputHelper, TestDatabaseInitializationType.StructureAndTestData)
 		{
 		}
 

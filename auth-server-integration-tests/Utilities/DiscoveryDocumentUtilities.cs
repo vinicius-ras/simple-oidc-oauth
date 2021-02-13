@@ -1,5 +1,6 @@
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Mvc.Testing;
+using SimpleOidcOauth.Tests.Integration.Extensions;
 
 namespace SimpleOidcOauth.Tests.Integration.Utilities
 {
@@ -41,7 +42,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			{
 				if (_cachedDiscoveryDocumentResponse == null)
 				{
-					using var httpClient = webAppFactory.CreateClient();
+					using var httpClient = webAppFactory.CreateIntegrationTestClient(true);
 					_cachedDiscoveryDocumentResponse = httpClient.GetDiscoveryDocumentAsync().Result;
 				}
 			}
