@@ -43,6 +43,14 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 
 
 
+		// STATIC PROPERTIES
+		/// <summary>An <see cref="IMapper"/>, with the same configuration specified by the <see cref="AutoMapperProfile"/> class.</summary>
+		protected static IMapper Mapper { get; }
+
+
+
+
+
 		// INSTANCE PROPERTIES
 		/// <summary>Reference to an <see cref="WebApplicationFactory{TEntryPoint}"/>, injected by the test engine.</summary>
 		protected WebApplicationFactory<Startup> WebAppFactory { get; init; }
@@ -50,8 +58,6 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 		protected ITestOutputHelper TestOutputHelper { get; }
 		/// <summary>A <see cref="MockEmailService"/>, created for accessing sent email data during the tests (when necessary).</summary>
 		protected MockEmailService MockEmailService { get; } = new MockEmailService();
-		/// <summary>An <see cref="IMapper"/>, with the same configuration specified by the <see cref="AutoMapperProfile"/> class.</summary>
-		protected static IMapper Mapper { get; }
 
 
 

@@ -1,5 +1,6 @@
 using IdentityServer4.Models;
 using IdentityServer4.Test;
+using SimpleOidcOauth.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -13,7 +14,7 @@ namespace SimpleOidcOauth.Services
 		///     This method should be used with caution, as it might lead to data loss.
 		/// </summary>
 		/// <returns>Returns a <see cref="Task"/> representing the asynchronous operation.</returns>
-		public Task ClearDatabaseAsync();
+		Task ClearDatabaseAsync();
 
 
 		/// <summary>Initializes the database(s) with the test/development data.</summary>
@@ -22,7 +23,11 @@ namespace SimpleOidcOauth.Services
 		/// <param name="apiResources">A collection of API Resources to be saved to the database.</param>
 		/// <param name="identityResources">A collection of Identity Resources to be saved to the database.</param>
 		/// <param name="users">A collection of users to be saved to the database.</param>
-		public Task InitializeDatabaseAsync(
+		/// <returns>
+		///     Returns a <see cref="DatabaseInitializationResult"/> object containing data about the performed operations,
+		///     wrapped within a <see cref="Task"/> object.
+		/// </returns>
+		Task<DatabaseInitializationResult> InitializeDatabaseAsync(
 			IEnumerable<Client> clients = default,
 			IEnumerable<ApiScope> apiScopes = default,
 			IEnumerable<ApiResource> apiResources = default,

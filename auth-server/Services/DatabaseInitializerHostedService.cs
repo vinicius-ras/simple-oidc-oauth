@@ -102,6 +102,7 @@ namespace SimpleOidcOauth.Services
 					_logger.LogDebug("Initializing database's data...");
 					try
 					{
+						// Retrieve data to be saved
 						var clients = _databaseInitializationConfigs
 							?.Clients
 							?.Select(serializableObject => _mapper.Map<SerializableClient, Client>(serializableObject));
@@ -117,6 +118,8 @@ namespace SimpleOidcOauth.Services
 						var users = _databaseInitializationConfigs
 							?.Users
 							?.Select(serializableObject => _mapper.Map<SerializableTestUser, TestUser>(serializableObject));
+
+						// Save the necessary data
 						await databaseInitializerService.InitializeDatabaseAsync(
 							clients,
 							apiScopes,

@@ -92,6 +92,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Services
 				var savedClient = allRetrievedDataBeforeClear.Clients.Single(client => client.ClientName.Equals(clientToSave.ClientName));
 				Assert.Equal(clientToSave.ClientId, savedClient.ClientId);
 				Assert.Equal(clientToSave.ClientName, savedClient.ClientName);
+				Assert.Equal(clientToSave.AllowAccessTokensViaBrowser, clientToSave.AllowAccessTokensViaBrowser);
+				Assert.Equal(clientToSave.RequireClientSecret, clientToSave.RequireClientSecret);
+				Assert.Equal(clientToSave.RequireConsent, clientToSave.RequireConsent);
+				Assert.Equal(clientToSave.RequirePkce, clientToSave.RequirePkce);
 
 				foreach (var corsOriginToSave in clientToSave.AllowedCorsOrigins ?? Enumerable.Empty<string>())
 				{
@@ -118,6 +122,16 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Services
 					var savedRedirectUri = savedClient.RedirectUris.Single(redirectUri => redirectUri.Equals(redirectUriToSave));
 					Assert.Equal(redirectUriToSave, savedRedirectUri);
 				}
+				foreach (var secretToSave in clientToSave.ClientSecrets ?? Enumerable.Empty<SerializableSecret>())
+				{
+					var savedSecret = savedClient.ClientSecrets.SingleOrDefault(secret =>
+						secret.Description == secretToSave.Description
+						&& secret.Value == secretToSave.Value
+						&& secret.Expiration == secretToSave.Expiration
+						&& secret.Type == secretToSave.Type
+					);
+					Assert.NotNull(savedSecret);
+				}
 			}
 
 			foreach (var apiScopeToSave in dataToSave.ApiScopes ?? Enumerable.Empty<SerializableApiScope>())
@@ -129,12 +143,42 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Services
 
 			foreach (var apiResourceToSave in dataToSave.ApiResources ?? Enumerable.Empty<SerializableApiResource>())
 			{
-				var savedApiResource = allRetrievedDataBeforeClear.ApiResources.Single(apiResource => apiResource.Name.Equals(apiResource.Name));
+				var savedApiResource = allRetrievedDataBeforeClear.ApiResources.Single(apiResource => apiResource.Name.Equals(apiResourceToSave.Name));
 				Assert.Equal(apiResourceToSave.Name, savedApiResource.Name);
 				Assert.Equal(apiResourceToSave.DisplayName, savedApiResource.DisplayName);
 				Assert.Equal(apiResourceToSave.UserClaims?.Count() ?? 0, savedApiResource.UserClaims?.Count() ?? 0);
 				foreach (var claimToSave in apiResourceToSave.UserClaims ?? Enumerable.Empty<string>())
 					Assert.Contains(claimToSave, savedApiResource.UserClaims);
+			}
+
+			foreach (var identityResourceToSave in dataToSave.IdentityResources ?? Enumerable.Empty<SerializableIdentityResource>())
+			{
+				var savedApiResource = allRetrievedDataBeforeClear.IdentityResources.Single(identityResource => identityResource.Name.Equals(identityResourceToSave.Name));
+				Assert.Equal(identityResourceToSave.Name, savedApiResource.Name);
+				Assert.Equal(identityResourceToSave.DisplayName, savedApiResource.DisplayName);
+				Assert.Equal(identityResourceToSave.Enabled, savedApiResource.Enabled);
+				Assert.Equal(identityResourceToSave.Description, savedApiResource.Description);
+				Assert.Equal(identityResourceToSave.ShowInDiscoveryDocument, savedApiResource.ShowInDiscoveryDocument);
+				Assert.Equal(identityResourceToSave.Required, savedApiResource.Required);
+				Assert.Equal(identityResourceToSave.Emphasize, savedApiResource.Emphasize);
+				Assert.Equal(identityResourceToSave.UserClaims?.Count() ?? 0, savedApiResource.UserClaims?.Count() ?? 0);
+				foreach (var claimToSave in identityResourceToSave.UserClaims ?? Enumerable.Empty<string>())
+					Assert.Contains(claimToSave, savedApiResource.UserClaims);
+			}
+
+			foreach (var userToSave in dataToSave.Users ?? Enumerable.Empty<SerializableTestUser>())
+			{
+				var savedUser = allRetrievedDataBeforeClear.Users.Single(user => user.Username == userToSave.Username);
+				Assert.Equal(userToSave.Username, savedUser.Username);
+				Assert.Equal(userToSave.Email, savedUser.Email);
+				Assert.Equal(userToSave.EmailConfirmed, savedUser.EmailConfirmed);
+
+				Assert.Equal(userToSave.Claims?.Count() ?? 0, savedUser.Claims?.Count() ?? 0);
+				foreach (var claimToSave in userToSave.Claims ?? Enumerable.Empty<SerializableClaim>())
+				{
+					var savedClaim = savedUser.Claims.SingleOrDefault(claim => claim.Type == claimToSave.Type && claim.Value == claimToSave.Value);
+					Assert.NotNull(savedClaim);
+				}
 			}
 
 			Assert.Empty(allRetrievedDataAfterClear.Clients);

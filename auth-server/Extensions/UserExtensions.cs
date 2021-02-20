@@ -1,3 +1,4 @@
+using AutoMapper;
 using IdentityModel;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Identity;
@@ -15,21 +16,12 @@ namespace SimpleOidcOauth.Extensions
 		///     corresponding ASP.NET Core Identity user model representation, as used by this application.
 		/// </summary>
 		/// <param name="testUser">The <see cref="TestUser" /> object to be converted.</param>
+		/// <param name="mapper">Reference to an <see cref="IMapper" /> object to convert between entities.</param>
+		/// <param name="mapper">An <see cref="UserManager{TUser}" /> object to calculate special values (e.g., the user's password hash).</param>
 		/// <returns>Returns an <see cref="IdentityUser" /> object containing the data which was extracted from the input object.</returns>
-		public static IdentityUser ConvertToIdentityUser(this TestUser testUser, UserManager<IdentityUser> userManager)
+		public static IdentityUser ConvertToIdentityUser(this TestUser testUser, IMapper mapper, UserManager<IdentityUser> userManager)
 		{
-			var result = new IdentityUser()
-			{
-				UserName = testUser.Username,
-				Email = testUser.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.Email)?.Value,
-				EmailConfirmed = testUser.Claims
-					.FirstOrDefault(c => c.Type == JwtClaimTypes.EmailVerified)?.Value
-					switch {
-						null => false,
-						string claimValue => bool.Parse(claimValue),
-					},
-				PhoneNumber = testUser.Claims.FirstOrDefault(c => c.Type == JwtClaimTypes.PhoneNumber)?.Value,
-			};
+			var result = mapper.Map<IdentityUser>(testUser);
 
 			result.NormalizedEmail = userManager.NormalizeEmail(result.Email);
 			result.NormalizedUserName = userManager.NormalizeName(result.UserName);
