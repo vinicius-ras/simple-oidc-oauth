@@ -810,7 +810,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 
 		[Fact]
-		public async Task Logout_NullLogoutId_ReturnsBadRequestStatusCode()
+		public async Task Logout_NullLogoutId_ReturnsOkStatusCode()
 		{
 			// Arrange
 			var httpClient = WebAppFactory.CreateIntegrationTestClient(false);
@@ -834,7 +834,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var response = await httpClient.PostAsync(AppEndpoints.LogoutUri, null);
 
 			// Assert
-			Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 		}
 
 
