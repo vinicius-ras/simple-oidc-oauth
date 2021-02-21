@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SimpleOidcOauth.Data;
+using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.Extensions;
 using SimpleOidcOauth.Models;
 using System;
@@ -32,7 +33,7 @@ namespace SimpleOidcOauth.Services
 		/// <summary>Container-injected instance for the <see cref="AppDbContext" /> service.</summary>
 		private readonly AppDbContext _appDbContext;
 		/// <summary>Container-injected instance for the <see cref="UserManager{TUser}" /> service.</summary>
-		private readonly UserManager<IdentityUser> _userManager;
+		private readonly UserManager<ApplicationUser> _userManager;
 		/// <summary>Container-injected instance for the <see cref="IMapper" /> service.</summary>
 		private readonly IMapper _mapper;
 
@@ -224,7 +225,7 @@ namespace SimpleOidcOauth.Services
 			PersistedGrantDbContext persistedGrantDbContext,
 			ConfigurationDbContext configurationDbContext,
 			AppDbContext appDbContext,
-			UserManager<IdentityUser> userManager,
+			UserManager<ApplicationUser> userManager,
 			IMapper mapper)
 		{
 			_logger = logger;
@@ -316,9 +317,9 @@ namespace SimpleOidcOauth.Services
 				_appDbContext,
 				_appDbContext.Users,
 				idSrvUser => idSrvUser.Username,
-				efIdentityUser => efIdentityUser.UserName,
-				efIdentityUser => efIdentityUser.Id,
-				idSvrTestUser => idSvrTestUser.ConvertToIdentityUser(_mapper, _userManager)
+				efApplicationUser => efApplicationUser.UserName,
+				efApplicationUser => efApplicationUser.Id,
+				idSvrTestUser => idSvrTestUser.ConvertToApplicationUser(_mapper, _userManager)
 			);
 
 

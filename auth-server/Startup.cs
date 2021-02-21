@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
+using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.IdentityServer;
 using SimpleOidcOauth.Services;
 using System;
@@ -77,7 +78,7 @@ namespace SimpleOidcOauth
 
 
             // Add ASP.NET Core Identity and IdentityServer4 services
-            services.AddIdentity<IdentityUser, IdentityRole>(opts => {
+            services.AddIdentity<ApplicationUser, ApplicationRole>(opts => {
                     opts.SignIn.RequireConfirmedAccount = true;
                     opts.SignIn.RequireConfirmedEmail = true;
                     opts.SignIn.RequireConfirmedPhoneNumber = false;
@@ -107,7 +108,7 @@ namespace SimpleOidcOauth
                         );
                     };
                 })
-                .AddAspNetIdentity<IdentityUser>();
+                .AddAspNetIdentity<ApplicationUser>();
 
 
             // Configures the cookies used by the application

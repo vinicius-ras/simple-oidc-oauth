@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
+using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Services;
 using System;
@@ -70,9 +71,9 @@ namespace SimpleOidcOauth.Controllers
 		/// <summary>Container-injected instance for the <see cref="ILogger{TCategoryName}" /> service.</summary>
 		private readonly ILogger<AccountController> _logger;
 		/// <summary>Container-injected instance for the <see cref="SignInManager{TUser}" /> service.</summary>
-		private readonly SignInManager<IdentityUser> _signInManager;
+		private readonly SignInManager<ApplicationUser> _signInManager;
 		/// <summary>Container-injected instance for the <see cref="UserManager{TUser}" /> service.</summary>
-		private readonly UserManager<IdentityUser> _userManager;
+		private readonly UserManager<ApplicationUser> _userManager;
 		/// <summary>Container-injected instance for the <see cref="IIdentityServerInteractionService" /> service.</summary>
 		private readonly IIdentityServerInteractionService _identServerInteractionService;
 		/// <summary>Container-injected instance for the <see cref="IEmailService" /> service.</summary>
@@ -93,8 +94,8 @@ namespace SimpleOidcOauth.Controllers
 		public AccountController(
 			IOptions<AppConfigs> appConfigs,
 			ILogger<AccountController> logger,
-			SignInManager<IdentityUser> signInManager,
-			UserManager<IdentityUser> userManager,
+			SignInManager<ApplicationUser> signInManager,
+			UserManager<ApplicationUser> userManager,
 			IIdentityServerInteractionService identServerInteractionService,
 			IEmailService emailService)
 		{
@@ -241,8 +242,9 @@ namespace SimpleOidcOauth.Controllers
 		[HttpPost(AppEndpoints.RegisterUri)]
 		public async Task<IActionResult> Register([FromBody] AccountRegisterInputModel registerData) {
 			// Try to register the new user
-			var newUser = new IdentityUser(registerData.UserName)
+			var newUser = new ApplicationUser
 			{
+				UserName = registerData.UserName,
 				Email = registerData.Email,
 			};
 			var userCreateResult = await _userManager.CreateAsync(newUser, registerData.Password);

@@ -1,5 +1,5 @@
 using IdentityServer4.EntityFramework.Entities;
-using Microsoft.AspNetCore.Identity;
+using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.Services;
 using System.Collections.Generic;
 
@@ -20,9 +20,9 @@ namespace SimpleOidcOauth.Models
 		/// <summary>The entities of type <see cref="IdentityResource"/> that have been inserted into the database during the initialization operation.</summary>
 		/// <value>An enumerable collection of inserted entities of type <see cref="IdentityResource"/>.</value>
 		public IEnumerable<IdentityResource> InsertedIdentityResources { get; init; }
-		/// <summary>The entities of type <see cref="IdentityUser"/> that have been inserted into the database during the initialization operation.</summary>
-		/// <value>An enumerable collection of inserted entities of type <see cref="IdentityUser"/>.</value>
-		public IEnumerable<IdentityUser> InsertedUsers { get; init; }
+		/// <summary>The entities of type <see cref="ApplicationUser"/> that have been inserted into the database during the initialization operation.</summary>
+		/// <value>An enumerable collection of inserted entities of type <see cref="ApplicationUser"/>.</value>
+		public IEnumerable<ApplicationUser> InsertedUsers { get; init; }
 		/// <summary>The entities of type <see cref="Client"/> that have been updated in the database during the initialization operation.</summary>
 		/// <value>An enumerable collection of updated entities of type <see cref="Client"/>.</value>
 		public IEnumerable<Client> UpdatedClients { get; init; }
@@ -35,8 +35,8 @@ namespace SimpleOidcOauth.Models
 		/// <summary>The entities of type <see cref="IdentityResource"/> that have been updated in the database during the initialization operation.</summary>
 		/// <value>An enumerable collection of updated entities of type <see cref="IdentityResource"/>.</value>
 		public IEnumerable<IdentityResource> UpdatedIdentityResources { get; init; }
-		/// <summary>The entities of type <see cref="IdentityUser"/> that have been updated in the database during the initialization operation.</summary>
-		/// <value>An enumerable collection of updated entities of type <see cref="IdentityUser"/>.</value>
-		public IEnumerable<IdentityUser> UpdatedUsers { get; init; }
+		/// <summary>The entities of type <see cref="ApplicationUser"/> that have been updated in the database during the initialization operation.</summary>
+		/// <value>An enumerable collection of updated entities of type <see cref="ApplicationUser"/>.</value>
+		public IEnumerable<ApplicationUser> UpdatedUsers { get; init; }
 	}
 }

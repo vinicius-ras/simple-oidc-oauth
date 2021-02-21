@@ -14,6 +14,7 @@ using SimpleOidcOauth.Tests.Integration.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SimpleOidcOauth.Data.Security;
 
 namespace SimpleOidcOauth.Tests.Integration.Controllers
 {
@@ -43,7 +44,7 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 		/// <summary>Container-injected instance for the <see cref="IMapper" /> service.</summary>
 		private readonly IMapper _mapper;
 		/// <summary>Container-injected instance for the <see cref="UserManager{TUser}" /> service.</summary>
-		private readonly UserManager<IdentityUser> _userManager;
+		private readonly UserManager<ApplicationUser> _userManager;
 
 
 
@@ -60,7 +61,7 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 			IDatabaseInitializerService databaseInitializerService,
 			ConfigurationDbContext configurationDbContext,
 			AppDbContext appDbContext,
-			UserManager<IdentityUser> userManager,
+			UserManager<ApplicationUser> userManager,
 			IMapper mapper)
 		{
 			_databaseInitializerService = databaseInitializerService;
