@@ -3,7 +3,8 @@
 		{ "path": "auth-server" },
 		{ "path": "auth-server-integration-tests" },
 		{ "path": "auth-server-unit-tests" },
-		{ "path": "spa" }
+		{ "path": "spa" },
+		{ "path": "sample-clients/mvc", "name": "[SAMPLE CLIENT] MVC" },
 	],
 	"settings": {}
 }
