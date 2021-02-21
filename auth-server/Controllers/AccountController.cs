@@ -174,9 +174,9 @@ namespace SimpleOidcOauth.Controllers
 			if (User == null || User.Identities.All(userIdent => userIdent.IsAuthenticated == false))
 				return Ok();
 
-			if (logoutId == null)
-				return BadRequest();
-
+			// If there is a logout ID, verify if it is valid.
+			// NOTE: if there is no logout ID, this means that the user is navigating the auth-server front-end ("spa")
+			// application (and not any of the client applications that use this IdP).
 			var logoutContext = await _identServerInteractionService.GetLogoutContextAsync(logoutId);
 			if (logoutContext == null)
 			{
@@ -184,7 +184,6 @@ namespace SimpleOidcOauth.Controllers
 				// The code should never enter this branch.
 				throw new InvalidOperationException("Failed to retrieve logout context: IdentityServer4 returned NULL context.");
 			}
-
 
 			// Sign the user out
 			await _signInManager.SignOutAsync();

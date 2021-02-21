@@ -170,8 +170,6 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Services
 			{
 				var savedUser = allRetrievedDataBeforeClear.Users.Single(user => user.Username == userToSave.Username);
 				Assert.Equal(userToSave.Username, savedUser.Username);
-				Assert.Equal(userToSave.Email, savedUser.Email);
-				Assert.Equal(userToSave.EmailConfirmed, savedUser.EmailConfirmed);
 
 				Assert.Equal(userToSave.Claims?.Count() ?? 0, savedUser.Claims?.Count() ?? 0);
 				foreach (var claimToSave in userToSave.Claims ?? Enumerable.Empty<SerializableClaim>())

@@ -34,8 +34,6 @@ namespace SimpleOidcOauth.Data.Configuration
 				.IncludeBase<Resource, SerializableResource>()
 				.ReverseMap();
 			CreateMap<TestUser, SerializableTestUser>()
-				.ForMember(serializableTestUser => serializableTestUser.Email, opt => opt.MapFrom(testUser => testUser.Claims.FirstOrDefault(claim => claim.Type == JwtClaimTypes.Email).Value))
-				.ForMember(serializableTestUser => serializableTestUser.EmailConfirmed, opt => opt.MapFrom(testUser => testUser.Claims.FirstOrDefault(claim => claim.Type == JwtClaimTypes.EmailVerified).Value))
 				.ForMember(serializableTestUser => serializableTestUser.Claims, opt => opt.MapFrom(testUser => testUser.Claims))
 				.ReverseMap();
 			CreateMap<TestUser, ApplicationUser>()

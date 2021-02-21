@@ -60,7 +60,7 @@ export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 		{
 			// Extract the "return URL" from the current URL's query string parameters
 			const urlSearchParams = new URLSearchParams(location.search);
-			const returnUrl = urlSearchParams.get("ReturnUrl") ?? "/";
+			const returnUrl = urlSearchParams.get("ReturnUrl") ?? null;
 
 			// Try to perform the login, keeping any returned credentials
 			const axiosResponse = await AxiosService.getInstance()
