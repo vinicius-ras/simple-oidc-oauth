@@ -169,11 +169,6 @@ namespace SimpleOidcOauth.Controllers
 		[HttpPost(AppEndpoints.LogoutUri)]
 		public async Task<IActionResult> Logout(string logoutId)
 		{
-			// Verify if there is a user logged in, and if a logout context can be acquired
-			// from the given "logout ID"
-			if (User == null || User.Identities.All(userIdent => userIdent.IsAuthenticated == false))
-				return Ok();
-
 			// If there is a logout ID, verify if it is valid.
 			// NOTE: if there is no logout ID, this means that the user is navigating the auth-server front-end ("spa")
 			// application (and not any of the client applications that use this IdP).

@@ -29,5 +29,17 @@ namespace SimpleOidcOauth.SampleClients.Mvc.Data.Configuration
 		public string ResponseType { get; set; }
 		/// <summary>A flag indicating if PKCE should be used for improved protection.</summary>
 		public bool UsePkce { get; set; }
+		/// <summary>A path within the application's base path which will be called by the IdP once the user performs a logout operation.</summary>
+		/// <value>
+		///     A path starting with "/" that will be called by the IdP to handle OIDC/OAuth logout.
+		///     The URL containing this path should be registered at the IdP in the list of "Post Logout Redirect URIs" of our Sample MVC Client.
+		/// </value>
+		public string SignedOutCallbackPath { get; set; }
+		/// <summary>An URI to which the user will be redirected after a logout operation is performed and processed by the endpoint specified by <see cref="SignedOutCallbackPath"/>.</summary>
+		/// <value>
+		///     Any URI to which the user must be redirected after the logout operation is completed.
+		///     This can even be an URI external to our Sample MVC Client's domain.
+		/// </value>
+		public string SignedOutRedirectUri { get; set; }
 	}
 }

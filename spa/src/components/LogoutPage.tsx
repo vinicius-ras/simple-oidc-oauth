@@ -64,11 +64,10 @@ function LogoutPage(props: LogoutPageProps) {
 			// client app, post-logout redirect URL, etc.
 			const currentPageQueryParams = new URLSearchParams(location.search);
 			const logoutIdValue = currentPageQueryParams.get(queryParamLogoutId);
-			if (!logoutIdValue)
-				throw new Error("Missing LOGOUT ID in current page's URL");
 
 			const queryParams = new URLSearchParams();
-			queryParams.append(queryParamLogoutId, logoutIdValue);
+			if (logoutIdValue)
+				queryParams.append(queryParamLogoutId, logoutIdValue);
 
 
 			// Call the target endpoint

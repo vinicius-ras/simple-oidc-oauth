@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SimpleOidcOauth.SampleClients.Mvc.Data.Configuration;
@@ -11,6 +12,6 @@ namespace SimpleOidcOauth.SampleClients.Mvc.Controllers
 		[Authorize]
 		public IActionResult Secret() => View();
 
-		public IActionResult Logout() => SignOut(OpenIdConnectConfigs.AuthenticationSchemeName);
+		public IActionResult Logout() => SignOut(CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectConfigs.AuthenticationSchemeName);
 	}
 }
