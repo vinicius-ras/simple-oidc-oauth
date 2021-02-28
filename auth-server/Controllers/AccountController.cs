@@ -1,3 +1,4 @@
+using AutoMapper;
 using IdentityModel;
 using IdentityServer4.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -9,11 +10,13 @@ using Microsoft.Extensions.Options;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.Security;
+using SimpleOidcOauth.Data.Serialization;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace SimpleOidcOauth.Controllers
@@ -78,6 +81,8 @@ namespace SimpleOidcOauth.Controllers
 		private readonly IIdentityServerInteractionService _identServerInteractionService;
 		/// <summary>Container-injected instance for the <see cref="IEmailService" /> service.</summary>
 		private readonly IEmailService _emailService;
+		/// <summary>Container-injected instance for the <see cref="IMapper" /> service.</summary>
+		private readonly IMapper _mapper;
 
 
 
@@ -91,13 +96,15 @@ namespace SimpleOidcOauth.Controllers
 		/// <param name="userManager">Container-injected instance for the <see cref="UserManager{TUser}" /> service.</param>
 		/// <param name="identServerInteractionService">Container-injected instance for the <see cref="IIdentityServerInteractionService" /> service.</param>
 		/// <param name="emailService">Container-injected instance for the <see cref="IEmailService" /> service.</param>
+		/// <param name="mapper">Container-injected instance for the <see cref="IMapper" /> service.</param>
 		public AccountController(
 			IOptions<AppConfigs> appConfigs,
 			ILogger<AccountController> logger,
 			SignInManager<ApplicationUser> signInManager,
 			UserManager<ApplicationUser> userManager,
 			IIdentityServerInteractionService identServerInteractionService,
-			IEmailService emailService)
+			IEmailService emailService,
+			IMapper mapper)
 		{
 			_appConfigs = appConfigs.Value;
 			_logger = logger;
@@ -105,6 +112,7 @@ namespace SimpleOidcOauth.Controllers
 			_userManager = userManager;
 			_identServerInteractionService = identServerInteractionService;
 			_emailService = emailService;
+			_mapper = mapper;
 		}
 
 
@@ -142,12 +150,16 @@ namespace SimpleOidcOauth.Controllers
 
 			// Try to sign the user in
 			var signInResult = await _signInManager.PasswordSignInAsync(user, inputData.Password, false, false);
+			IEnumerable<Claim> userClaims = signInResult.Succeeded
+				? await _userManager.GetClaimsAsync(user)
+				: Enumerable.Empty<Claim>();
 			return signInResult.Succeeded
 				? Ok(new LoginOutputModel {
 					Id = user.Id,
 					Name = user.UserName,
 					Email = user.Email,
 					ReturnUrl = inputData.ReturnUrl,
+					Claims = userClaims.Select(claim => _mapper.Map<SerializableClaim>(claim)),
 				})
 				: (IActionResult) Unauthorized();
 		}
@@ -215,6 +227,7 @@ namespace SimpleOidcOauth.Controllers
 				Id = userIdentity.Claims.First(c => c.Type == JwtClaimTypes.Subject).Value,
 				Name = userIdentity.Claims.First(c => c.Type == JwtClaimTypes.Name).Value,
 				Email = userIdentity.Claims.First(c => c.Type == JwtClaimTypes.Email).Value,
+				Claims = userIdentity.Claims.Select(c => _mapper.Map<SerializableClaim>(c)),
 			};
 			return Ok(result);
 		}

@@ -9,6 +9,17 @@ export type UserInfoData = {
 	name: string;
 	/** The email of the logged-in user. */
 	email: string;
+	/** A list of claims the user has. */
+	claims: SerializableClaim[];
+}
+
+
+/** Represents a claim, in its serializable format. */
+export type SerializableClaim = {
+	/** The type of claim represented by this object. */
+	type: string;
+	/** The value of the claim. */
+	value: string;
 }
 
 

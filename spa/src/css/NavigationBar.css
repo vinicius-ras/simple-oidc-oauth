@@ -1,0 +1,7 @@
+.component-NavigationBar header div {
+	@apply text-base;
+}
+
+.component-NavigationBar div.subtext {
+	@apply text-gray-300 text-xs leading-none font-bold;
+}
