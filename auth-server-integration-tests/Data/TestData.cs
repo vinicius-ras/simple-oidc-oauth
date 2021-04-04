@@ -155,6 +155,8 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 			AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
 			ClientSecrets = { new Secret(PlainTextPasswordClientResourceOwnerPasswordFlow.Sha256()) },
 			AllowedScopes = { ScopeApiResourceUserManagement },
+			RedirectUris = { "https://some-random-domain-07f1f04f60044334967205b97f01ac40.com/random-post-login-redirect-path" },
+			PostLogoutRedirectUris = { "https://some-random-domain-07f1f04f60044334967205b97f01ac40.com/random-post-logout-redirect-path" },
 		};
 
 

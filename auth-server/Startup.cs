@@ -1,5 +1,6 @@
 ﻿using IdentityServer4.Services;
 using MailKit.Net.Smtp;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -12,6 +13,8 @@ using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.IdentityServer;
+using SimpleOidcOauth.Security.Authorization.Handlers;
+using SimpleOidcOauth.Security.Authorization.Requirements;
 using SimpleOidcOauth.Services;
 using System;
 using System.Net;
@@ -164,7 +167,43 @@ namespace SimpleOidcOauth
             services.AddAutoMapper(typeof(AutoMapperProfile));
 
 
-            // Configure custom services
+            // Configure authorization handlers and policies
+            services.AddSingleton<IAuthorizationHandler, AtLeastOneClaimAuthorizationHandler>();
+
+            services.AddAuthorization(opts => {
+                // Client Application policies
+                opts.AddPolicy(AuthorizationPolicyNames.ClientsView, policyBuilder => {
+                    policyBuilder.RequireAuthenticatedUser();
+                    policyBuilder.AddRequirements(new AtLeastOneClaimAuthorizationRequirement(AuthServerClaimTypes.CanViewClients, AuthServerClaimTypes.CanViewAndEditClients));
+                });
+                opts.AddPolicy(AuthorizationPolicyNames.ClientsViewAndEdit, policyBuilder => {
+                    policyBuilder.RequireAuthenticatedUser();
+                    policyBuilder.RequireClaim(AuthServerClaimTypes.CanViewAndEditClients);
+                });
+
+                // Registered Users policies
+                opts.AddPolicy(AuthorizationPolicyNames.UsersView, policyBuilder => {
+                    policyBuilder.RequireAuthenticatedUser();
+                    policyBuilder.AddRequirements(new AtLeastOneClaimAuthorizationRequirement(AuthServerClaimTypes.CanViewUsers, AuthServerClaimTypes.CanViewAndEditUsers));
+                });
+                opts.AddPolicy(AuthorizationPolicyNames.UsersViewAndEdit, policyBuilder => {
+                    policyBuilder.RequireAuthenticatedUser();
+                    policyBuilder.RequireClaim(AuthServerClaimTypes.CanViewAndEditUsers);
+                });
+
+                // Registered Resources (API Scopes, API Resources and Identity Resources) policies
+                opts.AddPolicy(AuthorizationPolicyNames.ResourcesView, policyBuilder => {
+                    policyBuilder.RequireAuthenticatedUser();
+                    policyBuilder.AddRequirements(new AtLeastOneClaimAuthorizationRequirement(AuthServerClaimTypes.CanViewResources, AuthServerClaimTypes.CanViewAndEditResources));
+                });
+                opts.AddPolicy(AuthorizationPolicyNames.ResourcesViewAndEdit, policyBuilder => {
+                    policyBuilder.RequireAuthenticatedUser();
+                    policyBuilder.RequireClaim(AuthServerClaimTypes.CanViewAndEditResources);
+                });
+            });
+
+
+            // Configure other custom services
             services.AddTransient<IReturnUrlParser, CustomReturnUrlParser>();
             services.AddTransient<IEmbeddedResourcesService, EmbeddedResourcesService>();
 

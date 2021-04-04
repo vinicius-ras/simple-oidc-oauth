@@ -1,3 +1,6 @@
+using IdentityModel;
+using IdentityServer4;
+
 namespace SimpleOidcOauth.Data.Configuration
 {
 	/// <summary>
@@ -33,6 +36,21 @@ namespace SimpleOidcOauth.Data.Configuration
 		///     report, according to RFC 7807 ("Problem Details for HTTP APIs").
 		/// </summary>
 		public const string MediaTypeApplicationProblemJson = "application/problem+json";
+		/// <summary>A set of scheme names which are accepted by the IdP in Post-Login/Logout Redirect URLs and CORs Origins for the registered Client Applications.</summary>
+		public static readonly string[] AcceptableClientRedirectionUrlSchemes = { "http", "https" };
+		/// <summary>The set of Grant Types supported for registering the clients with this IdP.</summary>
+		public static readonly string[] AllowedClientRegistrationGrantTypes =
+		{
+			OidcConstants.GrantTypes.AuthorizationCode,
+			OidcConstants.GrantTypes.ClientCredentials,
+			OidcConstants.GrantTypes.Implicit,
+			OidcConstants.GrantTypes.Password,
+			OidcConstants.GrantTypes.RefreshToken
+		};
+		/// <summary>The set of Client Secret types that are currently supported by the IdP.</summary>
+		public static readonly string[] SupportedClientSecretTypes = {
+			IdentityServerConstants.SecretTypes.SharedSecret,
+		};
 
 
 

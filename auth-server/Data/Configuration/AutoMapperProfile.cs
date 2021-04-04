@@ -19,6 +19,7 @@ namespace SimpleOidcOauth.Data.Configuration
 			CreateMap<Claim, SerializableClaim>()
 				.ReverseMap();
 			CreateMap<Secret, SerializableSecret>()
+				.ForMember(serializableSecret => serializableSecret.IsValueHashed, opts => opts.Ignore())
 				.ReverseMap();
 			CreateMap<Client, SerializableClient>()
 				.ReverseMap();

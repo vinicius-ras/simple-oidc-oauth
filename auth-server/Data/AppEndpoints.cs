@@ -31,6 +31,30 @@ namespace SimpleOidcOauth.Data
 
 
 
+		#region ENDPOINTS: ClientsManagementController
+		/// <summary>The base URI for the <see cref="ClientsManagementController"/> action endpoints.</summary>
+		public const string ClientsManagementControllerUri = ApiUriPrefix + "/management/clients";
+		/// <summary>URI for the <see cref="ClientsManagementController.GetAllClients"/> action endpoint.</summary>
+		public const string GetAllRegisteredClients = ClientsManagementControllerUri;
+		/// <summary>URI for the <see cref="ClientsManagementController.GetClient(string)"/> action endpoint.</summary>
+		public const string GetRegisteredClient = ClientsManagementControllerUri + "/{" + ClientIdParameterName + "}";
+		/// <summary>URI for the <see cref="ClientsManagementController.GetAllowedClientRegistrationGrantTypes"/> action endpoint.</summary>
+		public const string GetAllowedClientRegistrationGrantTypes = ClientsManagementControllerUri + "/allowed-grant-types";
+		/// <summary>URI for the <see cref="ClientsManagementController.GetAvailableResources"/> action endpoint.</summary>
+		public const string GetAvailableClientRegistrationResources = ClientsManagementControllerUri + "/available-resources";
+		/// <summary>URI for the <see cref="ClientsManagementController.CreateNewClientApplication(Serialization.SerializableClient)"/> action endpoint.</summary>
+		public const string CreateNewClientApplication = ClientsManagementControllerUri;
+		/// <summary>URI for the <see cref="ClientsManagementController.UpdateClientApplication(string, Serialization.SerializableClient)"/> action endpoint.</summary>
+		public const string UpdateClientApplication = ClientsManagementControllerUri + "/{" + ClientIdParameterName + "}";
+
+		/// <summary>The name of the URI parameter used for specifying Client IDs in the <see cref="ClientsManagementController"/> endpoints.</summary>
+		public const string ClientIdParameterName = "clientID";
+		#endregion
+
+
+
+
+
 		#region ENDPOINTS: IdentityServerErrorsController
 		/// <summary>The base URI for the <see cref="IdentityServerErrorsController"/> action endpoints.</summary>
 		public const string IdentityServerErrorsControllerUri = ApiUriPrefix + "/idp-error";
