@@ -6,7 +6,7 @@ namespace SimpleOidcOauth.Data.Serialization
 	/// <summary>A serializable version of a <see cref="Resource"/> object.</summary>
 	public class SerializableResource
 	{
-		/// <summary>Indicates if this resource is enabled. Defaults to <c>true</c>.</summary>
+		/// <summary>Indicates if this resource is enabled.</summary>
 		public bool Enabled { get; set; }
 		/// <summary>The unique name of the resource.</summary>
 		public string Name { get; set; }
@@ -14,10 +14,7 @@ namespace SimpleOidcOauth.Data.Serialization
 		public string DisplayName { get; set; }
 		/// <summary>Description of the resource.</summary>
 		public string Description { get; set; }
-		/// <summary>
-		///     Specifies whether this scope is shown in the discovery document.
-		///     Defaults to <c>true</c>.
-		/// </summary>
+		/// <summary>Specifies whether this scope is shown in the discovery document.</summary>
 		public bool ShowInDiscoveryDocument { get; set; }
 		/// <summary>
 		///     List of associated user claims that should be included when this resource is

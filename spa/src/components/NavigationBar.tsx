@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import AuthServerClaimTypes from '../data/AuthServerClaimTypes';
+import SerializableClaim from '../data/SerializableClaim';
 import { AppState } from '../redux/AppStoreCreation';
-import { SerializableClaim } from '../redux/slices/userInfoSlice';
 import ButtonLinkWithIcon, { ButtonLinkWithIconProps } from './ButtonLinkWithIcon';
 
 /** Props for the {@link NavigationBar} functional component. */
@@ -20,9 +20,9 @@ function NavigationBar(props: NavigationBarProps) {
 	const [isExpanded, setExpanded] = useState(false);
 
 	// Initialize data which will be used to render the navigation bar
-	const clientManagementClaims = [AuthServerClaimTypes.CanViewClients, AuthServerClaimTypes.CanEditClients],
-		userManagementClaims = [AuthServerClaimTypes.CanViewUsers, AuthServerClaimTypes.CanEditUsers],
-		resourceManagementClaims = [AuthServerClaimTypes.CanViewResources, AuthServerClaimTypes.CanEditResources];
+	const clientManagementClaims = [AuthServerClaimTypes.CanViewClients, AuthServerClaimTypes.CanViewAndEditUsers],
+		userManagementClaims = [AuthServerClaimTypes.CanViewUsers, AuthServerClaimTypes.CanViewAndEditUsers],
+		resourceManagementClaims = [AuthServerClaimTypes.CanViewResources, AuthServerClaimTypes.CanViewAndEditResources];
 
 	const userHasAnyClaims = (userClaims: (SerializableClaim[] | undefined), targetClaims: AuthServerClaimTypes[]) => !!(userClaims ?? []).find(claim => targetClaims.includes(claim.type as AuthServerClaimTypes));
 	const hasAnyClientManagementClaims = userHasAnyClaims(userInfo?.claims, clientManagementClaims),
@@ -40,11 +40,11 @@ function NavigationBar(props: NavigationBarProps) {
 		);
 	};
 	return (
-		<nav className="component-NavigationBar bg-blue-600 flex text-white h-12">
+		<nav className="component-NavigationBar bg-blue-600 flex text-white h-12 shadow-lg">
 			{(() => {
 				if (userInfo)
 					return (
-						<button className="w-8 h-8 self-center" onClick={() => setExpanded(expanded => !expanded)} title="Menu">
+						<button className="w-8 h-8 self-center focus:outline-none" onClick={() => setExpanded(expanded => !expanded)} title="Menu">
 							<FontAwesomeIcon icon={faBars} />
 						</button>
 					)
@@ -54,14 +54,14 @@ function NavigationBar(props: NavigationBarProps) {
 				<div>OAuth 2.0 + OpenID Connect Provider</div>
 				<div className="subtext">By Vinicius R. A. Silva</div>
 			</Link>
-			<div className="absolute mt-12 bg-blue-600 rounded-b-xl pb-1">
+			<div className="absolute mt-12 bg-blue-600 rounded-b-xl pb-1 shadow-2xl">
 				{
 					userInfo && isExpanded
 					?
 						<React.Fragment>
-							{renderNavigationItem(hasAnyUserManagementClaims, faUsers, "Users", "/users")}
-							{renderNavigationItem(hasAnyClientManagementClaims, faBoxes, "Clients", "/clients")}
-							{renderNavigationItem(hasAnyResourceManagementClaims, faCoins, "Resources", "/resources")}
+							{renderNavigationItem(hasAnyUserManagementClaims, faUsers, "Users", "/management/users")}
+							{renderNavigationItem(hasAnyClientManagementClaims, faBoxes, "Clients", "/management/clients")}
+							{renderNavigationItem(hasAnyResourceManagementClaims, faCoins, "Resources", "/management/resources")}
 							<hr />
 							{renderNavigationItem(true, faUser, <React.Fragment><b>Current user:</b> {userInfo.name}</React.Fragment>, "/user-profile")}
 							{renderNavigationItem(true, faSignOutAlt, "Log out", "/logout")}

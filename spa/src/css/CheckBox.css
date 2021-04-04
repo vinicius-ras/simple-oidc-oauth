@@ -1,0 +1,15 @@
+.component-CheckBox {
+	@apply flex items-center cursor-pointer;
+}
+
+.component-CheckBox input[type="checkbox"] {
+	@apply hidden;
+}
+
+.component-CheckBox input[type="checkbox"] ~ .component-CheckBox__checkmark {
+	@apply w-6 h-6 rounded-md flex items-center justify-center text-red-800 bg-red-400;
+}
+
+.component-CheckBox input[type="checkbox"]:checked ~ .component-CheckBox__checkmark {
+	@apply text-green-800 bg-green-400;
+}

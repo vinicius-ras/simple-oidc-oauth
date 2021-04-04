@@ -1,4 +1,5 @@
 import { Action, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import SerializableClaim from "../../data/SerializableClaim";
 
 
 /** The format of the data that is returned to this application once the user is logged in. */
@@ -11,15 +12,6 @@ export type UserInfoData = {
 	email: string;
 	/** A list of claims the user has. */
 	claims: SerializableClaim[];
-}
-
-
-/** Represents a claim, in its serializable format. */
-export type SerializableClaim = {
-	/** The type of claim represented by this object. */
-	type: string;
-	/** The value of the claim. */
-	value: string;
 }
 
 

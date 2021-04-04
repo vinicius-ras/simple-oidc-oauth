@@ -51,16 +51,13 @@ namespace SimpleOidcOauth.Data.Serialization
 		[MinLength(1)]
 		[AbsoluteUrlCollection]
 		public IEnumerable<string> RedirectUris { get; set; }
-		/// <summary>
-		///     If set to false, no client secret is needed to request tokens at the token endpoint
-		///     (defaults to true)
-		/// </summary>
+		/// <summary>If set to false, no client secret is needed to request tokens at the token endpoint.</summary>
 		public bool RequireClientSecret { get; set; }
-		/// <summary>Specifies whether a consent screen is required (defaults to <c>false</c>).</summary>
+		/// <summary>Specifies whether a consent screen is required.</summary>
 		public bool RequireConsent { get; set; }
 		/// <summary>
 		///     Specifies whether a proof key is required for authorization code based token
-		///     requests (defaults to true).
+		///     requests.
 		/// </summary>
 		public bool RequirePkce { get; set; }
 

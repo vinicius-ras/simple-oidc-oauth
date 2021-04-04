@@ -5,3 +5,7 @@
 .component-NavigationBar div.subtext {
 	@apply text-gray-300 text-xs leading-none font-bold;
 }
+
+.component-NavigationBar > div.absolute {
+	@apply z-50;
+}
