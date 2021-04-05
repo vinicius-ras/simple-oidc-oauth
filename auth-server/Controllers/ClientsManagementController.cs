@@ -81,13 +81,14 @@ namespace SimpleOidcOauth.Controllers
 		public async Task<IEnumerable<SerializableClient>> GetAllClients()
 		{
 			var clients = await _configurationDbContext.Clients
+				.AsNoTracking()
+				.AsSplitQuery()
 				.Include(client => client.AllowedCorsOrigins)
 				.Include(client => client.AllowedGrantTypes)
 				.Include(client => client.AllowedScopes)
 				.Include(client => client.ClientSecrets)
 				.Include(client => client.PostLogoutRedirectUris)
 				.Include(client => client.RedirectUris)
-				.AsSplitQuery()
 				.Select(client => _mapper.Map<SerializableClient>(client.ToModel()))
 				.ToListAsync();
 			return clients;
@@ -133,17 +134,20 @@ namespace SimpleOidcOauth.Controllers
 		public async Task<ActionResult<SerializableClient>> GetClient([FromRoute(Name = AppEndpoints.ClientIdParameterName)] string clientId)
 		{
 			var clientEntity = await _configurationDbContext.Clients
+				.AsNoTracking()
+				.AsSplitQuery()
 				.Include(client => client.AllowedCorsOrigins)
 				.Include(client => client.AllowedGrantTypes)
 				.Include(client => client.AllowedScopes)
 				.Include(client => client.ClientSecrets)
 				.Include(client => client.PostLogoutRedirectUris)
 				.Include(client => client.RedirectUris)
-				.AsSplitQuery()
 				.SingleOrDefaultAsync(client => client.ClientId == clientId);
 			if (clientEntity == null)
 				return NotFound();
-			return _mapper.Map<SerializableClient>(clientEntity.ToModel());
+
+			var serializableClient = _mapper.Map<SerializableClient>(clientEntity.ToModel());
+			return serializableClient;
 		}
 
 
@@ -349,32 +353,43 @@ namespace SimpleOidcOauth.Controllers
 
 			// Try to find the client's data
 			var clientInDatabase = await _configurationDbContext.Clients
-				.Include(client => client.AllowedScopes)
+				.Include(client => client.AllowedCorsOrigins)
 				.Include(client => client.AllowedGrantTypes)
+				.Include(client => client.AllowedScopes)
 				.Include(client => client.ClientSecrets)
+				.Include(client => client.PostLogoutRedirectUris)
+				.Include(client => client.RedirectUris)
+				.AsSplitQuery()
 				.FirstOrDefaultAsync(c => c.ClientId == clientId);
 			if (clientInDatabase == null)
 				return NotFound();
 
+			// Hash any unhashed client secret
+			foreach (var secret in clientData.ClientSecrets)
+			{
+				if (secret.IsValueHashed == false)
+					secret.Value = secret.Value.Sha256();
+			}
+
+			// Update values and navigation properties on the found client
 			var updatedEntityData = _mapper.Map<Client>(clientData)
 				.ToEntity();
 			updatedEntityData.Id = clientInDatabase.Id;
 
-
-			// Update values and navigation properties on the found client
 			var entry = _configurationDbContext.Entry(clientInDatabase);
 			entry.CurrentValues.SetValues(updatedEntityData);
 
-			clientInDatabase.AllowedScopes = updatedEntityData.AllowedScopes;
+			clientInDatabase.AllowedCorsOrigins = updatedEntityData.AllowedCorsOrigins;
 			clientInDatabase.AllowedGrantTypes = updatedEntityData.AllowedGrantTypes;
+			clientInDatabase.AllowedScopes = updatedEntityData.AllowedScopes;
 			clientInDatabase.ClientSecrets = updatedEntityData.ClientSecrets;
-
+			clientInDatabase.PostLogoutRedirectUris = updatedEntityData.PostLogoutRedirectUris;
+			clientInDatabase.RedirectUris = updatedEntityData.RedirectUris;
 
 			// Delete old versions of remaining related entities
 			var oldCorsOrigins = _configurationDbContext.ClientCorsOrigins
 				.Where(origin => origin.ClientId == clientInDatabase.Id);
 			_configurationDbContext.ClientCorsOrigins.RemoveRange(oldCorsOrigins);
-
 
 			// Save changes to the database
 			await _configurationDbContext.SaveChangesAsync();

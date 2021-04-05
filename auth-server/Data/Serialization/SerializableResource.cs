@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using IdentityServer4.Models;
 
 namespace SimpleOidcOauth.Data.Serialization
@@ -9,6 +10,7 @@ namespace SimpleOidcOauth.Data.Serialization
 		/// <summary>Indicates if this resource is enabled.</summary>
 		public bool Enabled { get; set; }
 		/// <summary>The unique name of the resource.</summary>
+		[Required]
 		public string Name { get; set; }
 		/// <summary>Display name of the resource.</summary>
 		public string DisplayName { get; set; }

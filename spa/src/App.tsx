@@ -45,7 +45,7 @@ function App() {
 								</Switch>
 							</RequireAppInitialization>
 						</main>
-						<footer></footer>
+						<footer className="mb-80" />
 					</div>
 				</div>
 			</Router>

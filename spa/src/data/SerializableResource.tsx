@@ -3,7 +3,7 @@ type SerializableResource = {
 	/** Indicates if this resource is enabled. */
 	enabled?: boolean
 	/** The unique name of the resource. */
-	name?: string;
+	name: string;
 	/** Display name of the resource. */
 	displayName?: string;
 	/** Description of the resource. */

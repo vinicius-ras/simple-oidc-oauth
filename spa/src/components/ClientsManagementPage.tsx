@@ -2,16 +2,20 @@ import { faSave, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Lodash from 'lodash';
 import React, { useEffect, useState } from 'react';
-import Select, { OptionsType, OptionTypeBase } from 'react-select';
+import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { GrantTypes } from '../data/IdentityModel/OidcConstants';
 import IdentityServerConstants from '../data/IdentityServerConstants';
 import SerializableClient from '../data/SerializableClient';
 import SerializableResource from '../data/SerializableResource';
+import SerializableSecret from '../data/SerializableSecret';
 import AppConfigurationService from '../services/AppConfigurationService';
 import AxiosService from '../services/AxiosService';
+import { AlertColor } from './AlertBox';
 import ButtonLink from './ButtonLink';
 import CheckBox from './CheckBox';
+import ErrorAlert from './ErrorAlert';
+import { ErrorDisplayMode } from './ErrorText';
 import InputElement from './InputElement';
 import WorkerButtonLinkWithIcon from './WorkerButtonLinkWithIcon';
 
@@ -25,6 +29,25 @@ const GrantTypeFriendlyNames = {
 };
 
 
+/** An object describing an available Grant Type that the IdP has reported to our application. */
+type GrantTypeDescriptor = {
+	/** The actual string representation of the Grant Type, used in communications with the IdP. */
+	grantType: string;
+	/** A friendly name for the Grant Type. This is displayed to the user, and is obtained by
+	 * using the actual grant type (@see grantType) value as a key in a friendly names map (@see GrantTypeFriendlyNames). */
+	friendlyName: string;
+};
+
+
+/** An object describing a Post-Login/Logout Redirect Url. */
+type RedirectUrlDescriptor = {
+	/** An URL which is the redirection target for the Client Application after login/logout in the IdP server. */
+	url: string;
+	/** An optional label to be used as the URL's entry text in select boxes. */
+	label?: string;
+};
+
+
 /** Props for the {@link ClientsManagementPage} functional component. */
 export interface ClientsManagementPageProps
 {
@@ -33,50 +56,30 @@ export interface ClientsManagementPageProps
 
 /** The page which allows registering, updating and managing IdP Client Applications. */
 function ClientsManagementPage(props: ClientsManagementPageProps) {
-	const [availableClients, setAvailableClients] = useState<SerializableClient[]|null>(null);
-	const [selectedClientEntry, setSelectedClientEntry] = useState<OptionTypeBase|null>(null);
-	const [editedClientData, setEditedClientData] = useState<SerializableClient|null>({});
+	const [availableClients, setAvailableClients] = useState<SerializableClient[]>([]);
+	const [selectedClientEntry, setSelectedClientEntry] = useState<SerializableClient|null>(null);
 
-	const [availableGrantTypes, setAvailableGrantTypes] = useState<ReadonlyArray<OptionTypeBase>|null>(null);
-	const [availableResources, setAvailableResources] = useState<ReadonlyArray<OptionTypeBase>|null>(null);
+	const [allGrantTypeDescriptors, setAllGrantTypeDescriptors] = useState<ReadonlyArray<GrantTypeDescriptor>>([]);
+	const [availableResources, setAvailableResources] = useState<ReadonlyArray<SerializableResource>>([]);
 	const [isSubmittingClientData, setIsSubmittingClientData] = useState(false);
-
-	/** Updates the currently selected client, displaying its data in the page's form for edition.
-	 * @param selectedClient The option representing the selected client. */
-	function updateSelectedClientDataForm(selectedClient: OptionTypeBase|null) {
-		// Update displayed data
-		setSelectedClientEntry(selectedClient);
-		if (!selectedClient) {
-			setEditedClientData(null);
-			return;
-		}
-
-		const serializableClient = (availableClients ?? []).find(client => client.clientId === selectedClient.value);
-		if (!serializableClient) {
-			setEditedClientData(null);
-			return;
-		}
-
-		setEditedClientData(serializableClient);
-	};
 
 
 	/** Called when the CORS Origins list is changed.
 	 * @param corsSelectEntries The entries of the select component which holds the CORS Origins. */
-	function onCorsOriginsChange(corsSelectEntries: OptionsType<OptionTypeBase>) {
+	function onCorsOriginsChange(corsSelectEntries: RedirectUrlDescriptor[]) {
 		// Only accept inputs which are URLs, while mapping them to their respective Origin components only (stripping URL paths, query strings, fragments, etc)
 		const validCorsEntries = corsSelectEntries
-			.filter(entry => {
+			.filter(urlDescriptorEntry => {
 				try {
-					return !!(new URL(entry.value).origin);
+					return !!(new URL(urlDescriptorEntry.url).origin);
 				} catch (error) {
 					return false;
 				}
 			})
-			.map(entry => new URL(entry.value).origin);
+			.map(urlDescriptorEntry => new URL(urlDescriptorEntry.url).origin);
 
 			const uniqueEntries = Lodash.uniq(validCorsEntries);
-			setEditedClientData(curData => ({...curData, allowedCorsOrigins: uniqueEntries}));
+			setSelectedClientEntry(curData => ({...curData, allowedCorsOrigins: uniqueEntries}));
 	}
 
 
@@ -85,25 +88,42 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 	 * @param clientUrisProperty
 	 *     The name of the property in the {@link SerializableClient} type which holds
 	 *     the Post-Login/Post-Logout Redirect URIs. */
-	function onRedirectUrisChange(uriEntries: OptionsType<OptionTypeBase>, clientUrisProperty: keyof Pick<SerializableClient, "redirectUris" | "postLogoutRedirectUris">) {
+	function onRedirectUrisChange(uriEntries: RedirectUrlDescriptor[], clientUrisProperty: keyof Pick<SerializableClient, "redirectUris" | "postLogoutRedirectUris">) {
 
 		// Only accept inputs which are URLs, discarding the query string and fragment parts.
 		// Also, there must be only distinct elements in the list of URIs.
 		const validRedirectUriEntries = uriEntries
-			.filter(entry => {
+			.filter(urlDescriptorEntry => {
 				try {
-					return !!(new URL(entry.value));
+					return !!(new URL(urlDescriptorEntry.url));
 				} catch (error) {
 					return false;
 				}
 			})
-			.map(entry => {
-				const targetUrl = new URL(entry.value);
+			.map(urlDescriptorEntry => {
+				const targetUrl = new URL(urlDescriptorEntry.url);
 				return `${targetUrl.origin}${targetUrl.pathname}`;
 			});
 
 		const uniqueEntries = Lodash.uniq(validRedirectUriEntries);
-		setEditedClientData(curData => ({...curData, [clientUrisProperty]: uniqueEntries}));
+		setSelectedClientEntry(curData => ({...curData, [clientUrisProperty]: uniqueEntries}));
+	}
+
+
+	/** Called when a Client Secret is added/removed from the list.
+	 * @param secretEntries The entries of the select component which holds the Client Secrets. */
+	function onClientSecretChange(secretEntries: SerializableSecret[]) {
+		// Unhashed secrets will have their descriptions cleared, preventing the "description" field in the database
+		// from containing the plaintext password typed for the secret
+		secretEntries.forEach(secret => {
+			if (secret.isValueHashed === false)
+				delete secret.description;
+		});
+
+		setSelectedClientEntry(curData => ({
+			...curData,
+			clientSecrets: [...secretEntries]
+		}));
 	}
 
 
@@ -114,8 +134,14 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 
 		setIsSubmittingClientData(true);
 		try {
-			await AxiosService.getInstance()
-				.post<SerializableClient>(AppConfigurationService.Endpoints.CreateNewClientApplication, editedClientData);
+			// Decide which endpoint to call: either PUT (update existing client) or POST (create new client)
+			const response = (selectedClientEntry?.clientId)
+				? await AxiosService.getInstance()
+					.put<SerializableClient>(AppConfigurationService.Endpoints.UpdateClientApplication(selectedClientEntry.clientId), selectedClientEntry)
+				: await AxiosService.getInstance()
+					.post<SerializableClient>(AppConfigurationService.Endpoints.CreateNewClientApplication, selectedClientEntry);
+
+			setSelectedClientEntry(response.data);
 		} catch (error) {
 			console.error("Failed to save client's data: ", error);
 		}
@@ -142,13 +168,14 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 			try {
 				const response = await AxiosService.getInstance()
 					.get<string[]>(AppConfigurationService.Endpoints.GetAllowedClientRegistrationGrantTypes);
-				setAvailableGrantTypes(response.data.map(grantTypeName => ({
-					label: GrantTypeFriendlyNames[grantTypeName as keyof typeof GrantTypeFriendlyNames] ?? grantTypeName,
-					value: grantTypeName
-				})));
+				const receivedGrantTypes: ReadonlyArray<GrantTypeDescriptor> = response.data.map(receivedGrantType => ({
+					grantType: receivedGrantType,
+					friendlyName: GrantTypeFriendlyNames[receivedGrantType as keyof typeof GrantTypeFriendlyNames] ?? receivedGrantType
+				}));
+				setAllGrantTypeDescriptors(receivedGrantTypes);
 			} catch (error) {
 				console.error(`Failed to retrieve available Grant Types`, error);
-				setAvailableGrantTypes([]);
+				setAllGrantTypeDescriptors([]);
 			}
 		}
 
@@ -158,10 +185,7 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 			try {
 				const response = await AxiosService.getInstance()
 					.get<SerializableResource[]>(AppConfigurationService.Endpoints.GetAvailableClientRegistrationResources);
-				setAvailableResources(response.data.map(resource => ({
-					label: resource.displayName ?? resource.name,
-					value: resource.name,
-				})));
+				setAvailableResources(response.data);
 			} catch (error) {
 				console.error(`Failed to retrieve available Resources`, error);
 				setAvailableResources([]);
@@ -181,32 +205,15 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 		if (!availableClients?.[0])
 			setSelectedClientEntry(null);
 		else
-			setSelectedClientEntry( {value: availableClients[0].clientId, label: availableClients[0].clientName });
+			setSelectedClientEntry({ ...availableClients[0] });
 	}, [availableClients]);
-
-
-	// Effect: when the currently selected Client entry changes, update the form with the data that is being edited
-	useEffect(() => {
-		// Try to find the selected client's data
-		if (!availableClients || !selectedClientEntry) {
-			setEditedClientData(null);
-			return;
-		}
-		const foundClient = availableClients.find(client => client.clientId === selectedClientEntry.value);
-		setEditedClientData(foundClient ?? null);
-	}, [availableClients, selectedClientEntry]);
 
 
 
 	// Render the component
-	const optionsToDisplay = (availableClients ?? []).map(serializableClient => ({
-		value: serializableClient.clientId,
-		label: serializableClient.clientName
-	}));
-
-	const allPostLoginRedirectUris = editedClientData?.redirectUris?.map(uri => ({label: uri, value: uri})) ?? [],
-		allPostLogoutRedirectUris = editedClientData?.postLogoutRedirectUris?.map(uri => ({label: uri, value: uri})) ?? [],
-		allCorsOrigins = editedClientData?.allowedCorsOrigins?.map(corsOrigin => ({label: corsOrigin, value: corsOrigin})) ?? [];
+	const allPostLoginRedirectUris = selectedClientEntry?.redirectUris?.map(url => ({url} as RedirectUrlDescriptor)) ?? [],
+		allPostLogoutRedirectUris = selectedClientEntry?.postLogoutRedirectUris?.map(url => ({url} as RedirectUrlDescriptor)) ?? [],
+		allCorsOrigins = selectedClientEntry?.allowedCorsOrigins?.map(url => ({url} as RedirectUrlDescriptor)) ?? [];
 
 	const shouldDisableControls = (!availableClients || isSubmittingClientData);
 	return (
@@ -215,9 +222,11 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 				<h1 className="font-bold block w-full mb-2">Pick or create a client</h1>
 				<CreatableSelect
 					className="flex-grow"
-					options={optionsToDisplay}
+					options={availableClients}
+					getOptionValue={serializableClient => serializableClient.clientId ?? ""}
+					getOptionLabel={serializableClient => serializableClient.clientName ?? ""}
 					value={selectedClientEntry}
-					onChange={newValue => updateSelectedClientDataForm(newValue)}
+					onChange={serializableClient => setSelectedClientEntry(serializableClient ? ({...serializableClient}) : null)}
 					isDisabled={shouldDisableControls} />
 				<ButtonLink to="/" className="bg-red-600 ml-2" disabled={shouldDisableControls} title="Delete client application">
 					<FontAwesomeIcon icon={faTrash} />
@@ -225,134 +234,157 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 				</ButtonLink>
 			</section>
 			{
-				editedClientData
-				? (
-					<section className="mt-10">
-						{/* Basic options. */}
-						<h1 className="font-bold">Client configurations</h1>
+				selectedClientEntry
+					? (
+						<section className="mt-10">
+							{/* Basic options. */}
+							<h1 className="font-bold">Client configurations</h1>
 
-						<input type="hidden" value={editedClientData.clientId} />
-						<label className="block mt-2">
-							Name:
-							<InputElement className="outline-none" value={editedClientData.clientName} onChange={evt => setEditedClientData(curData => ({...curData, clientName: evt.target.value}))} disabled={shouldDisableControls} />
-						</label>
-						<label className="block mt-2">
-							Allowed OAuth/OIDC Grant Types:
-							<Select isMulti
-								onChange={selectedEntriesArray => setEditedClientData(curData => ({...curData, allowedGrantTypes: selectedEntriesArray.map(entry => entry.value)}))}
-								options={availableGrantTypes ?? []}
-								value={(availableGrantTypes ?? []).filter(grantTypeEntry => editedClientData.allowedGrantTypes?.includes(grantTypeEntry.value))}
-								isDisabled={shouldDisableControls} />
-						</label>
-						<label className="block mt-2">
-							Allowed scopes:
-							<Select isMulti
-								onChange={selectedEntriesArray => setEditedClientData(curData => ({...curData, allowedScopes: selectedEntriesArray.map(entry => entry.value)}))}
-								options={availableResources ?? []}
-								value={(availableResources ?? []).filter(resourceEntry => editedClientData.allowedScopes?.includes(resourceEntry.value))}
-								isDisabled={shouldDisableControls} />
-						</label>
-						<CheckBox
-							text="Requires users to explicitly consent access"
-							className="mt-2"
-							checked={editedClientData.requireConsent ?? false}
-							onChange={evt => setEditedClientData(curData => ({...curData, requireConsent: evt.target.checked}))}
-							disabled={shouldDisableControls} />
-
-
-
-						{/* Allowed Redirect URIs after login/logout. */}
-						<h1 className="font-bold mt-10">Post login/logout redirection URIs</h1>
-						<label className="block mt-2">
-							Allowed post-login redirect URIs:
-							<CreatableSelect isMulti
-								placeholder="Click to add a Redirect URI."
-								noOptionsMessage={() => "Type a Redirect URI to add it."}
-								formatCreateLabel={inputValue => `Click here or press ENTER/TAB to add this Redirect URI.`}
-								onChange={entryValues => onRedirectUrisChange(entryValues, "redirectUris")}
-								options={allPostLoginRedirectUris}
-								value={allPostLoginRedirectUris}
-								isDisabled={shouldDisableControls} />
-						</label>
-						<label className="block mt-2">
-							Allowed post-logout redirect URIs:
-							<CreatableSelect isMulti
-								placeholder="Click to add a Post-Logout Redirect URI."
-								noOptionsMessage={() => "Type a Post-Logout Redirect URI to add it."}
-								formatCreateLabel={inputValue => `Click here or press ENTER/TAB to add this Post-Logout Redirect URI.`}
-								onChange={entryValues => onRedirectUrisChange(entryValues, "postLogoutRedirectUris")}
-								options={allPostLogoutRedirectUris}
-								value={allPostLogoutRedirectUris}
-								isDisabled={shouldDisableControls} />
-						</label>
+							<input type="hidden" value={selectedClientEntry.clientId} />
+							<label className="block mt-2">
+								Name:
+								<InputElement name="ClientName" className="outline-none" value={selectedClientEntry.clientName} onChange={evt => setSelectedClientEntry(curData => ({ ...curData, clientName: evt.target.value }))} disabled={shouldDisableControls} />
+							</label>
+							<label className="block mt-2">
+								Allowed OAuth/OIDC Grant Types:
+								<ErrorAlert alertBox={{ color: AlertColor.ERROR }} errorText={{ displayMode: ErrorDisplayMode.ERROR_KEY, errorKey: "AllowedGrantTypes" }} />
+								<Select isMulti
+									options={allGrantTypeDescriptors}
+									getOptionValue={grantTypeDescriptor => grantTypeDescriptor.grantType}
+									getOptionLabel={grantTypeDescriptor => grantTypeDescriptor.friendlyName}
+									value={selectedClientEntry.allowedGrantTypes?.map(grantType => ({
+										grantType,
+										friendlyName: GrantTypeFriendlyNames[grantType as keyof typeof GrantTypeFriendlyNames] ?? grantType
+									} as GrantTypeDescriptor))}
+									onChange={selectedGrantTypeDescriptors => setSelectedClientEntry(curData => ({ ...curData, allowedGrantTypes: selectedGrantTypeDescriptors.map(idpGrantType => idpGrantType.grantType) }))}
+									isDisabled={shouldDisableControls} />
+							</label>
+							<label className="block mt-2">
+								Allowed scopes:
+								<ErrorAlert alertBox={{ color: AlertColor.ERROR }} errorText={{ displayMode: ErrorDisplayMode.ERROR_KEY, errorKey: "AllowedScopes" }} />
+								<Select isMulti
+									options={availableResources}
+									getOptionValue={resource => resource.name}
+									getOptionLabel={resource => resource.displayName ?? resource.name}
+									value={(availableResources).filter(resourceEntry => selectedClientEntry.allowedScopes?.includes(resourceEntry.name!))}
+									onChange={selectedEntriesArray => setSelectedClientEntry(curData => ({ ...curData, allowedScopes: [...selectedEntriesArray.map(resource => resource.name)] }))}
+									isDisabled={shouldDisableControls} />
+							</label>
+							<CheckBox
+								text="Requires users to explicitly consent access"
+								className="mt-2"
+								checked={selectedClientEntry.requireConsent ?? false}
+								onChange={evt => setSelectedClientEntry(curData => ({ ...curData, requireConsent: evt.target.checked }))}
+								disabled={shouldDisableControls} />
 
 
 
-						{/* Allowed Redirect URIs after login/logout. */}
-						<h1 className="font-bold mb-2 mt-10">Client secrets</h1>
-						<CheckBox
-							text="Require client app to be authenticated"
-							className="mt-2"
-							checked={editedClientData.requireClientSecret ?? false}
-							onChange={evt => setEditedClientData(curData => ({...curData, requireClientSecret: evt.target.checked}))}
-							disabled={shouldDisableControls} />
-						<label className="block mt-2">
-							Registered client secrets:
-							<CreatableSelect isMulti
-								placeholder="Click to add a Client App's Secret."
-								noOptionsMessage={() => "Type a Client App's Secret to add it."}
-								formatCreateLabel={inputValue => `Click here or press ENTER/TAB to add this Client App's Secret.`}
-								onChange={selectedEntriesArray => setEditedClientData(curData => ({
-									...curData,
-									clientSecrets: selectedEntriesArray.map(entry => ({
+							{/* Allowed Redirect URIs after login/logout. */}
+							<h1 className="font-bold mt-10">Post login/logout redirection URIs</h1>
+							<label className="block mt-2">
+								Allowed post-login redirect URIs:
+								<ErrorAlert alertBox={{ color: AlertColor.ERROR }} errorText={{ displayMode: ErrorDisplayMode.ERROR_KEY, errorKey: "RedirectUris" }} />
+								<CreatableSelect isMulti
+									placeholder="Click to add a Redirect URI."
+									noOptionsMessage={() => "Type a Redirect URI to add it."}
+									formatCreateLabel={() => `Click here or press ENTER/TAB to add this Redirect URI.`}
+									options={allPostLoginRedirectUris}
+									getOptionValue={urlDescriptor => urlDescriptor.url}
+									getOptionLabel={urlDescriptor => urlDescriptor.label ?? urlDescriptor.url}
+									getNewOptionData={(inputText, label) => ({url: inputText, label: label} as RedirectUrlDescriptor)}
+									value={allPostLoginRedirectUris}
+									onChange={entryValues => onRedirectUrisChange([...entryValues], "redirectUris")}
+									isDisabled={shouldDisableControls} />
+							</label>
+							<label className="block mt-2">
+								Allowed post-logout redirect URIs:
+								<ErrorAlert alertBox={{ color: AlertColor.ERROR }} errorText={{ displayMode: ErrorDisplayMode.ERROR_KEY, errorKey: "PostLogoutRedirectUris" }} />
+								<CreatableSelect isMulti
+									placeholder="Click to add a Post-Logout Redirect URI."
+									noOptionsMessage={() => "Type a Post-Logout Redirect URI to add it."}
+									formatCreateLabel={() => `Click here or press ENTER/TAB to add this Post-Logout Redirect URI.`}
+									options={allPostLogoutRedirectUris}
+									getOptionValue={urlDescriptor => urlDescriptor.url}
+									getOptionLabel={urlDescriptor => urlDescriptor.label ?? urlDescriptor.url}
+									getNewOptionData={(inputText, label) => ({url: inputText, label: label} as RedirectUrlDescriptor)}
+									value={allPostLogoutRedirectUris}
+									onChange={entryValues => onRedirectUrisChange([...entryValues], "postLogoutRedirectUris")}
+									isDisabled={shouldDisableControls} />
+							</label>
+
+
+
+							{/* Allowed Redirect URIs after login/logout. */}
+							<h1 className="font-bold mb-2 mt-10">Client secrets</h1>
+							<CheckBox
+								text="Require client app to be authenticated"
+								className="mt-2"
+								checked={selectedClientEntry.requireClientSecret ?? false}
+								onChange={evt => setSelectedClientEntry(curData => ({ ...curData, requireClientSecret: evt.target.checked }))}
+								disabled={shouldDisableControls} />
+							<label className="block mt-2">
+								Registered client secrets:
+								<ErrorAlert alertBox={{ color: AlertColor.ERROR }} errorText={{ displayMode: ErrorDisplayMode.ERROR_KEY, errorKey: "ClientSecrets" }} />
+								<CreatableSelect isMulti
+									placeholder="Click to add a Client App's Secret."
+									noOptionsMessage={() => "Type a Client App's Secret to add it."}
+									formatCreateLabel={() => `Click here or press ENTER/TAB to add this Client App's Secret.`}
+									options={selectedClientEntry.clientSecrets ?? []}
+									getOptionValue={secret => secret?.value ?? ""}
+									getOptionLabel={secret => secret?.description ?? secret?.value ?? ""}
+									getNewOptionData={(inputText, creationLabel) => ({
+										value: inputText,
+										description: creationLabel as string,
 										type: IdentityServerConstants.SecretTypes.SharedSecret,
-										value: entry.value,
 										isValueHashed: false,
-									}))
-								}))}
-								options={editedClientData.clientSecrets?.map(clientSecret => ({label: clientSecret.value, value: clientSecret.value})) ?? []}
-								isDisabled={shouldDisableControls} />
-						</label>
+									})}
+									value={selectedClientEntry.clientSecrets ?? []}
+									onChange={secretEntries => onClientSecretChange([...secretEntries])}
+									isDisabled={shouldDisableControls} />
+							</label>
 
 
 
-						{/* Advanced options. */}
-						<h1 className="font-bold mt-10">Advanced client configurations</h1>
-						<CheckBox
-							text="Allow access tokens via browser"
-							className="mt-2"
-							checked={editedClientData.allowAccessTokensViaBrowser ?? false}
-							onChange={evt => setEditedClientData(curData => ({...curData, allowAccessTokensViaBrowser: evt.target.checked}))}
-							disabled={shouldDisableControls} />
-						<CheckBox
-							text="Enforce PKCE usage"
-							className="mt-2"
-							checked={editedClientData.requirePkce ?? false}
-							onChange={evt => setEditedClientData(curData => ({...curData, requirePkce: evt.target.checked}))}
-							disabled={shouldDisableControls} />
-						<label className="block mt-2">
-							Allowed CORS Origins:
-							<CreatableSelect isMulti
-								placeholder="Click to add an Allowed CORS Origin."
-								noOptionsMessage={() => "Type a CORS Origin to add it."}
-								formatCreateLabel={inputValue => `Click here or press ENTER/TAB to add this CORS Origin.`}
-								onChange={onCorsOriginsChange}
-								options={allCorsOrigins}
-								value={allCorsOrigins}
-								isDisabled={shouldDisableControls} />
-						</label>
+							{/* Advanced options. */}
+							<h1 className="font-bold mt-10">Advanced client configurations</h1>
+							<CheckBox
+								text="Allow access tokens via browser"
+								className="mt-2"
+								checked={selectedClientEntry.allowAccessTokensViaBrowser ?? false}
+								onChange={evt => setSelectedClientEntry(curData => ({ ...curData, allowAccessTokensViaBrowser: evt.target.checked }))}
+								disabled={shouldDisableControls} />
+							<CheckBox
+								text="Enforce PKCE usage"
+								className="mt-2"
+								checked={selectedClientEntry.requirePkce ?? false}
+								onChange={evt => setSelectedClientEntry(curData => ({ ...curData, requirePkce: evt.target.checked }))}
+								disabled={shouldDisableControls} />
+							<label className="block mt-2">
+								Allowed CORS Origins:
+								<CreatableSelect isMulti
+									placeholder="Click to add an Allowed CORS Origin."
+									noOptionsMessage={() => "Type a CORS Origin to add it."}
+									formatCreateLabel={() => `Click here or press ENTER/TAB to add this CORS Origin.`}
+									options={allCorsOrigins}
+									getOptionValue={urlDescriptor => urlDescriptor.url}
+									getOptionLabel={urlDescriptor => urlDescriptor.label ?? urlDescriptor.url}
+									getNewOptionData={(inputText, creationLabel) => ({url: inputText, label: creationLabel} as RedirectUrlDescriptor)}
+									value={allCorsOrigins}
+									onChange={entryValues => onCorsOriginsChange([...entryValues])}
+									isDisabled={shouldDisableControls} />
+							</label>
 
 
 
-						{/* Submit button. */}
-						<div className="mt-10">
-							<WorkerButtonLinkWithIcon to="/" icon={faSave} className="mt-10" onClick={evt => saveClient(evt)} isBusy={isSubmittingClientData}>
-								Save
-							</WorkerButtonLinkWithIcon>
-						</div>
-					</section>
-				)
-				: null
+							{/* Submit button. */}
+							<div className="mt-10">
+								<WorkerButtonLinkWithIcon to="/" icon={faSave} className="mt-10" onClick={evt => saveClient(evt)} isBusy={isSubmittingClientData}>
+									Save
+								</WorkerButtonLinkWithIcon>
+							</div>
+						</section>
+					)
+					: null
 			}
 		</div>
 	);

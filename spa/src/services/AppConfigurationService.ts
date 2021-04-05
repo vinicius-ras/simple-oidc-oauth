@@ -22,13 +22,6 @@ export default abstract class AppConfigurationService {
 
 	/** The name of the cookie to be used to detect if the user has logged in to the server. */
 	public static readonly AuthenticationCookieName = process.env.REACT_APP_AUTHENTICATION_COOKIE_NAME || '';
-
-	/** Contains names for the endpoint parameters. */
-	public static EndpointParameterNames = class {
-		/** The name of the URI parameter used for specifying Client IDs in the endpoints. */
-		public static readonly ClientIdParameterName = "clientID";
-	}
-
 	/** Contains URLs to the endpoints that this application communicates with. */
 	public static Endpoints = class {
 		/** The endpoint used to log the user in, by sending his/her credentials as a POST request. */
@@ -41,7 +34,7 @@ export default abstract class AppConfigurationService {
 		/** The endpoint used to retrieve all of the Client Applications registered in the IdP Server. */
 		public static readonly GetAllRegisteredClients = `${AppConfigurationService.AuthServerUrl}/api/management/clients`;
 		/** The endpoint used to retrieve a specific Client Application's data from the IdP Server. */
-		public static readonly GetRegisteredClient = `${AppConfigurationService.AuthServerUrl}/api/management/clients/{${AppConfigurationService.EndpointParameterNames.ClientIdParameterName}}`;
+		public static readonly GetRegisteredClient = (clientId: string) => `${AppConfigurationService.AuthServerUrl}/api/management/clients/${clientId}`;
 		/** The endpoint used to retrieve the Grant Types which are allowed for Client Application registration in the IdP Server. */
 		public static readonly GetAllowedClientRegistrationGrantTypes = `${AppConfigurationService.AuthServerUrl}/api/management/clients/allowed-grant-types`;
 		/** The endpoint used to retrieve the Resources (API Scopes, API Resources and Identity Resources) which are currently available for Client Application
@@ -50,6 +43,6 @@ export default abstract class AppConfigurationService {
 		/** The endpoint used to register a new Client Application. */
 		public static readonly CreateNewClientApplication = `${AppConfigurationService.AuthServerUrl}/api/management/clients`;
 		/** The endpoint used to update an existing Client Application. */
-		public static readonly UpdateClientApplication = `${AppConfigurationService.AuthServerUrl}/api/management/clients/{${AppConfigurationService.EndpointParameterNames.ClientIdParameterName}}`;
+		public static readonly UpdateClientApplication = (clientId: string) => `${AppConfigurationService.AuthServerUrl}/api/management/clients/${clientId}`;
 	 }
 }
