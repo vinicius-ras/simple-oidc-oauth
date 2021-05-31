@@ -57,9 +57,11 @@ namespace SimpleOidcOauth.Services
 		///     <para>A collection containing all of the entities which can be persisted in the target database.</para>
 		///     <para>If this parameter is set to <c>null</c>, this method does nothing and returns immediately with an empty <see cref="IEnumerable{T}"/> result.</para>
 		/// </param>
+		/// <param name="databaseContext">The <see cref="DbContext"/> used to perform operations on the target database.</param>
 		/// <param name="databaseCollection">A <see cref="DbSet{TEntity}" /> object used to manage entities in the target database.</param>
 		/// <param name="identityServerModelKeySelector">A function which takes an object from the IdentityServer's model realm and extracts a key discriminator for comparing it to other entities.</param>
 		/// <param name="entityFrameworkModelKeySelector">A function which takes an object from the Entity Framework Core's model realm and extracts a key discriminator for comparing it to other entities.</param>
+		/// <param name="entityFrameworkModelIdSelector">A function which takes an object from the Entity Framework Core's model realm and extracts it's ID (primary key) for comparing it to other entities.</param>
 		/// <param name="convertToEntityFrameworkModel">
 		///     A function which takes an object from the IdentityServer's model realm and converts it to the Entity Framework Core's model realm.
 		///     This function is used to convert entities to the right class before saving them to the target database.

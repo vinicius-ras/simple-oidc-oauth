@@ -17,7 +17,7 @@ namespace SimpleOidcOauth.Extensions
 		/// </summary>
 		/// <param name="testUser">The <see cref="TestUser" /> object to be converted.</param>
 		/// <param name="mapper">Reference to an <see cref="IMapper" /> object to convert between entities.</param>
-		/// <param name="mapper">An <see cref="UserManager{TUser}" /> object to calculate special values (e.g., the user's password hash).</param>
+		/// <param name="userManager">An <see cref="UserManager{TUser}" /> object to calculate special values (e.g., the user's password hash).</param>
 		/// <returns>Returns an <see cref="ApplicationUser" /> object containing the data which was extracted from the input object.</returns>
 		public static ApplicationUser ConvertToApplicationUser(this TestUser testUser, IMapper mapper, UserManager<ApplicationUser> userManager)
 		{

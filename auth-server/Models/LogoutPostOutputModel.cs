@@ -1,6 +1,6 @@
 namespace SimpleOidcOauth.Models
 {
-	/// <summary>Output model representing response data returned by the <see cref="AccountController" /> endpoint.</summary>
+	/// <summary>Output model representing response data returned by the <see cref="SimpleOidcOauth.Controllers.AccountController" /> endpoint.</summary>
 	public class LogoutPostOutputModel
 	{
 		/// <summary>The POST-logout redirection URL.</summary>

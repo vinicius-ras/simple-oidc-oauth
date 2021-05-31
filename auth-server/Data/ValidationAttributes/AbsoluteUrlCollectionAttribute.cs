@@ -29,6 +29,7 @@ namespace SimpleOidcOauth.Data.ValidationAttributes
 
 
 		// OVERRIDEN METHODS: ValidationAttribute
+		/// <inheritdoc />
 		public override bool IsValid(object value)
 		{
 			// Null values are always valid (use [Required] to invalidate null fields, as per good validation practices)

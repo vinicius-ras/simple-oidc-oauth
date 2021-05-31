@@ -46,7 +46,7 @@ namespace SimpleOidcOauth.Services
 		/// </param>
 		/// <param name="cancellationToken">A token which can be used to cancel the sending operation.</param>
 		/// <returns>A task which resolves to a flag representing if the operation was successful.</returns>
-		/// <exception cref="ArgumentNullException">Thrown if any of the non-optional parameters (<paramref name="to"/>, <paramref name="subject"/>, <paramref name="htmlBodyTemplate"/>) is set to <c>null</c>.</exception>
+		/// <exception cref="System.ArgumentNullException">Thrown if any of the non-optional parameters (<paramref name="to"/>, <paramref name="subject"/>, <paramref name="htmlBodyTemplate"/>) is set to <c>null</c>.</exception>
 		Task<bool> SendMessageFromStringAsync(string to, string subject, string htmlBodyTemplate, IDictionary<string, object> emailData = null, CancellationToken cancellationToken = default(CancellationToken));
 
 
@@ -79,7 +79,7 @@ namespace SimpleOidcOauth.Services
 		///     This method calls <see cref="SendMessageFromStringAsync(string, string, string, IDictionary{string, object}, CancellationToken)" /> once the resource's contents are loaded.
 		///     Thus, any exception thrown by <see cref="SendMessageFromStringAsync(string, string, string, IDictionary{string, object}, CancellationToken)" /> might also be thrown by this method.
 		/// </remarks>
-		/// <exception cref="ArgumentNullException">The <paramref name="templateResourcePath"/> parameter is <c>null</c>.</exception>
+		/// <exception cref="System.ArgumentNullException">The <paramref name="templateResourcePath"/> parameter is <c>null</c>.</exception>
 		Task<bool> SendMessageFromResourceAsync(string to, string subject, string templateResourcePath, IDictionary<string, object> emailData = null, CancellationToken cancellationToken = default(CancellationToken));
 	}
 }

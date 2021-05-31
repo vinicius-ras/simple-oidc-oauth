@@ -66,6 +66,7 @@ namespace SimpleOidcOauth.Data.Serialization
 
 
 		// INTERFACE IMPLEMENTATION: IValidatableObject
+		/// <inheritdoc />
 		public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
 		{
 			// The client's allowed Grant Types must be in the list of allowed types, and must not be duplicated

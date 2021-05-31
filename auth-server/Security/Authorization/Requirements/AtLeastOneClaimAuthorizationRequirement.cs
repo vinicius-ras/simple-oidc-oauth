@@ -8,7 +8,7 @@ namespace SimpleOidcOauth.Security.Authorization.Requirements
 	class AtLeastOneClaimAuthorizationRequirement : IAuthorizationRequirement
 	{
 		// INSTANCE PROPERTIES
-		/// <param name="claimsSet">The set of claims, from which the user must have at least one of for the Authorization to be granted.</param>
+		/// <summary>The set of claims, from which the user must have at least one of for the Authorization to be granted.</summary>
 		public IEnumerable<string> AcceptableClaimTypes { get; }
 
 

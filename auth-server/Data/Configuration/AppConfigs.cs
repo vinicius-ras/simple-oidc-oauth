@@ -63,11 +63,11 @@ namespace SimpleOidcOauth.Data.Configuration
 		/// <summary>Configurations for the Single Page Application which displays the auth server's User Interface.</summary>
 		/// <value>An object holding all of the auth server's SPA configurations.</value>
 		public SpaConfigs Spa { get; set; }
-		/// <summary>Configurations for the <see cref="Services.IEmbeddedResourcesService">.</summary>
-		/// <value>An object holding all of the configurations for the <see cref="Services.IEmbeddedResourcesService">.</value>
+		/// <summary>Configurations for the <see cref="Services.IEmbeddedResourcesService" />.</summary>
+		/// <value>An object holding all of the configurations for the <see cref="Services.IEmbeddedResourcesService" />.</value>
 		public EmbeddedResourcesConfigs EmbeddedResources { get; set; }
-		/// <summary>Configurations for the <see cref="Services.IEmailService">.</summary>
-		/// <value>An object holding all of the configurations for the <see cref="Services.IEmailService">.</value>
+		/// <summary>Configurations for the <see cref="Services.IEmailService" />.</summary>
+		/// <value>An object holding all of the configurations for the <see cref="Services.IEmailService" />.</value>
 		public EmailConfigs Email { get; set; }
 		/// <summary>
 		///     <para>Data used to initialize the database during application's startup.</para>

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SimpleOidcOauth.Models
 {
-	/// <summary>Output model representing response data returned by the <see cref="AccountController.Login(LoginInputModel)" /> endpoint.</summary>
+	/// <summary>Output model representing response data returned by the <see cref="SimpleOidcOauth.Controllers.AccountController.Login(LoginInputModel)" /> endpoint.</summary>
 	public class LoginOutputModel
 	{
 		/// <summary>User's identifier.</summary>

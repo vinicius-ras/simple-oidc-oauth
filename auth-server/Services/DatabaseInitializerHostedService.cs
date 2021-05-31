@@ -45,6 +45,7 @@ namespace SimpleOidcOauth.Services
 		///     <para>Container-injected instance for the <see cref="IServiceProvider" /> service.</para>
 		///     <para>This instance is used for creating scopes in order to access scoped services.</para>
 		/// </param>
+		/// <param name="mapper">Container-injected instance for the <see cref="IMapper" /> service (from AutoMapper).</param>
 		public DatabaseInitializerHostedService(
 			IOptions<AppConfigs> appConfigs,
 			ILogger<DatabaseInitializerHostedService> logger,
@@ -62,6 +63,7 @@ namespace SimpleOidcOauth.Services
 
 
 		// INTERFACE IMPLEMENTATION: IHostedService
+		/// <inheritdoc />
 		public async Task StartAsync(CancellationToken cancellationToken)
 		{
 			// Verify if any initialization is enabled
@@ -144,6 +146,7 @@ namespace SimpleOidcOauth.Services
 		}
 
 
+		/// <inheritdoc />
 		public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 	}
 }

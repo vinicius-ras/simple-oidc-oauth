@@ -221,7 +221,7 @@ namespace SimpleOidcOauth.IdentityServer
 		/// <summary>
 		///     Verifies if the given return URL is valid.
 		///     A valid return URL needs to either be a Local URL, or a well-known External/Remote URL configured
-		///     as the auth-server's origin (see <see cref="AppConfigs.AuthServerBaseUrl"/>).
+		///     as the auth-server's origin (see <see cref="AuthServerConfigs.BaseUrl"/>).
 		/// </summary>
 		/// <param name="returnUrl">The return URL to be verified.</param>
 		/// <returns>Returns a flag indicating if the specified return URL is valid.</returns>

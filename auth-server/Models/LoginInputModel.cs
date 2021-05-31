@@ -11,9 +11,9 @@ namespace SimpleOidcOauth.Models
 		[Required]
 		[EmailAddress]
 		public string Email { get; set; }
-		[Required]
 		/// <summary>User's password.</summary>
 		/// <value>The password for the user who is trying to log in.</value>
+		[Required]
 		public string Password { get; set; }
 		/// <summary>The URL to which the user will be redirected to after login.</summary>
 		/// <value>The return URL to which the user will be redirected to after a successful login.</value>
