@@ -16,7 +16,12 @@ namespace SimpleOidcOauth.Controllers
 	///         to homogenize/standardize message formats used to convey machine-readable details for errors carried in HTTP responses.
 	///     </para>
 	/// </summary>
+	/// <remarks>
+	///     This controller uses the <see cref="ApiExplorerSettingsAttribute"/> in order not to be discoverable/documented by Swashbuckle.
+	///     This also applies to any actions declared for this controller.
+	/// </remarks>
 	[ApiController]
+	[ApiExplorerSettings(IgnoreApi = true)]
 	public class UnhandledExceptionsController : ControllerBase
 	{
 		// CONSTANTS

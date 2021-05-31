@@ -78,5 +78,7 @@ namespace SimpleOidcOauth.Data.Configuration
 		///     <para>This data is optional, and can be <c>null</c> if no predefined data is needed. Nested properties can also be set to <c>null</c> if not needed.</para>
 		/// </value>
 		public DatabaseInitializationConfigs DatabaseInitialization { get; set; }
+		/// <summary>Configurations for Swagger - an OpenAPI implementation provided by the Swashbuckle library.</summary>
+		public SwaggerConfigs Swagger { get; set; }
 	}
 }

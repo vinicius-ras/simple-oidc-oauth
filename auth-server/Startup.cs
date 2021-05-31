@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.Security;
@@ -166,6 +168,29 @@ namespace SimpleOidcOauth
             // Configure AutoMapper
             services.AddAutoMapper(typeof(AutoMapperProfile));
 
+            // Configure Swashbuckle / Swagger
+            services.AddSwaggerGen(opts => {
+                string curAssemblyName = Assembly.GetExecutingAssembly().GetName().Name,
+                    appBasePath = AppContext.BaseDirectory,
+                    xmlDocumentationPath = $"{appBasePath}{curAssemblyName}.xml";
+                opts.IncludeXmlComments(xmlDocumentationPath);
+                opts.SwaggerDoc(appConfigs.Swagger.ApiDocumentNameUrlFriendly, new OpenApiInfo {
+                    Title = appConfigs.Swagger.ApiTitleFull,
+                    Version = appConfigs.Swagger.ApiVersion,
+                    Description = appConfigs.Swagger.ApiDescription,
+                    Contact = new OpenApiContact {
+                        Name = appConfigs.Swagger.ApiContactName,
+                        Email = appConfigs.Swagger.ApiContactEmail,
+                        Url = new Uri(appConfigs.Swagger.ApiContactUrl),
+                    },
+                    License = new OpenApiLicense {
+                        Name = appConfigs.Swagger.ApiLicenseName,
+                        Url = new Uri(appConfigs.Swagger.ApiLicenseUrl),
+                    },
+                    TermsOfService = new Uri(appConfigs.Swagger.ApiTermsOfServiceUrl),
+                });
+            });
+
 
             // Configure authorization handlers and policies
             services.AddSingleton<IAuthorizationHandler, AtLeastOneClaimAuthorizationHandler>();
@@ -223,21 +248,29 @@ namespace SimpleOidcOauth
 
         /// <summary>Configures the HTTP request processing pipeline for the application.</summary>
         /// <param name="app">An object which can be used for configuring the application's HTTP request processing pipeline.</param>
-        public void Configure(IApplicationBuilder app)
+        /// <param name="appConfigsOptions">Configurations provided to the application.</param>
+        public void Configure(IApplicationBuilder app, IOptions<AppConfigs> appConfigsOptions)
         {
-            app.UseExceptionHandler(AppEndpoints.UnhandledExceptionUri);
-            app.UseCookiePolicy();
-            app.UseStaticFiles();
-            app.UseRouting();
-            app.UseCors();
-
-            app.UseIdentityServer();
-
-            app.UseAuthorization();
-            app.UseEndpoints(endpoints =>
-            {
-               endpoints.MapDefaultControllerRoute();
-            });
+            var appConfigs = appConfigsOptions.Value;
+            app.UseExceptionHandler(AppEndpoints.UnhandledExceptionUri)
+                .UseCookiePolicy()
+                .UseStaticFiles()
+                .UseSwagger(opts => {
+                    opts.RouteTemplate = appConfigs.Swagger.OpenApiDocumentRouteTemplate;
+                })
+                .UseSwaggerUI(opts => {
+                    string routeTemplate = appConfigs.Swagger.OpenApiDocumentRouteTemplate,
+                        targetOpenApiDocument = appConfigs.Swagger.ApiDocumentNameUrlFriendly,
+                        effectiveEndpoint = routeTemplate.Replace("{documentName}", targetOpenApiDocument);
+                    opts.SwaggerEndpoint(effectiveEndpoint, appConfigs.Swagger.ApiTitleShort);
+                })
+                .UseRouting()
+                .UseCors()
+                .UseIdentityServer()
+                .UseAuthorization()
+                .UseEndpoints(endpoints => {
+                    endpoints.MapDefaultControllerRoute();
+                });
         }
     }
 }
