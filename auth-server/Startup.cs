@@ -1,4 +1,4 @@
-﻿using IdentityServer4.Services;
+using IdentityServer4.Services;
 using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -174,21 +174,31 @@ namespace SimpleOidcOauth
                     appBasePath = AppContext.BaseDirectory,
                     xmlDocumentationPath = $"{appBasePath}{curAssemblyName}.xml";
                 opts.IncludeXmlComments(xmlDocumentationPath);
-                opts.SwaggerDoc(appConfigs.Swagger.ApiDocumentNameUrlFriendly, new OpenApiInfo {
-                    Title = appConfigs.Swagger.ApiTitleFull,
-                    Version = appConfigs.Swagger.ApiVersion,
-                    Description = appConfigs.Swagger.ApiDescription,
+
+                var swaggerConfigs = appConfigs.Swagger;
+                var openApiInfo = new OpenApiInfo
+                {
+                    Title = swaggerConfigs.ApiTitleFull,
+                    Version = swaggerConfigs.ApiVersion,
+                    Description = swaggerConfigs.ApiDescription,
                     Contact = new OpenApiContact {
-                        Name = appConfigs.Swagger.ApiContactName,
-                        Email = appConfigs.Swagger.ApiContactEmail,
-                        Url = new Uri(appConfigs.Swagger.ApiContactUrl),
+                        Name = swaggerConfigs.ApiContactName,
+                        Email = swaggerConfigs.ApiContactEmail,
+                        Url = string.IsNullOrWhiteSpace(swaggerConfigs.ApiContactUrl)
+                            ? null
+                            : new Uri(swaggerConfigs.ApiContactUrl),
                     },
                     License = new OpenApiLicense {
-                        Name = appConfigs.Swagger.ApiLicenseName,
-                        Url = new Uri(appConfigs.Swagger.ApiLicenseUrl),
+                        Name = swaggerConfigs.ApiLicenseName,
+                        Url = string.IsNullOrWhiteSpace(swaggerConfigs.ApiLicenseUrl)
+                            ? null
+                            : new Uri(swaggerConfigs.ApiLicenseUrl),
                     },
-                    TermsOfService = new Uri(appConfigs.Swagger.ApiTermsOfServiceUrl),
-                });
+                    TermsOfService = string.IsNullOrWhiteSpace(swaggerConfigs.ApiTermsOfServiceUrl)
+                        ? null
+                        : new Uri(swaggerConfigs.ApiTermsOfServiceUrl),
+                };
+                opts.SwaggerDoc(swaggerConfigs.ApiDocumentNameUrlFriendly, openApiInfo);
             });
 
 
