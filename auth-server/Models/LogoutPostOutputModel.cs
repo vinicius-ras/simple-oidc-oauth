@@ -8,6 +8,7 @@ namespace SimpleOidcOauth.Models
 		///     A URL to where the user will be redirected after the logout happened.
 		///     This URL should take the user's agent back to the client application.
 		/// </value>
+		/// <example>https://my-application/sign-out-callback/?state=something&amp;nonce=123abc</example>
 		public string PostLogoutRedirectUri { get; set; }
 		/// <summary>
 		///     The URL to be rendered in an IFrame in the logout page, in order to log the user
@@ -17,6 +18,7 @@ namespace SimpleOidcOauth.Models
 		///     A URL which needs to be rendered in the auth-server SPA's logout page, and which will
 		///     trigger the logout of the user in the client application.
 		/// </value>
+		/// <example>https://my-idp/iframe-signout/?state=something&amp;nonce=123abc</example>
 		public string SignOutIFrameUrl { get; set; }
 	}
 }
