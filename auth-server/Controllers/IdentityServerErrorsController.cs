@@ -7,6 +7,7 @@ namespace SimpleOidcOauth.Controllers
 {
 	/// <summary>A controller which handles errors returned by the IdentityServer4 infrastructure.</summary>
 	[Route(AppEndpoints.IdentityServerErrorsControllerUri)]
+	[ApiExplorerSettings(IgnoreApi = true)]
 	public class IdentityServerErrorsController : ControllerBase
 	{
 		// INSTANCE FIELDS

@@ -13,6 +13,7 @@ using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.Data.Serialization;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Services;
+using Swashbuckle.AspNetCore.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,6 +32,7 @@ namespace SimpleOidcOauth.Controllers
 	/// </summary>
 	[Route(AppEndpoints.AccountControllerUri)]
 	[ApiController]
+	[SwaggerTag("Endpoints for user account registration and authentication.")]
 	public class AccountController : ControllerBase
 	{
 		// CONSTANTS AND STATIC READONLY
