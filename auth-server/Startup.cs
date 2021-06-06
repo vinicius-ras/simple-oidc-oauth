@@ -15,6 +15,7 @@ using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.IdentityServer;
+using SimpleOidcOauth.OpenApi.Swagger.Filters;
 using SimpleOidcOauth.Security.Authorization.Handlers;
 using SimpleOidcOauth.Security.Authorization.Requirements;
 using SimpleOidcOauth.Services;
@@ -170,13 +171,13 @@ namespace SimpleOidcOauth
 
             // Configure Swashbuckle / Swagger
             services.AddSwaggerGen(opts => {
+                // Use the application's XML Documentation to generate an OpenAPI documentation
                 string curAssemblyName = Assembly.GetExecutingAssembly().GetName().Name,
                     appBasePath = AppContext.BaseDirectory,
                     xmlDocumentationPath = $"{appBasePath}{curAssemblyName}.xml";
                 opts.IncludeXmlComments(xmlDocumentationPath);
 
-                opts.EnableAnnotations();
-
+                // Create our application's OpenAPI Document
                 var swaggerConfigs = appConfigs.Swagger;
                 var openApiInfo = new OpenApiInfo
                 {
@@ -201,6 +202,10 @@ namespace SimpleOidcOauth
                         : new Uri(swaggerConfigs.ApiTermsOfServiceUrl),
                 };
                 opts.SwaggerDoc(swaggerConfigs.ApiDocumentNameUrlFriendly, openApiInfo);
+
+                // Configure some other Swashbuckle's options and filters
+                opts.EnableAnnotations();
+                opts.SchemaFilter<ValidationProblemDetailsFilter>();
             });
 
 
