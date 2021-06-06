@@ -16,6 +16,14 @@ namespace SimpleOidcOauth.Data.Configuration
 		///     <p>An example value would be <c>my-api-docs/{documentName}/openapi.json</c>.</p>
 		/// </value>
 		public string OpenApiDocumentRouteTemplate { get; set; }
+		/// <summary>The title of the Swagger UI page, as it should appear in the user's browser.</summary>
+		public string SwaggerUIPageTitle { get; set; }
+		/// <summary>The route prefix for the Swagger UI.</summary>
+		/// <remarks>
+		///     This route prefix is used to define the URI the user should access in his/her browser in order to view
+		///     the Swagger UI.
+		/// </remarks>
+		public string SwaggerUIRoutePrefix { get; set; }
 		/// <summary>The full name of the API, as it should appear when displayed in the Web UI.</summary>
 		public string ApiTitleFull { get; set; }
 		/// <summary>The short name of the API, as it should appear when displayed in the Web UI.</summary>

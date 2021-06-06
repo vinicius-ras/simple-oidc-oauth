@@ -271,10 +271,15 @@ namespace SimpleOidcOauth
                     opts.RouteTemplate = appConfigs.Swagger.OpenApiDocumentRouteTemplate;
                 })
                 .UseSwaggerUI(opts => {
-                    string routeTemplate = appConfigs.Swagger.OpenApiDocumentRouteTemplate,
-                        targetOpenApiDocument = appConfigs.Swagger.ApiDocumentNameUrlFriendly,
+                    var swaggerConfigs = appConfigs.Swagger;
+
+                    string routeTemplate = swaggerConfigs.OpenApiDocumentRouteTemplate,
+                        targetOpenApiDocument = swaggerConfigs.ApiDocumentNameUrlFriendly,
                         effectiveEndpoint = routeTemplate.Replace("{documentName}", targetOpenApiDocument);
-                    opts.SwaggerEndpoint(effectiveEndpoint, appConfigs.Swagger.ApiTitleShort);
+                    opts.SwaggerEndpoint(effectiveEndpoint, swaggerConfigs.ApiTitleShort);
+
+                    opts.DocumentTitle = swaggerConfigs.SwaggerUIPageTitle;
+                    opts.RoutePrefix = swaggerConfigs.SwaggerUIRoutePrefix;
                 })
                 .UseRouting()
                 .UseCors()
