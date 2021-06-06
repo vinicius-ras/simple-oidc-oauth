@@ -1,20 +1,27 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using IdentityServer4.Models;
+using SimpleOidcOauth.OpenApi.Swagger.Filters;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace SimpleOidcOauth.Data.Serialization
 {
-	/// <summary>A serializable version of a <see cref="Resource"/> object.</summary>
+	/// <summary>A serializable version of a resource (API Scope, API Resource, or Identity Resource).</summary>
+	/// <remarks>This class represents a serializable version of the <see cref="Resource"/> class.</remarks>
+	[SwaggerSchemaFilter(typeof(SerializableResourceSchemaFilter))]
 	public class SerializableResource
 	{
 		/// <summary>Indicates if this resource is enabled.</summary>
 		public bool Enabled { get; set; }
 		/// <summary>The unique name of the resource.</summary>
+		/// <example>my-petshop-api</example>
 		[Required]
 		public string Name { get; set; }
 		/// <summary>Display name of the resource.</summary>
+		/// <example>Foobar Petshop API</example>
 		public string DisplayName { get; set; }
 		/// <summary>Description of the resource.</summary>
+		/// <example>A web API for managing petshops.</example>
 		public string Description { get; set; }
 		/// <summary>Specifies whether this scope is shown in the discovery document.</summary>
 		public bool ShowInDiscoveryDocument { get; set; }

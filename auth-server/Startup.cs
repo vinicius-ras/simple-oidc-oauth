@@ -175,6 +175,8 @@ namespace SimpleOidcOauth
                     xmlDocumentationPath = $"{appBasePath}{curAssemblyName}.xml";
                 opts.IncludeXmlComments(xmlDocumentationPath);
 
+                opts.EnableAnnotations();
+
                 var swaggerConfigs = appConfigs.Swagger;
                 var openApiInfo = new OpenApiInfo
                 {

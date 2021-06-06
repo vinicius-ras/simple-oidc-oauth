@@ -11,6 +11,8 @@ using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.Data.Serialization;
+using SimpleOidcOauth.OpenApi.Swagger.Filters;
+using Swashbuckle.AspNetCore.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,6 +27,7 @@ namespace SimpleOidcOauth.Controllers
 	[ApiController]
 	[Authorize(AuthorizationPolicyNames.ClientsView)]
 	[Route(AppEndpoints.ClientsManagementControllerUri)]
+	[SwaggerTag("Endpoints for managing the Client Applications which can communicate with the IdP.")]
 	public class ClientsManagementController : ControllerBase
 	{
 		// INSTANCE FIELDS
@@ -53,30 +56,17 @@ namespace SimpleOidcOauth.Controllers
 
 
 		/// <summary>Retrieves a list of all of the currently registered Clients in the IdP Server.</summary>
-		/// <returns>
-		///     <para>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</para>
-		///     <para>
-		///         In case of success, this endpoint returns an HTTP OK (200) response with a collection of <see cref="SerializableClient"/> instances.
-		///         Depending on the requesting user's claims, some of the returned information (such as client Secret values) might be redacted.
-		///     </para>
-		///     <para>
-		///         In case of failure, this endpoint will return one of the following responses:
-		///
-		///         <list type="bullet">
-		///             <item>
-		///                 <term>HTTP Unauthorized (401)</term>
-		///                 <description>Returned for unauthenticated requests.</description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Forbidden (403)</term>
-		///                 <description>
-		///                     Returned for authenticated requests coming from a user that does not have the claims
-		///                     to view clients data (<see cref="AuthServerClaimTypes.CanViewClients"/>).
-		///                 </description>
-		///             </item>
-		///         </list>
-		///     </para>
-		/// </returns>
+		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
+		/// <response code="200">
+		///     Indicates success on the operation.
+		///     A collection of <see cref="SerializableClient"/> objects will be returned in the response body.
+		///     Depending on the requesting user's claims, some of the returned information (such as client Secret values) might be redacted.
+		/// </response>
+		/// <response code="401">Status code returned for unauthenticated requests.</response>
+		/// <response code="403">
+		///     Returned for authenticated requests coming from a user that does not have the claims
+		///     to view clients data (<see cref="AuthServerClaimTypes.CanViewClients"/>).
+		/// </response>
 		[HttpGet(AppEndpoints.GetAllRegisteredClients)]
 		public async Task<IEnumerable<SerializableClient>> GetAllClients()
 		{
@@ -99,37 +89,17 @@ namespace SimpleOidcOauth.Controllers
 		/// <param name="clientId">
 		///     The client ID (<see cref="IdentityServer4.EntityFramework.Entities.Client.ClientId"/>) for the client whose data needs to be requested.
 		/// </param>
-		/// <returns>
-		///     <para>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</para>
-		///     <para>
-		///         In case of success, this endpoint returns an HTTP OK (200) response with a <see cref="SerializableClient"/> instance representing the target
-		///         Client Application's data.
-		///         Depending on the requesting user's claims, some of the returned information (such as client Secret values) might be redacted.
-		///     </para>
-		///     <para>
-		///         In case of failure, this endpoint will return one of the following responses:
-		///
-		///         <list type="bullet">
-		///             <item>
-		///                 <term>HTTP Unauthorized (401)</term>
-		///                 <description>Returned for unauthenticated requests.</description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Forbidden (403)</term>
-		///                 <description>
-		///                     Returned for authenticated requests coming from a user that does not have the claims
-		///                     to view clients data (<see cref="AuthServerClaimTypes.CanViewClients"/>).
-		///                 </description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Not Found (404)</term>
-		///                 <description>
-		///                     Returned when the specified client could not be found.
-		///                 </description>
-		///             </item>
-		///         </list>
-		///     </para>
-		/// </returns>
+		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
+		/// <response code="200">
+		///     Indicates the operation was successful. A <see cref="SerializableClient"/> object will be returned in the response body, describing the
+		///     requested Client Application.
+		/// </response>
+		/// <response code="401">Returned for unauthenticated requests.</response>
+		/// <response code="403">
+		///     Returned for authenticated requests coming from a user that does not have the claims
+		///     to view clients data (<see cref="AuthServerClaimTypes.CanViewClients"/>).
+		/// </response>
+		/// <response code="404">Informs that the specified client could not be found in the database.</response>
 		[HttpGet(AppEndpoints.GetRegisteredClient)]
 		public async Task<ActionResult<SerializableClient>> GetClient([FromRoute(Name = AppEndpoints.ClientIdParameterName)] string clientId)
 		{
@@ -152,57 +122,35 @@ namespace SimpleOidcOauth.Controllers
 
 
 		/// <summary>Retrieves a list of all of the currently allowed Grant Types for client registration.</summary>
-		/// <returns>
-		///     <para>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</para>
-		///     <para>In case of success, this endpoint returns an HTTP OK (200) response with a collection of strings representing the allowed grant types.</para>
-		///     <para>
-		///         In case of failure, this endpoint will return one of the following responses:
-		///
-		///         <list type="bullet">
-		///             <item>
-		///                 <term>HTTP Unauthorized (401)</term>
-		///                 <description>Returned for unauthenticated requests.</description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Forbidden (403)</term>
-		///                 <description>
-		///                     Returned for authenticated requests coming from a user that does not have the claims
-		///                     to view clients data (<see cref="AuthServerClaimTypes.CanViewClients"/>).
-		///                 </description>
-		///             </item>
-		///         </list>
-		///     </para>
-		/// </returns>
+		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
+		/// <response code="200">
+		///     Indicates the operation was successful. A collection of strings representing the allowed grant types will be returned in
+		///     the response body.
+		/// </response>
+		/// <response code="401">Returned for unauthenticated requests.</response>
+		/// <response code="403">
+		///     Returned for authenticated requests coming from a user that does not have the claims
+		///     to view clients data (<see cref="AuthServerClaimTypes.CanViewClients"/>).
+		/// </response>
 		[HttpGet(AppEndpoints.GetAllowedClientRegistrationGrantTypes)]
+		[SwaggerOperationFilter(typeof(ClientsManagementControllerGrantTypesOperationFilter))]
 		public IEnumerable<string> GetAllowedClientRegistrationGrantTypes() => AppConfigs.AllowedClientRegistrationGrantTypes;
 
 
 		/// <summary>Retrieves a list of all of the currently registered resources (API Scopes, API Resources and Identity Resources).</summary>
-		/// <returns>
-		///     <para>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</para>
+		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
+		/// <response code="200">
 		///     <para>
-		///         In case of success, this endpoint returns an HTTP OK (200) response with a collection of <see cref="SerializableResource"/> instances,
-		///         representing the list of available/registered resources and their data.
-		///         Notice that this data includes API Scopes, API Resources and Identity Resources.
+		///         Indicates the operation was successful. A collection of <see cref="SerializableResource"/> objects will be returned, each one representing
+		///         one of the available resources and their respective data.
 		///     </para>
-		///     <para>
-		///         In case of failure, this endpoint will return one of the following responses:
-		///
-		///         <list type="bullet">
-		///             <item>
-		///                 <term>HTTP Unauthorized (401)</term>
-		///                 <description>Returned for unauthenticated requests.</description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Forbidden (403)</term>
-		///                 <description>
-		///                     Returned for authenticated requests coming from a user that does not have the claims
-		///                     to view clients data (<see cref="AuthServerClaimTypes.CanViewClients"/>).
-		///                 </description>
-		///             </item>
-		///         </list>
-		///     </para>
-		/// </returns>
+		///     <para>Notice that this data might include a mix of API Scopes, API Resources, and Identity Resources.</para>
+		/// </response>
+		/// <response code="401">Returned for unauthenticated requests.</response>
+		/// <response code="403">
+		///     Returned for authenticated requests coming from a user that does not have the claims
+		///     to view clients data (<see cref="AuthServerClaimTypes.CanViewClients"/>).
+		/// </response>
 		[HttpGet(AppEndpoints.GetAvailableClientRegistrationResources)]
 		public async Task<IEnumerable<SerializableResource>> GetAvailableResources()
 		{
@@ -224,42 +172,30 @@ namespace SimpleOidcOauth.Controllers
 		}
 
 
-		/// <summary>Endpoint used to register a new Client Application in the IdP Management Interface.</summary>
+		/// <summary>Registers a new Client Application in the IdP Management Interface.</summary>
 		/// <param name="client">The data for the client that needs to be created.</param>
-		/// <returns>
-		///     <para>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</para>
-		///     <para>
-		///         In case of success, this endpoint will return an HTTP Created (201) response with a body containing the data registered for the new
-		///         client (in <see cref="SerializableClient"/> format). Also, a "Location" HTTP Header with the URI to retrieve the created Client's data will be present in
-		///         the response.
-		///     </para>
-		///     <para>
-		///         In case of failure, this endpoint will return one of the following responses:
-		///
-		///         <list type="bullet">
-		///             <item>
-		///                 <term>HTTP Bad Request (400)</term>
-		///                 <description>
-		///                     Returned in case of any validation errors, such as invalid/missing data.
-		///                     The response body will contain a <see cref="ValidationProblemDetails"/> describing the error.
-		///                 </description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Unauthorized (401)</term>
-		///                 <description>Returned for unauthenticated requests.</description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Forbidden (403)</term>
-		///                 <description>
-		///                     Returned for authenticated requests coming from a user that does not have the claims
-		///                     to view clients data (<see cref="AuthServerClaimTypes.CanViewAndEditClients"/>).
-		///                 </description>
-		///             </item>
-		///         </list>
-		///     </para>
-		/// </returns>
+		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
+		/// <response code="201">
+		///     Indicates the operation was successful. A <see cref="SerializableClient"/> containing the newly created client's data
+		///     will be returned in the response's body. The response will also contain a "Location" HTTP Header indicating the URI where
+		///     API clients can retrieve the created client's data.
+		/// </response>
+		/// <response code="400">
+		///     Indicates validation errors in the request body's payload data.
+		///     The response body will contain a <see cref="ValidationProblemDetails"/> instance describing the errors.
+		/// </response>
+		/// <response code="401">Status code returned for unauthenticated requests.</response>
+		/// <response code="403">
+		///     Status code returned for authenticated requests coming from a user that does not have the claims to view
+		///     clients' data (<see cref="AuthServerClaimTypes.CanViewAndEditClients"/>).
+		/// </response>
 		[HttpPost(AppEndpoints.CreateNewClientApplication)]
 		[Authorize(AuthorizationPolicyNames.ClientsViewAndEdit)]
+		[ProducesResponseType(typeof(SerializableClient), 201)]
+		[ProducesResponseType(typeof(ValidationProblemDetails), 400)]
+		[ProducesResponseType(401)]
+		[ProducesResponseType(403)]
+		[ProducesErrorResponseType(typeof(void))]
 		public async Task<ActionResult<SerializableClient>> CreateNewClientApplication([FromBody] SerializableClient client)
 		{
 			// Validate incoming data
@@ -288,52 +224,34 @@ namespace SimpleOidcOauth.Controllers
 		}
 
 
-		/// <summary>Endpoint used to update an existing Client Application's data in the IdP Management Interface.</summary>
+		/// <summary>Updates the data of a Client Application that has been previously registered with the IdP.</summary>
 		/// <param name="clientId">The Client ID for the client that must be updated.</param>
 		/// <param name="clientData">
-		///     <para>The data for the client that needs to be updated.</para>
+		///     <para>The new data for the client that needs to be updated.</para>
 		///     <para>
 		///         The <see cref="SerializableClient.ClientId"/> property must match the ID provided in the <paramref name="clientId"/> URL parameter.
 		///         Otherwise, this endpoint will return an HTTP 400 (Bad Request) response.
 		///     </para>
 		/// </param>
-		/// <returns>
-		///     <para>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</para>
-		///     <para>
-		///         In case of success, this endpoint will return an HTTP Ok (200) response with a body containing the data registered for the new
-		///         client (in <see cref="SerializableClient"/> format).
-		///     </para>
-		///     <para>
-		///         In case of failure, this endpoint will return one of the following responses:
-		///
-		///         <list type="bullet">
-		///             <item>
-		///                 <term>HTTP Bad Request (400)</term>
-		///                 <description>
-		///                     Returned in case of any validation errors, such as invalid/missing data.
-		///                     The response body will contain a <see cref="ValidationProblemDetails"/> describing the error.
-		///                 </description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Unauthorized (401)</term>
-		///                 <description>Returned for unauthenticated requests.</description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Forbidden (403)</term>
-		///                 <description>
-		///                     Returned for authenticated requests coming from a user that does not have the claims
-		///                     to view clients data (<see cref="AuthServerClaimTypes.CanViewAndEditClients"/>).
-		///                 </description>
-		///             </item>
-		///             <item>
-		///                 <term>HTTP Not Found (404)</term>
-		///                 <description>Returned if the specified Client Application is not registered in the database.</description>
-		///             </item>
-		///         </list>
-		///     </para>
-		/// </returns>
+		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
+		/// <response code="200">
+		///     Indicates the operation was successful. A <see cref="SerializableClient"/> instance representing the updated client data will
+		///     be returned in the response body.
+		/// </response>
+		/// <response code="400">
+		///     Indicates that invalid/incorrect Client Application data has been sent to the endpoint.
+		///     The response body will contain a <see cref="ValidationProblemDetails"/> describing the error.
+		/// </response>
+		/// <response code="401">Status code returned for unauthenticated requests.</response>
+		/// <response code="403">
+		///     Status code returned for authenticated requests coming from a user that does not have the claims to view
+		///     clients' data (<see cref="AuthServerClaimTypes.CanViewAndEditClients"/>).
+		/// </response>
+		/// <response code="404">Informs that the specified client could not be found in the database.</response>
 		[HttpPut(AppEndpoints.UpdateClientApplication)]
 		[Authorize(AuthorizationPolicyNames.ClientsViewAndEdit)]
+		[ProducesResponseType(typeof(SerializableClient), 200)]
+		[ProducesResponseType(typeof(ValidationProblemDetails), 400)]
 		public async Task<ActionResult<SerializableClient>> UpdateClientApplication(
 			[FromRoute(Name = AppEndpoints.ClientIdParameterName)] string clientId,
 			[FromBody] SerializableClient clientData)

@@ -1,13 +1,17 @@
 using IdentityServer4.Models;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.ValidationAttributes;
+using SimpleOidcOauth.OpenApi.Swagger.Filters;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
 namespace SimpleOidcOauth.Data.Serialization
 {
-	/// <summary>A serializable version of a <see cref="Client"/> object.</summary>
+	/// <summary>A serializable version of a Client Application.</summary>
+	/// <remarks>This class is basically a serializable version of the <see cref="Client"/> class.</remarks>
+	[SwaggerSchemaFilter(typeof(SerializableClientSchemaFilter))]
 	public class SerializableClient : IValidatableObject
 	{
 		// INSTANCE PROPERTIES
@@ -35,8 +39,10 @@ namespace SimpleOidcOauth.Data.Serialization
 		/// </summary>
 		public IEnumerable<string> AllowedScopes { get; set; }
 		/// <summary>Unique ID of the client.</summary>
+		/// <example>sample-client</example>
 		public string ClientId { get; set; }
 		/// <summary>Client display name (used for logging and consent screen).</summary>
+		/// <example>My Sample Client</example>
 		[Required]
 		public string ClientName { get; set; }
 		/// <summary>Client secrets - only relevant for flows that require a secret.</summary>
