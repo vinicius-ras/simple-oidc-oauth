@@ -1,5 +1,8 @@
+using System;
+using System.Linq.Expressions;
 using IdentityModel;
 using IdentityServer4;
+using SimpleOidcOauth.Utilities;
 
 namespace SimpleOidcOauth.Data.Configuration
 {
@@ -80,5 +83,20 @@ namespace SimpleOidcOauth.Data.Configuration
 		public DatabaseInitializationConfigs DatabaseInitialization { get; set; }
 		/// <summary>Configurations for Swagger - an OpenAPI implementation provided by the Swashbuckle library.</summary>
 		public SwaggerConfigs Swagger { get; set; }
+
+
+
+
+
+		// STATIC METHODS
+		/// <summary>Utility method for retrieving a configuration key in a format that can be used for configurations stored in memory collections.</summary>
+		/// <param name="memberAccessLambda">A Lambda Expression which accesses a given configuration key's property/field.</param>
+		/// <typeparam name="TReturn">The return type of the target configuration property.</typeparam>
+		/// <returns>
+		///     Returns a colon-separated path describing the access to the given target property/field.
+		///     This path can be used as In-Memory Collections of configurations.
+		/// </returns>
+		public static string GetAppConfigurationKey<TReturn>(Expression<Func<AppConfigs, TReturn>> memberAccessLambda)
+			=> $"{AppConfigs.ConfigKey}:{ExpressionTreeUtilities.GetMemberAccessPath(null, memberAccessLambda, ":", true)}";
 	}
 }

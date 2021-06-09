@@ -123,10 +123,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerOperational}", $"Data Source={testSuiteName}-IdentityServerOperational.sqlite;" },
 						{ $"ConnectionStrings:{AppConfigs.ConnectionStringIdentityServerUsers}", $"Data Source={testSuiteName}-IdentityServerUsers.sqlite;" },
 
-						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.AuthServer)}:{nameof(AppConfigs.AuthServer.BaseUrl)}", $"{TestServerOrigin}" },
-						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.DatabaseInitialization)}:{nameof(AppConfigs.DatabaseInitialization.CleanBeforeInitialize)}", "true" },
-						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.DatabaseInitialization)}:{nameof(AppConfigs.DatabaseInitialization.InitializeStructure)}", initializeDatabaseStructure.ToString().ToLower() },
-						{ $"{AppConfigs.ConfigKey}:{nameof(AppConfigs.DatabaseInitialization)}:{nameof(AppConfigs.DatabaseInitialization.InitializeData)}", initializeDatabaseWithTestData.ToString().ToLower() },
+						{ AppConfigs.GetAppConfigurationKey(configs => configs.AuthServer.BaseUrl), $"{TestServerOrigin}" },
+						{ AppConfigs.GetAppConfigurationKey(configs => configs.DatabaseInitialization.CleanBeforeInitialize), "true" },
+						{ AppConfigs.GetAppConfigurationKey(configs => configs.DatabaseInitialization.InitializeStructure), initializeDatabaseStructure.ToString().ToLower() },
+						{ AppConfigs.GetAppConfigurationKey(configs => configs.DatabaseInitialization.InitializeData), initializeDatabaseWithTestData.ToString().ToLower() },
 					};
 					configurationBuilder.AddInMemoryCollection(customConfigs);
 
