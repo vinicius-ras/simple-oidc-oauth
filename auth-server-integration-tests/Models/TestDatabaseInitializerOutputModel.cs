@@ -8,7 +8,7 @@ namespace SimpleOidcOauth.Tests.Integration.Models
 	public class TestDatabaseInitializerOutputModel
 	{
 		// INSTANCE PROPERTIES
-		/// <summary>A collection of all <see cref="ClientDto"/> objects which were obtained from the database.</summary>
+		/// <summary>A collection of all <see cref="SerializableClient"/> objects which were obtained from the database.</summary>
 		public IEnumerable<SerializableClient> Clients { get; init; }
 		/// <summary>A collection of all <see cref="ApiScope"/> objects which were obtained from the database.</summary>
 		public IEnumerable<SerializableApiScope> ApiScopes { get; init; }
@@ -16,7 +16,7 @@ namespace SimpleOidcOauth.Tests.Integration.Models
 		public IEnumerable<SerializableApiResource> ApiResources { get; init; }
 		/// <summary>A collection of all <see cref="IdentityResource"/> objects which were obtained from the database.</summary>
 		public IEnumerable<SerializableIdentityResource> IdentityResources { get; init; }
-		/// <summary>A collection of all <see cref="UserDto"/> objects which were obtained from the database.</summary>
+		/// <summary>A collection of all <see cref="SerializableTestUser"/> objects which were obtained from the database.</summary>
 		public IEnumerable<SerializableTestUser> Users { get; init; }
 	}
 }

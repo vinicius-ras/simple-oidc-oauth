@@ -80,7 +80,6 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 		///         This instance is expected to be configured to NOT automatically follow HTTP redirections,
 		///         as these will be treated internally.
 		///     </para>
-
 		/// </param>
 		/// <typeparam name="TStartup">The type of the startup class used by the test server.</typeparam>
 		/// <returns>Returns a string containing the URL where the user needs to be redirected to after a successful login is performed.</returns>
