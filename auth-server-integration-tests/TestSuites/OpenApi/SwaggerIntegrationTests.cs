@@ -10,7 +10,7 @@ using SimpleOidcOauth.Data.Configuration;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SimpleOidcOauth.Tests.Integration.TestSuites.Misc
+namespace SimpleOidcOauth.Tests.Integration.TestSuites.OpenApi
 {
 	/// <summary>Integration tests for the OpenAPI (Swagger) implementation via Swashbuckle.</summary>
 	public class SwaggerIntegrationTests : IntegrationTestBase

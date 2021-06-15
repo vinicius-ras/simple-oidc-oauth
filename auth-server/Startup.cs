@@ -203,9 +203,10 @@ namespace SimpleOidcOauth
                 };
                 opts.SwaggerDoc(swaggerConfigs.ApiDocumentNameUrlFriendly, openApiInfo);
 
-                // Configure some other Swashbuckle's options and filters
+                // Configure some other Swashbuckle's options and global filters
                 opts.EnableAnnotations();
                 opts.SchemaFilter<ValidationProblemDetailsFilter>();
+                opts.OperationFilter<CustomResponseHeaderOperationFilter>();
             });
 
 

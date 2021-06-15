@@ -7,15 +7,18 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.Data.Serialization;
+using SimpleOidcOauth.OpenApi.Swagger.Attributes;
 using SimpleOidcOauth.OpenApi.Swagger.Filters;
 using Swashbuckle.AspNetCore.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace SimpleOidcOauth.Controllers
@@ -196,6 +199,7 @@ namespace SimpleOidcOauth.Controllers
 		[ProducesResponseType(401)]
 		[ProducesResponseType(403)]
 		[ProducesErrorResponseType(typeof(void))]
+		[CustomResponseHeader(StatusCode = HttpStatusCode.Created, HeaderName = nameof(HeaderNames.Location), Description = "URI to the newly registered Client Application's data.")]
 		public async Task<ActionResult<SerializableClient>> CreateNewClientApplication([FromBody] SerializableClient client)
 		{
 			// Validate incoming data
