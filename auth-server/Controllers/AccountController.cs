@@ -134,8 +134,11 @@ namespace SimpleOidcOauth.Controllers
 		/// <param name="inputData">User credentials data sent for performing authentication.</param>
 		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
 		/// <response code="200">Indicates the login was successful. A <see cref="LoginOutputModel" /> instance will be returned in the response body.</response>
+		/// <response code="400">Indicates the sent credentials contain invalid/missing data (e.g., malformed emails, missing password, etc).</response>
 		/// <response code="401">Indicates the login procedure failed for some reason (e.g., invalid credentials, invalid redirection target, etc).</response>
 		[HttpPost(AppEndpoints.LoginUri)]
+		[ProducesResponseType(typeof(LoginOutputModel), (int)HttpStatusCode.OK)]
+		[ProducesResponseType(typeof(ValidationProblemDetails), (int)HttpStatusCode.BadRequest)]
 		public async Task<ActionResult<LoginOutputModel>> Login([FromBody] LoginInputModel inputData)
 		{
 			// If there is a return URL, then there must be a valid Authorization Context (else, this might be a malicious redirection attempt)
