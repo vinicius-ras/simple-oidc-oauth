@@ -14,6 +14,7 @@ using Microsoft.OpenApi.Models;
 using SimpleOidcOauth.Data;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.Security;
+using SimpleOidcOauth.Data.Serialization;
 using SimpleOidcOauth.IdentityServer;
 using SimpleOidcOauth.OpenApi.Swagger.Filters;
 using SimpleOidcOauth.Security.Authorization.Handlers;
@@ -70,7 +71,10 @@ namespace SimpleOidcOauth
                 connStrISOperationalStore = _config.GetConnectionString(AppConfigs.ConnectionStringIdentityServerOperational);
 
             // Add controllers only (we don't need full MVC support for this project)
-            services.AddControllers();
+            services.AddControllers()
+                .AddJsonOptions(opts => {
+                    opts.JsonSerializerOptions.Converters.Add(new PolymorphicDiscriminatorJsonConverterFactory());
+                });
 
 
             // Add database access services

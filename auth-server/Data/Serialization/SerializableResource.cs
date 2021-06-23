@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using IdentityServer4.Models;
 using SimpleOidcOauth.OpenApi.Swagger.Filters;
 using Swashbuckle.AspNetCore.Annotations;
@@ -9,8 +10,9 @@ namespace SimpleOidcOauth.Data.Serialization
 	/// <summary>A serializable version of a resource (API Scope, API Resource, or Identity Resource).</summary>
 	/// <remarks>This class represents a serializable version of the <see cref="Resource"/> class.</remarks>
 	[SwaggerSchemaFilter(typeof(SerializableResourceSchemaFilter))]
-	public class SerializableResource
+	public abstract class SerializableResource : IPolymorphicDiscriminator
 	{
+		// INSTANCE PROPERTIES
 		/// <summary>Indicates if this resource is enabled.</summary>
 		public bool Enabled { get; set; }
 		/// <summary>The unique name of the resource.</summary>
@@ -33,5 +35,13 @@ namespace SimpleOidcOauth.Data.Serialization
 		/// <summary>Gets or sets the custom properties for the resource.</summary>
 		/// <value>The properties.</value>
 		public IDictionary<string, string> Properties { get; set; }
+
+
+
+
+
+		// INTERFACE IMPLEMENTATION: IPolymorphicDiscriminator
+		/// <inheritdoc />
+		public abstract string DiscriminatorValue { get; }
 	}
 }

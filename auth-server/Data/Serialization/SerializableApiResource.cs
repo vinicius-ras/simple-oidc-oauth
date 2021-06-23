@@ -6,6 +6,7 @@ namespace SimpleOidcOauth.Data.Serialization
 	/// <summary>A serializable version of a <see cref="ApiResource"/> object.</summary>
 	public class SerializableApiResource : SerializableResource
 	{
+		// INSTANCE PROPERTIES
 		/// <summary>
 		///     The API secret is used for the introspection endpoint. The API can authenticate
 		///     with introspection using the API name and secret.
@@ -18,5 +19,13 @@ namespace SimpleOidcOauth.Data.Serialization
 		///     algorithm.
 		/// </summary>
 		public IEnumerable<string> AllowedAccessTokenSigningAlgorithms { get; set; }
+
+
+
+
+
+		// INTERFACE OVERRIDES: IPolymorphicDiscriminator
+		/// <inheritdoc/>
+		public override string DiscriminatorValue => "api-resource";
 	}
 }

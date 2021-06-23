@@ -159,17 +159,19 @@ namespace SimpleOidcOauth.Controllers
 		{
 			// Retrieve all resources
 			var apiScopes = await _configurationDbContext.ApiScopes
-				.Select(apiScope => _mapper.Map<SerializableResource>(apiScope.ToModel()))
+				.Select(apiScope => _mapper.Map<SerializableApiScope>(apiScope.ToModel()))
 				.ToListAsync();
 			var apiResources = await _configurationDbContext.ApiResources
-				.Select(apiResource => _mapper.Map<SerializableResource>(apiResource.ToModel()))
+				.Select(apiResource => _mapper.Map<SerializableApiResource>(apiResource.ToModel()))
 				.ToListAsync();
 			var identityResources = await _configurationDbContext.IdentityResources
-				.Select(identityResource => _mapper.Map<SerializableResource>(identityResource.ToModel()))
+				.Select(identityResource => _mapper.Map<SerializableIdentityResource>(identityResource.ToModel()))
 				.ToListAsync();
 
 			// Return all results
-			var allResources = apiScopes.Concat(apiResources)
+			var allResources = Enumerable.Empty<SerializableResource>()
+				.Concat(apiScopes)
+				.Concat(apiResources)
 				.Concat(identityResources);
 			return allResources;
 		}
