@@ -28,7 +28,7 @@ namespace SimpleOidcOauth.Data.ValidationAttributes
 
 
 
-		// OVERRIDEN METHODS: ValidationAttribute
+		// OVERRIDDEN METHODS: ValidationAttribute
 		/// <inheritdoc />
 		public override bool IsValid(object value)
 		{
