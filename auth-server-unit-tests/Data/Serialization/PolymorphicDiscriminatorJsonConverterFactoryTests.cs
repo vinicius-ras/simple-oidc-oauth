@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -368,6 +369,182 @@ namespace SimpleOidcOauth.Tests.Unit.Data
 
 			// ***** Assert *****
 			Assert.Throws<JsonException>(deserializationAction);
+		}
+
+
+		[Fact]
+		public void WriteAndRead_DeserializingIEnumerable_DeserializesObjectsorrectly()
+		{
+			// Arrange
+			var serializationOptions = GetJsonSerializerOptionsForTests();
+			IEnumerable<BaseType> sampleObjects = new BaseType[]
+			{
+				_derivedObjectSample1,
+				_derivedObjectSample2
+			};
+
+
+			// Act
+			var validSerializedJsonContents = JsonSerializer.Serialize(sampleObjects, serializationOptions);
+			var parsedCollection = JsonSerializer.Deserialize<IEnumerable<BaseType>>(validSerializedJsonContents, serializationOptions);
+			var parsedDerived1 = parsedCollection.OfType<DerivedType1>().Single();
+			var parsedDerived2 = parsedCollection.OfType<DerivedType2>().Single();
+
+			// Assert
+			Assert.IsType<DerivedType1>(parsedDerived1);
+			Assert.IsType<DerivedType2>(parsedDerived2);
+
+			Assert.Equal(_derivedObjectSample1.StringProp, parsedDerived1.StringProp);
+			Assert.Equal(_derivedObjectSample1.IntProp, parsedDerived1.IntProp);
+			Assert.Equal(_derivedObjectSample1.InitReadOnlyProp, parsedDerived1.InitReadOnlyProp);
+			Assert.Equal(_derivedObjectSample1.DiscriminatorValue, parsedDerived1.DiscriminatorValue);
+			Assert.Equal(DerivedType1DiscriminatorValue, parsedDerived1.DiscriminatorValue);
+			Assert.Equal(((DerivedType1)_derivedObjectSample1).DerivedType1Prop, ((DerivedType1)parsedDerived1).DerivedType1Prop);
+			Assert.Equal(_derivedObjectSample1.DoubleArray.Length, parsedDerived1.DoubleArray.Length);
+			for (int i = _derivedObjectSample1.DoubleArray.Length - 1; i >= 0; i--)
+				Assert.True(DoublesRoughlyEqual(_derivedObjectSample1.DoubleArray[i], parsedDerived1.DoubleArray[i]));
+
+			Assert.Equal(_derivedObjectSample2.StringProp, parsedDerived2.StringProp);
+			Assert.Equal(_derivedObjectSample2.IntProp, parsedDerived2.IntProp);
+			Assert.Equal(_derivedObjectSample2.InitReadOnlyProp, parsedDerived2.InitReadOnlyProp);
+			Assert.Equal(_derivedObjectSample2.DiscriminatorValue, parsedDerived2.DiscriminatorValue);
+			Assert.Equal(DerivedType2DiscriminatorValue, parsedDerived2.DiscriminatorValue);
+			Assert.Equal(((DerivedType2)_derivedObjectSample2).DerivedType2ReadOnlyProp, ((DerivedType2)parsedDerived2).DerivedType2ReadOnlyProp);
+			Assert.Equal(_derivedObjectSample2.DoubleArray.Length, parsedDerived2.DoubleArray.Length);
+			for (int i = _derivedObjectSample2.DoubleArray.Length - 1; i >= 0; i--)
+				Assert.True(DoublesRoughlyEqual(_derivedObjectSample2.DoubleArray[i], parsedDerived2.DoubleArray[i]));
+		}
+
+
+		[Fact]
+		public void WriteAndRead_DeserializingArray_DeserializesObjectsorrectly()
+		{
+			// Arrange
+			var serializationOptions = GetJsonSerializerOptionsForTests();
+			IEnumerable<BaseType> sampleObjects = new BaseType[]
+			{
+				_derivedObjectSample1,
+				_derivedObjectSample2
+			};
+
+
+			// Act
+			var validSerializedJsonContents = JsonSerializer.Serialize(sampleObjects, serializationOptions);
+			var parsedCollection = JsonSerializer.Deserialize<BaseType[]>(validSerializedJsonContents, serializationOptions);
+			var parsedDerived1 = parsedCollection.OfType<DerivedType1>().Single();
+			var parsedDerived2 = parsedCollection.OfType<DerivedType2>().Single();
+
+			// Assert
+			Assert.IsType<DerivedType1>(parsedDerived1);
+			Assert.IsType<DerivedType2>(parsedDerived2);
+
+			Assert.Equal(_derivedObjectSample1.StringProp, parsedDerived1.StringProp);
+			Assert.Equal(_derivedObjectSample1.IntProp, parsedDerived1.IntProp);
+			Assert.Equal(_derivedObjectSample1.InitReadOnlyProp, parsedDerived1.InitReadOnlyProp);
+			Assert.Equal(_derivedObjectSample1.DiscriminatorValue, parsedDerived1.DiscriminatorValue);
+			Assert.Equal(DerivedType1DiscriminatorValue, parsedDerived1.DiscriminatorValue);
+			Assert.Equal(((DerivedType1)_derivedObjectSample1).DerivedType1Prop, ((DerivedType1)parsedDerived1).DerivedType1Prop);
+			Assert.Equal(_derivedObjectSample1.DoubleArray.Length, parsedDerived1.DoubleArray.Length);
+			for (int i = _derivedObjectSample1.DoubleArray.Length - 1; i >= 0; i--)
+				Assert.True(DoublesRoughlyEqual(_derivedObjectSample1.DoubleArray[i], parsedDerived1.DoubleArray[i]));
+
+			Assert.Equal(_derivedObjectSample2.StringProp, parsedDerived2.StringProp);
+			Assert.Equal(_derivedObjectSample2.IntProp, parsedDerived2.IntProp);
+			Assert.Equal(_derivedObjectSample2.InitReadOnlyProp, parsedDerived2.InitReadOnlyProp);
+			Assert.Equal(_derivedObjectSample2.DiscriminatorValue, parsedDerived2.DiscriminatorValue);
+			Assert.Equal(DerivedType2DiscriminatorValue, parsedDerived2.DiscriminatorValue);
+			Assert.Equal(((DerivedType2)_derivedObjectSample2).DerivedType2ReadOnlyProp, ((DerivedType2)parsedDerived2).DerivedType2ReadOnlyProp);
+			Assert.Equal(_derivedObjectSample2.DoubleArray.Length, parsedDerived2.DoubleArray.Length);
+			for (int i = _derivedObjectSample2.DoubleArray.Length - 1; i >= 0; i--)
+				Assert.True(DoublesRoughlyEqual(_derivedObjectSample2.DoubleArray[i], parsedDerived2.DoubleArray[i]));
+		}
+
+
+		[Fact]
+		public void WriteAndRead_DeserializingCollectionHashSet_DeserializesObjectsorrectly()
+		{
+			// Arrange
+			var serializationOptions = GetJsonSerializerOptionsForTests();
+			IEnumerable<BaseType> sampleObjects = new BaseType[]
+			{
+				_derivedObjectSample1,
+				_derivedObjectSample2
+			};
+
+
+			// Act
+			var validSerializedJsonContents = JsonSerializer.Serialize(sampleObjects, serializationOptions);
+			var parsedCollection = JsonSerializer.Deserialize<HashSet<BaseType>>(validSerializedJsonContents, serializationOptions);
+			var parsedDerived1 = parsedCollection.OfType<DerivedType1>().Single();
+			var parsedDerived2 = parsedCollection.OfType<DerivedType2>().Single();
+
+			// Assert
+			Assert.IsType<DerivedType1>(parsedDerived1);
+			Assert.IsType<DerivedType2>(parsedDerived2);
+
+			Assert.Equal(_derivedObjectSample1.StringProp, parsedDerived1.StringProp);
+			Assert.Equal(_derivedObjectSample1.IntProp, parsedDerived1.IntProp);
+			Assert.Equal(_derivedObjectSample1.InitReadOnlyProp, parsedDerived1.InitReadOnlyProp);
+			Assert.Equal(_derivedObjectSample1.DiscriminatorValue, parsedDerived1.DiscriminatorValue);
+			Assert.Equal(DerivedType1DiscriminatorValue, parsedDerived1.DiscriminatorValue);
+			Assert.Equal(((DerivedType1)_derivedObjectSample1).DerivedType1Prop, ((DerivedType1)parsedDerived1).DerivedType1Prop);
+			Assert.Equal(_derivedObjectSample1.DoubleArray.Length, parsedDerived1.DoubleArray.Length);
+			for (int i = _derivedObjectSample1.DoubleArray.Length - 1; i >= 0; i--)
+				Assert.True(DoublesRoughlyEqual(_derivedObjectSample1.DoubleArray[i], parsedDerived1.DoubleArray[i]));
+
+			Assert.Equal(_derivedObjectSample2.StringProp, parsedDerived2.StringProp);
+			Assert.Equal(_derivedObjectSample2.IntProp, parsedDerived2.IntProp);
+			Assert.Equal(_derivedObjectSample2.InitReadOnlyProp, parsedDerived2.InitReadOnlyProp);
+			Assert.Equal(_derivedObjectSample2.DiscriminatorValue, parsedDerived2.DiscriminatorValue);
+			Assert.Equal(DerivedType2DiscriminatorValue, parsedDerived2.DiscriminatorValue);
+			Assert.Equal(((DerivedType2)_derivedObjectSample2).DerivedType2ReadOnlyProp, ((DerivedType2)parsedDerived2).DerivedType2ReadOnlyProp);
+			Assert.Equal(_derivedObjectSample2.DoubleArray.Length, parsedDerived2.DoubleArray.Length);
+			for (int i = _derivedObjectSample2.DoubleArray.Length - 1; i >= 0; i--)
+				Assert.True(DoublesRoughlyEqual(_derivedObjectSample2.DoubleArray[i], parsedDerived2.DoubleArray[i]));
+		}
+
+
+		[Fact]
+		public void WriteAndRead_DeserializingCollectionQueue_DeserializesObjectsorrectly()
+		{
+			// Arrange
+			var serializationOptions = GetJsonSerializerOptionsForTests();
+			IEnumerable<BaseType> sampleObjects = new BaseType[]
+			{
+				_derivedObjectSample1,
+				_derivedObjectSample2
+			};
+
+
+			// Act
+			var validSerializedJsonContents = JsonSerializer.Serialize(sampleObjects, serializationOptions);
+			var parsedCollection = JsonSerializer.Deserialize<Queue<BaseType>>(validSerializedJsonContents, serializationOptions);
+			var parsedDerived1 = parsedCollection.OfType<DerivedType1>().Single();
+			var parsedDerived2 = parsedCollection.OfType<DerivedType2>().Single();
+
+			// Assert
+			Assert.IsType<DerivedType1>(parsedDerived1);
+			Assert.IsType<DerivedType2>(parsedDerived2);
+
+			Assert.Equal(_derivedObjectSample1.StringProp, parsedDerived1.StringProp);
+			Assert.Equal(_derivedObjectSample1.IntProp, parsedDerived1.IntProp);
+			Assert.Equal(_derivedObjectSample1.InitReadOnlyProp, parsedDerived1.InitReadOnlyProp);
+			Assert.Equal(_derivedObjectSample1.DiscriminatorValue, parsedDerived1.DiscriminatorValue);
+			Assert.Equal(DerivedType1DiscriminatorValue, parsedDerived1.DiscriminatorValue);
+			Assert.Equal(((DerivedType1)_derivedObjectSample1).DerivedType1Prop, ((DerivedType1)parsedDerived1).DerivedType1Prop);
+			Assert.Equal(_derivedObjectSample1.DoubleArray.Length, parsedDerived1.DoubleArray.Length);
+			for (int i = _derivedObjectSample1.DoubleArray.Length - 1; i >= 0; i--)
+				Assert.True(DoublesRoughlyEqual(_derivedObjectSample1.DoubleArray[i], parsedDerived1.DoubleArray[i]));
+
+			Assert.Equal(_derivedObjectSample2.StringProp, parsedDerived2.StringProp);
+			Assert.Equal(_derivedObjectSample2.IntProp, parsedDerived2.IntProp);
+			Assert.Equal(_derivedObjectSample2.InitReadOnlyProp, parsedDerived2.InitReadOnlyProp);
+			Assert.Equal(_derivedObjectSample2.DiscriminatorValue, parsedDerived2.DiscriminatorValue);
+			Assert.Equal(DerivedType2DiscriminatorValue, parsedDerived2.DiscriminatorValue);
+			Assert.Equal(((DerivedType2)_derivedObjectSample2).DerivedType2ReadOnlyProp, ((DerivedType2)parsedDerived2).DerivedType2ReadOnlyProp);
+			Assert.Equal(_derivedObjectSample2.DoubleArray.Length, parsedDerived2.DoubleArray.Length);
+			for (int i = _derivedObjectSample2.DoubleArray.Length - 1; i >= 0; i--)
+				Assert.True(DoublesRoughlyEqual(_derivedObjectSample2.DoubleArray[i], parsedDerived2.DoubleArray[i]));
 		}
 	}
 }
