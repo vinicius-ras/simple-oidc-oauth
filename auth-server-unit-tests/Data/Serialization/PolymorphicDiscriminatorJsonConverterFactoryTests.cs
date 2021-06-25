@@ -10,7 +10,7 @@ using Xunit;
 namespace SimpleOidcOauth.Tests.Unit.Data
 {
 	/// <summary>Unit tests for the <see cref="PolymorphicDiscriminatorJsonConverterFactory"/> class, along with its related <see cref="IPolymorphicDiscriminator"/> interface.</summary>
-	public class PolymorphicDiscriminatorJsonConverterTests
+	public class PolymorphicDiscriminatorJsonConverterFactoryTests
 	{
 		// CONSTANTS
 		/// <summary>Discriminator value for the first derived class type which was declared for the tests.</summary>
@@ -98,7 +98,7 @@ namespace SimpleOidcOauth.Tests.Unit.Data
 		private static JsonSerializerOptions GetJsonSerializerOptionsForTests()
 		{
 			var converterConfigs = new PolymorphicDiscriminatorJsonConverterFactoryConfigs();
-			converterConfigs.ExtraAssembliesToParse.Add(typeof(PolymorphicDiscriminatorJsonConverterTests).Assembly);
+			converterConfigs.ExtraAssembliesToParse.Add(typeof(PolymorphicDiscriminatorJsonConverterFactoryTests).Assembly);
 
 			var result = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 			result.Converters.Add(new PolymorphicDiscriminatorJsonConverterFactory(converterConfigs));
