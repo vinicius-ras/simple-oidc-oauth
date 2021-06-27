@@ -143,6 +143,15 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 			AllowedGrantTypes = GrantTypes.ClientCredentials,
 			ClientSecrets = { new Secret(PlainTextPasswordClientClientCredentialsFlow.Sha256()) },
 			AllowedScopes = { ScopeApiResourceUserManagement, ScopeApiResourceProducts },
+			AllowedCorsOrigins = {
+				"http://fake-cors-origin-5455bc181e3240b680b47a9c4479979f.com",
+			},
+			PostLogoutRedirectUris = {
+				"http://fake-cors-origin-5455bc181e3240b680b47a9c4479979f.com/post-logout",
+			},
+			RedirectUris = {
+				"http://fake-cors-origin-5455bc181e3240b680b47a9c4479979f.com/post-login",
+			},
 		};
 
 

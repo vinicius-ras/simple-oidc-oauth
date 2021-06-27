@@ -150,6 +150,40 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 		}
 
 
+		/// <summary>Performs an HTTP Request to the login endpoint.</summary>
+		/// <remarks>
+		///     This method uses the given HTTP Client to perform a login request, sending user credentials in the request's body.
+		///     The used <see cref="HttpClient"/> will receive and store authentication cookies to use for further authenticated requests (provided
+		///     that the <see cref="HttpClient"/> is not configured to discard/ignore these cookies in any ways, of course).
+		/// </remarks>
+		/// <param name="httpClient">An HTTP Client used to communicate with the Test Host.</param>
+		/// <param name="userName">The user name, to be sent as the user's credentials.</param>
+		/// <param name="password">The password of the user, to be sent as the user's credentials.</param>
+		/// <param name="returnUrl">
+		///     <para>The Return URL, as returned by a previous call to the OAuth 2.0 Authorize Endpoint.</para>
+		///     <para>
+		///         This parameter is only necessary for OAuth authorization flows. It might be set to <c>null</c> for cases
+		///         where the only need is to perform a login operation to obtain authentication cookies (e.g., for calling the IdP Management Interface APIs to add a
+		///         new Client Application, User, API Resource, etc).
+		///     </para>
+		/// </param>
+		/// <returns>
+		///     Returns an object containing the HTTP Response message.
+		///     The possible contents of this response are described in the documentation for the POST method on the <see cref="AppEndpoints.LoginUri"/> endpoint.
+		/// </returns>
+		public static async Task<HttpResponseMessage> PerformRequestToLoginEndpointAsync(HttpClient httpClient, string userName, string password, string returnUrl = null)
+		{
+			var loginInputData = new LoginInputModel
+			{
+				Email = userName,
+				Password = password,
+				ReturnUrl = returnUrl ?? string.Empty,
+			};
+			var loginResult = await httpClient.PostAsync(AppEndpoints.LoginUri, JsonContent.Create(loginInputData));
+			return loginResult;
+		}
+
+
 		/// <summary>
 		///     Utility method for trying to perform a login operation with the given user's account.
 		///     The Authorize Endpoint running in the Test Host will be called as appropriate.
@@ -196,13 +230,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 
 			// Send the user credentials and post-login return URL to the login endpoint
 			var targetUserEmail = targetUser.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
-			var loginInputData = new LoginInputModel
-			{
-				Email = targetUserEmail,
-				Password = targetUser.Password,
-				ReturnUrl = returnUrlAfterLogin,
-			};
-			var loginResult = await httpClient.PostAsync(AppEndpoints.LoginUri, JsonContent.Create(loginInputData));
+			var loginResult = await PerformRequestToLoginEndpointAsync(httpClient, targetUserEmail, targetUser.Password, returnUrlAfterLogin);
 
 			// Return the result to the client code as appropriate
 			if (loginResult.IsSuccessStatusCode)

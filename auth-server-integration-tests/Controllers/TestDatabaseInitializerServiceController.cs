@@ -15,10 +15,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SimpleOidcOauth.Data.Security;
+using SimpleOidcOauth.Tests.Integration.TestSuites.Services;
 
 namespace SimpleOidcOauth.Tests.Integration.Controllers
 {
-	/// <summary>A special controller used to test the <see cref="IDatabaseInitializerService"/>.</summary>
+	/// <summary>A special controller wich provides easy access to the <see cref="IDatabaseInitializerService"/>.</summary>
+	/// <remarks>
+	///     <para>
+	///         The first purpose of this controller is to be used for testing the <see cref="IDatabaseInitializerService"/>.
+	///         This is accomplished by the <see cref="DatabaseInitializerServiceTests"/> test suite.
+	///     </para>
+	///     <para>
+	///         The second purpose of this controller is to be used for initializing the database for integration tests that require some
+	///         level of control over the data stored in the database. These integration tests can perform a request to the database-initialization endpoints
+	///         of this controller to easily initialize the database (with test users, client applications, etc) before actually performing the tests.
+	///     </para>
+	/// </remarks>
 	[ApiController]
 	public class TestDatabaseInitializerServiceController : ControllerBase
 	{
@@ -77,10 +89,9 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 		///     Any POSTed data will be used in a call to the target method.
 		/// </summary>
 		/// <param name="input">The data to be used to initialize the test database.</param>
-		/// <returns>
-		///     <para>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</para>
-		///     <para>This endpoint should always return an HTTP 200 (Ok) Status Code.</para>
-		/// </returns>
+		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
+		/// <response code="200">Response returned to indicate the operation was successful.</response>
+		/// <response code="400">Indicates the request's body contains invalid/malformed data.</response>
 		[HttpPost(InitializeDatabaseEndpoint)]
 		public async Task<IActionResult> InitializeDatabase([FromBody] TestDatabaseInitializerInputModel input)
 		{

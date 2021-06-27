@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -142,6 +143,7 @@ namespace SimpleOidcOauth.Data.Serialization
         ///     value. This pair is used to discover what type of Derived-<see cref="Type"/> should be generated when trying to serialize/deserialize a specific
         ///     Base-<see cref="Type"/> while using some target discriminator value.
         /// </remarks>
+        [DebuggerDisplay(@"Type {BaseType.Name} + Discriminator {DiscriminatorValue}")]
         private struct TypeDiscriminatorKey
         {
             /// <summary>The Base-<see cref="Type"/> of the object that needs to be serialized/deserialized.</summary>
