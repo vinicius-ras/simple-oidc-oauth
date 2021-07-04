@@ -35,7 +35,8 @@
     "react-select": "^4.1.0",
     "tailwindcss": "^2.0.3",
     "typedoc": "^0.20.28",
-    "typescript": "^4.2.2"
+    "typescript": "^4.2.2",
+    "uuid": "^8.3.2"
   },
   "scripts": {
     "postcss:watch": "postcss src/css/tailwind.css -o src/css/build/app.css --watch",
@@ -59,5 +60,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/uuid": "^8.3.1"
   }
 }
