@@ -1,0 +1,3 @@
+.component-CustomDatePicker {
+	@apply border border-gray-500 rounded-lg p-2 outline-none;
+}

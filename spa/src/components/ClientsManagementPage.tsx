@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { GrantTypes } from '../data/IdentityModel/OidcConstants';
-import IdentityServerConstants from '../data/IdentityServerConstants';
 import SerializableClient from '../data/SerializableClient';
 import SerializableResource from '../data/SerializableResource';
 import SerializableSecret from '../data/SerializableSecret';
@@ -17,6 +16,7 @@ import CheckBox from './CheckBox';
 import ErrorAlert from './ErrorAlert';
 import { ErrorDisplayMode } from './ErrorText';
 import InputElement from './InputElement';
+import SecretsList from './SecretsList';
 import WorkerButtonLinkWithIcon from './WorkerButtonLinkWithIcon';
 
 /** Maps the name of a Grant Type to a corresponding "friendlier" name. */
@@ -325,22 +325,7 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 							<label className="block mt-2">
 								Registered client secrets:
 								<ErrorAlert alertBox={{ color: AlertColor.ERROR }} errorText={{ displayMode: ErrorDisplayMode.ERROR_KEY, errorKey: "ClientSecrets" }} />
-								<CreatableSelect isMulti
-									placeholder="Click to add a Client App's Secret."
-									noOptionsMessage={() => "Type a Client App's Secret to add it."}
-									formatCreateLabel={() => `Click here or press ENTER/TAB to add this Client App's Secret.`}
-									options={selectedClientEntry.clientSecrets ?? []}
-									getOptionValue={secret => secret?.value ?? ""}
-									getOptionLabel={secret => secret?.description ?? secret?.value ?? ""}
-									getNewOptionData={(inputText, creationLabel) => ({
-										value: inputText,
-										description: creationLabel as string,
-										type: IdentityServerConstants.SecretTypes.SharedSecret,
-										isValueHashed: false,
-									})}
-									value={selectedClientEntry.clientSecrets ?? []}
-									onChange={secretEntries => onClientSecretChange([...secretEntries])}
-									isDisabled={shouldDisableControls} />
+								<SecretsList secrets={selectedClientEntry.clientSecrets ?? []} onChange={newSecrets => setSelectedClientEntry(curData => ({ ...curData, clientSecrets: newSecrets}))} />
 							</label>
 
 

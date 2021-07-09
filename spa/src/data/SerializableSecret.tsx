@@ -4,8 +4,8 @@ type SerializableSecret = {
 	description?: string,
 	/** The secret's actual value ("password"). */
 	value?: string,
-	/** The secret's expiration date and time, in the format "yyyy-MM-ddTHH:mm:ss.fffffffK". */
-	expiration?: string,
+	/** The secret's expiration date and time. */
+	expiration?: Date,
 	/** The type of the secret. Secret types supported by IdentityServer4 can be found at the {@link IdentityServerConstants} class. */
 	type?: string,
 	/** A flag indicating if the {@link value} property is either in hashed or in plaintext format. This property is transient (not saved to the database).
