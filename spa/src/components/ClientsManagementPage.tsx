@@ -16,7 +16,7 @@ import CheckBox from './CheckBox';
 import ErrorAlert from './ErrorAlert';
 import { ErrorDisplayMode } from './ErrorText';
 import InputElement from './InputElement';
-import SecretsList from './SecretsList';
+import SecretsList, { createSecretsListContext, SecretsListContext } from './SecretsList';
 import WorkerButtonLinkWithIcon from './WorkerButtonLinkWithIcon';
 
 /** Maps the name of a Grant Type to a corresponding "friendlier" name. */
@@ -58,6 +58,18 @@ export interface ClientsManagementPageProps
 function ClientsManagementPage(props: ClientsManagementPageProps) {
 	const [availableClients, setAvailableClients] = useState<SerializableClient[]>([]);
 	const [selectedClientEntry, setSelectedClientEntry] = useState<SerializableClient|null>(null);
+
+	const [clientSecrets, setClientSecrets] = useState<SerializableSecret[]>([]);
+	const [isClientSecretBeingEdited, setIsClientSecretBeingEdited] = useState<boolean[]>([]);
+	const [copyStates, setCopyStates] = useState<SecretsListContext["copyStates"]>([]);
+	const [SecretsListContextObject] = useState(createSecretsListContext({
+		clientSecrets,
+		setClientSecrets,
+		isClientSecretBeingEdited,
+		setIsClientSecretBeingEdited,
+		copyStates,
+		setCopyStates,
+	}));
 
 	const [allGrantTypeDescriptors, setAllGrantTypeDescriptors] = useState<ReadonlyArray<GrantTypeDescriptor>>([]);
 	const [availableResources, setAvailableResources] = useState<ReadonlyArray<SerializableResource>>([]);
@@ -110,23 +122,6 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 	}
 
 
-	/** Called when a Client Secret is added/removed from the list.
-	 * @param secretEntries The entries of the select component which holds the Client Secrets. */
-	function onClientSecretChange(secretEntries: SerializableSecret[]) {
-		// Unhashed secrets will have their descriptions cleared, preventing the "description" field in the database
-		// from containing the plaintext password typed for the secret
-		secretEntries.forEach(secret => {
-			if (secret.isValueHashed === false)
-				delete secret.description;
-		});
-
-		setSelectedClientEntry(curData => ({
-			...curData,
-			clientSecrets: [...secretEntries]
-		}));
-	}
-
-
 	/** Submits the data for the currently edited client to the back-end, so that it can be saved.
 	 * @param evt Object representing the click on the "save client" button. */
 	async function saveClient(evt: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
@@ -135,12 +130,20 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 		setIsSubmittingClientData(true);
 		try {
 			// Decide which endpoint to call: either PUT (update existing client) or POST (create new client)
+			const dataToSend : SerializableClient = {
+				...selectedClientEntry,
+				clientSecrets,
+			}
 			const response = (selectedClientEntry?.clientId)
 				? await AxiosService.getInstance()
-					.put<SerializableClient>(AppConfigurationService.Endpoints.UpdateClientApplication(selectedClientEntry.clientId), selectedClientEntry)
+					.put<SerializableClient>(AppConfigurationService.Endpoints.UpdateClientApplication(selectedClientEntry.clientId), dataToSend)
 				: await AxiosService.getInstance()
-					.post<SerializableClient>(AppConfigurationService.Endpoints.CreateNewClientApplication, selectedClientEntry);
+					.post<SerializableClient>(AppConfigurationService.Endpoints.CreateNewClientApplication, dataToSend);
 
+			setAvailableClients(oldClients => oldClients.map(client =>
+				client.clientId === selectedClientEntry?.clientId
+					? response.data
+					: client));
 			setSelectedClientEntry(response.data);
 		} catch (error) {
 			console.error("Failed to save client's data: ", error);
@@ -209,11 +212,29 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 	}, [availableClients]);
 
 
+	// Effect: when the client currently being edited is changed, update the context used to render the Client Secrets list
+	useEffect(() => {
+		const secretsData = selectedClientEntry?.clientSecrets ?? [];
+		setClientSecrets(secretsData);
+		setCopyStates(Lodash.times(secretsData.length, Lodash.constant('idle')));
+		setIsClientSecretBeingEdited(Lodash.times(secretsData.length, Lodash.constant(false)));
+	}, [selectedClientEntry]);
+
+
 
 	// Render the component
 	const allPostLoginRedirectUris = selectedClientEntry?.redirectUris?.map(url => ({url} as RedirectUrlDescriptor)) ?? [],
 		allPostLogoutRedirectUris = selectedClientEntry?.postLogoutRedirectUris?.map(url => ({url} as RedirectUrlDescriptor)) ?? [],
 		allCorsOrigins = selectedClientEntry?.allowedCorsOrigins?.map(url => ({url} as RedirectUrlDescriptor)) ?? [];
+
+	const secretsListData : SecretsListContext = {
+		clientSecrets,
+		setClientSecrets,
+		isClientSecretBeingEdited,
+		setIsClientSecretBeingEdited,
+		copyStates,
+		setCopyStates,
+	};
 
 	const shouldDisableControls = (!availableClients || isSubmittingClientData);
 	return (
@@ -325,7 +346,9 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 							<label className="block mt-2">
 								Registered client secrets:
 								<ErrorAlert alertBox={{ color: AlertColor.ERROR }} errorText={{ displayMode: ErrorDisplayMode.ERROR_KEY, errorKey: "ClientSecrets" }} />
-								<SecretsList secrets={selectedClientEntry.clientSecrets ?? []} onChange={newSecrets => setSelectedClientEntry(curData => ({ ...curData, clientSecrets: newSecrets}))} />
+								<SecretsListContextObject.Provider value={secretsListData}>
+									<SecretsList context={SecretsListContextObject} />
+								</SecretsListContextObject.Provider>
 							</label>
 
 
