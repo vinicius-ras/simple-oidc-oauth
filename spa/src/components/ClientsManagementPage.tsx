@@ -205,11 +205,14 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 
 	// Effect: when the Clients list gets updated, update the currently selected client to the first one in the list
 	useEffect(() => {
+		if (selectedClientEntry)
+			return;
+
 		if (!availableClients?.[0])
 			setSelectedClientEntry(null);
 		else
 			setSelectedClientEntry({ ...availableClients[0] });
-	}, [availableClients]);
+	}, [availableClients, selectedClientEntry]);
 
 
 	// Effect: when the client currently being edited is changed, update the context used to render the Client Secrets list
