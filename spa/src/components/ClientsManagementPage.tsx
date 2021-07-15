@@ -142,7 +142,7 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 
 			setAvailableClients(oldClients => oldClients.map(client =>
 				client.clientId === selectedClientEntry?.clientId
-					? response.data
+					? SerializableClient.fixJsonDeserialization(response.data)
 					: client));
 			setSelectedClientEntry(response.data);
 		} catch (error) {
@@ -159,7 +159,9 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 			try {
 				const response = await AxiosService.getInstance()
 					.get<SerializableClient[]>(AppConfigurationService.Endpoints.GetAllRegisteredClients);
-				setAvailableClients(response.data);
+				const returnedData : SerializableClient[] = (response.data ?? [])
+					.map(client => SerializableClient.fixJsonDeserialization(client));
+				setAvailableClients(returnedData);
 			} catch (error) {
 				console.error(`Failed to retrieve registered Client Applications`, error);
 				setAvailableClients([]);
