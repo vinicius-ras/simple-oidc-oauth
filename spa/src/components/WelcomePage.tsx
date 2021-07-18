@@ -1,6 +1,7 @@
 import { faSignInAlt, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useState } from "react";
+import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "../redux/AppStoreCreation";
 import userInfoSlice from "../redux/slices/userInfoSlice";
@@ -31,6 +32,7 @@ export default function WelcomePage() {
 				.post(AppConfigurationService.Endpoints.Logout);
 			dispatch(userInfoSlice.actions.clearUserInfo());
 		} catch(err) {
+			toast.error("Something went wrong. Please, try again later.");
 			console.error("Logout failed", err);
 		}
 

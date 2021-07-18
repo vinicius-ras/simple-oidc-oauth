@@ -1,6 +1,7 @@
 import { library as FontAwesomeIconsLibrary } from '@fortawesome/fontawesome-svg-core';
 import { fab } from '@fortawesome/free-brands-svg-icons';
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import { Provider } from 'react-redux';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import { AlertColor } from './components/AlertBox';
@@ -21,6 +22,7 @@ FontAwesomeIconsLibrary.add(fab);
 function App() {
 	return (
 		<Provider store={AppStore}>
+			<Toaster />
 			<Router>
 				<div className="App">
 					<div className="w-screen max-w-md md:max-w-6xl">

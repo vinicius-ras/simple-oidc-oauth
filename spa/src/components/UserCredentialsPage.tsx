@@ -2,6 +2,7 @@ import { faSignInAlt, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import { AxiosError } from 'axios';
 import HttpStatusCode from "http-status-codes";
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { Redirect, useLocation } from 'react-router-dom';
 import { AppState } from '../redux/AppStoreCreation';
@@ -43,6 +44,7 @@ export default function UserCredentialsPage(props: UserCredentialsPageProps) {
 		if (redirectUrl)
 			isLocalRedirectUrl = (new URL(redirectUrl).origin === window.location.origin);
 	} catch (err) {
+		toast.error("Invalid redirection URL.");
 		console.error(`Error parsing login page's redirect URL: `, err);
 	}
 

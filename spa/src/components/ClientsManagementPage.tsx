@@ -2,6 +2,7 @@ import { faSave, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Lodash from 'lodash';
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { GrantTypes } from '../data/IdentityModel/OidcConstants';
@@ -146,6 +147,10 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 					: client));
 			setSelectedClientEntry(response.data);
 		} catch (error) {
+			const errorMsg = (selectedClientEntry?.clientId)
+				? "Failed to update the Client Application. Please, verify the form for errors."
+				: "Failed to create the new Client Application. Please, verify the form for errors.";
+			toast.error(errorMsg);
 			console.error("Failed to save client's data: ", error);
 		}
 		setIsSubmittingClientData(false);
@@ -163,7 +168,9 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 					.map(client => SerializableClient.fixJsonDeserialization(client));
 				setAvailableClients(returnedData);
 			} catch (error) {
-				console.error(`Failed to retrieve registered Client Applications`, error);
+				const errorMsg = "Failed to retrieve registered Client Applications. Please, verify your connection and if you are currently logged-in.";
+				toast.error(errorMsg);
+				console.error(errorMsg, error);
 				setAvailableClients([]);
 			}
 		}
@@ -179,7 +186,9 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 				}));
 				setAllGrantTypeDescriptors(receivedGrantTypes);
 			} catch (error) {
-				console.error(`Failed to retrieve available Grant Types`, error);
+				const errorMsg = "Failed to retrieve available Grant Types. Please, verify your connection and if you are currently logged-in.";
+				toast.error(errorMsg);
+				console.error(errorMsg, error);
 				setAllGrantTypeDescriptors([]);
 			}
 		}
@@ -192,7 +201,9 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 					.get<SerializableResource[]>(AppConfigurationService.Endpoints.GetAvailableClientRegistrationResources);
 				setAvailableResources(response.data);
 			} catch (error) {
-				console.error(`Failed to retrieve available Resources`, error);
+				const errorMsg = "Failed to retrieve available Resources. Please, verify your connection and if you are currently logged-in.";
+				toast.error(errorMsg);
+				console.error(errorMsg, error);
 				setAvailableResources([]);
 			}
 		}

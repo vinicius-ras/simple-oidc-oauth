@@ -1,6 +1,7 @@
 import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { AxiosResponse } from 'axios';
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useDispatch } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import userInfoSlice from '../redux/slices/userInfoSlice';
@@ -86,6 +87,7 @@ function LogoutPage(props: LogoutPageProps) {
 			// Dispatch a logout event
 			dispatch(userInfoSlice.actions.clearUserInfo());
 		} catch (err) {
+			toast.error("Something went wrong. Please, try again later.");
 			console.error(err);
 			setIsCallingLogoutEndpoint(false);
 		}
