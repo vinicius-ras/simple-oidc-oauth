@@ -1,7 +1,6 @@
 using AutoMapper;
 using IdentityServer4.EntityFramework.DbContexts;
-using IdentityServer4.EntityFramework.Mappers;
-using IdentityServer4.Models;
+using IdentityServer4.EntityFramework.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -20,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Is4HashExtensions = IdentityServer4.Models.HashExtensions;
 
 namespace SimpleOidcOauth.Controllers
 {
@@ -82,7 +82,7 @@ namespace SimpleOidcOauth.Controllers
 				.Include(client => client.ClientSecrets)
 				.Include(client => client.PostLogoutRedirectUris)
 				.Include(client => client.RedirectUris)
-				.Select(client => _mapper.Map<SerializableClient>(client.ToModel()))
+				.Select(client => _mapper.Map<SerializableClient>(client))
 				.ToListAsync();
 			return clients;
 		}
@@ -119,7 +119,7 @@ namespace SimpleOidcOauth.Controllers
 			if (clientEntity == null)
 				return NotFound();
 
-			var serializableClient = _mapper.Map<SerializableClient>(clientEntity.ToModel());
+			var serializableClient = _mapper.Map<SerializableClient>(clientEntity);
 			return serializableClient;
 		}
 
@@ -159,13 +159,13 @@ namespace SimpleOidcOauth.Controllers
 		{
 			// Retrieve all resources
 			var apiScopes = await _configurationDbContext.ApiScopes
-				.Select(apiScope => _mapper.Map<SerializableApiScope>(apiScope.ToModel()))
+				.Select(apiScope => _mapper.Map<SerializableApiScope>(apiScope))
 				.ToListAsync();
 			var apiResources = await _configurationDbContext.ApiResources
-				.Select(apiResource => _mapper.Map<SerializableApiResource>(apiResource.ToModel()))
+				.Select(apiResource => _mapper.Map<SerializableApiResource>(apiResource))
 				.ToListAsync();
 			var identityResources = await _configurationDbContext.IdentityResources
-				.Select(identityResource => _mapper.Map<SerializableIdentityResource>(identityResource.ToModel()))
+				.Select(identityResource => _mapper.Map<SerializableIdentityResource>(identityResource))
 				.ToListAsync();
 
 			// Return all results
@@ -212,15 +212,14 @@ namespace SimpleOidcOauth.Controllers
 				return BadRequest(new ValidationProblemDetails(ModelState));
 
 			// Generate a random client ID and register a new Client Application
-			var clientEntity = _mapper.Map<Client>(client)
-				.ToEntity();
+			var clientEntity = _mapper.Map<Client>(client);
 			clientEntity.ClientId = Guid.NewGuid().ToString();
 
 			await _configurationDbContext.Clients.AddAsync(clientEntity);
 			await _configurationDbContext.SaveChangesAsync();
 
 			// Return the created client's data
-			var updatedSerializableClient = _mapper.Map<SerializableClient>(clientEntity.ToModel());
+			var updatedSerializableClient = _mapper.Map<SerializableClient>(clientEntity);
 			return CreatedAtAction(
 				nameof(GetClient),
 				new RouteValueDictionary {
@@ -292,12 +291,11 @@ namespace SimpleOidcOauth.Controllers
 			foreach (var secret in clientData.ClientSecrets)
 			{
 				if (secret.IsValueHashed == false)
-					secret.Value = secret.Value.Sha256();
+					secret.Value = Is4HashExtensions.Sha256(secret.Value);
 			}
 
 			// Update values and navigation properties on the found client
-			var updatedEntityData = _mapper.Map<Client>(clientData)
-				.ToEntity();
+			var updatedEntityData = _mapper.Map<Client>(clientData);
 			updatedEntityData.Id = clientInDatabase.Id;
 
 			var entry = _configurationDbContext.Entry(clientInDatabase);
@@ -319,7 +317,7 @@ namespace SimpleOidcOauth.Controllers
 			await _configurationDbContext.SaveChangesAsync();
 
 			// Return the created client's data
-			var updatedSerializableClient = _mapper.Map<SerializableClient>(clientInDatabase.ToModel());
+			var updatedSerializableClient = _mapper.Map<SerializableClient>(clientInDatabase);
 			return Ok(updatedSerializableClient);
 		}
 	}

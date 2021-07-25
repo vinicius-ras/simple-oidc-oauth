@@ -1,5 +1,4 @@
 using AutoMapper;
-using IdentityServer4.Models;
 using IdentityServer4.Test;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -104,29 +103,16 @@ namespace SimpleOidcOauth.Services
 					_logger.LogDebug("Initializing database's data...");
 					try
 					{
-						// Retrieve data to be saved
-						var clients = _databaseInitializationConfigs
-							?.Clients
-							?.Select(serializableObject => _mapper.Map<SerializableClient, Client>(serializableObject));
-						var apiScopes = _databaseInitializationConfigs
-							?.ApiScopes
-							?.Select(serializableObject => _mapper.Map<SerializableApiScope, ApiScope>(serializableObject));
-						var apiResources = _databaseInitializationConfigs
-							?.ApiResources
-							?.Select(serializableObject => _mapper.Map<SerializableApiResource, ApiResource>(serializableObject));
-						var identityResources = _databaseInitializationConfigs
-							?.IdentityResources
-							?.Select(serializableObject => _mapper.Map<SerializableIdentityResource, IdentityResource>(serializableObject));
+						// Save the necessary data
 						var users = _databaseInitializationConfigs
 							?.Users
 							?.Select(serializableObject => _mapper.Map<SerializableTestUser, TestUser>(serializableObject));
 
-						// Save the necessary data
 						await databaseInitializerService.InitializeDatabaseAsync(
-							clients,
-							apiScopes,
-							apiResources,
-							identityResources,
+							_databaseInitializationConfigs?.Clients,
+							_databaseInitializationConfigs?.ApiScopes,
+							_databaseInitializationConfigs?.ApiResources,
+							_databaseInitializationConfigs?.IdentityResources,
 							users);
 					}
 					catch (Exception ex)

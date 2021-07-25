@@ -1,4 +1,4 @@
-using IdentityServer4.Models;
+using IdentityServer4.EntityFramework.Entities;
 using System.Collections.Generic;
 
 namespace SimpleOidcOauth.Data.Serialization
@@ -11,7 +11,7 @@ namespace SimpleOidcOauth.Data.Serialization
 		///     The API secret is used for the introspection endpoint. The API can authenticate
 		///     with introspection using the API name and secret.
 		/// </summary>
-		public IEnumerable<SerializableSecret> ApiSecrets { get; set; }
+		public IEnumerable<SerializableApiResourceSecret> ApiSecrets { get; set; }
 		/// <summary>Models the scopes this API resource allows.</summary>
 		public ICollection<string> Scopes { get; set; }
 		/// <summary>

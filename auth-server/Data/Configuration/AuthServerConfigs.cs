@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using IdentityServer4.Models;
-
 namespace SimpleOidcOauth.Data.Configuration
 {
 	/// <summary>Models the configurations for the Authentication/Authorization Server back end itself.</summary>

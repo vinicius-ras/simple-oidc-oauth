@@ -10,6 +10,7 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 	class SerializableSecretEqualityComparer : IEqualityComparer<SerializableSecret>
 	{
 		// INTERFACE IMPLEMENTATION: IEqualityComparer<SerializableSecret>
+		/// <inheritdoc/>
 		public bool Equals(SerializableSecret x, SerializableSecret y)
 		{
 			// Basic null comparisons
@@ -35,6 +36,7 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 		}
 
 
+		/// <inheritdoc/>
 		public int GetHashCode([DisallowNull] SerializableSecret obj) =>
 			HashCode.Combine(obj.Description, obj.Expiration, obj.IsValueHashed, obj.Type, obj.Value);
 	}

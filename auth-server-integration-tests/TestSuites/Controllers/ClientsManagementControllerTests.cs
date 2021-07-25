@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using IdentityModel;
 using IdentityServer4;
-using IdentityServer4.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SimpleOidcOauth.Controllers;
 using SimpleOidcOauth.Data;
@@ -35,7 +34,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		///     This user effectivelly simulates a non-manager user. Such users are only able to access third-party services through the IdP, but
 		///     have no access to the IdP Management Interfaces.
 		/// </remarks>
-		private static readonly SerializableTestUser _userWithoutAuthServerClaims = new SerializableTestUser {
+		private static SerializableTestUser UserWithoutAuthServerClaims => new SerializableTestUser {
 			Username = "user-without-auth-server-claims",
 			Password = "password-b9f2e7753f024c1eb508e62be83ffe06",
 			Claims = new[] {
@@ -45,7 +44,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			}
 		};
 		/// <summary>A test user that has the <see cref="AuthServerClaimTypes.CanViewClients"/> claim.</summary>
-		private static readonly SerializableTestUser _userCanViewClients = new SerializableTestUser {
+		private static SerializableTestUser UserCanViewClients => new SerializableTestUser {
 			Username = "user-can-view-clients",
 			Password = "password-6b72b83a2daf46bfb23dd460af89a52f",
 			Claims = new[] {
@@ -56,7 +55,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			}
 		};
 		/// <summary>A test user that has the <see cref="AuthServerClaimTypes.CanViewAndEditClients"/> claim.</summary>
-		private static readonly SerializableTestUser _userCanViewAndEditClients = new SerializableTestUser {
+		private static SerializableTestUser UserCanViewAndEditClients => new SerializableTestUser {
 			Username = "user-can-view-and-edit-clients",
 			Password = "password-eccf7d5c26f54e5aa3c28d05df276e61",
 			Claims = new[] {
@@ -67,7 +66,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			}
 		};
 		/// <summary>Some sample resources to be inserted and used in the tests' databases.</summary>
-		private static readonly SerializableResource[] _sampleResources = new SerializableResource[] {
+		private static SerializableResource[] SampleResources => new SerializableResource[] {
 			new SerializableApiScope {
 				Enabled = true,
 				ShowInDiscoveryDocument = true,
@@ -126,14 +125,14 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 					"api-resource-eb3709b7400c446bb56ce12243e3880f-scope-3",
 				},
 				ApiSecrets = new[] {
-					new SerializableSecret {
+					new SerializableApiResourceSecret {
 						Description = "Description for Sample Secret #1 for resource #eb3709b7400c446bb56ce12243e3880f",
 						Expiration = new DateTime(2000, 8, 20),
 						IsValueHashed = true,
 						Value = "random-secret-value-70063fcc76d04dfeb5c12de080254d9d",
 						Type = IdentityServerConstants.SecretTypes.SharedSecret,
 					},
-					new SerializableSecret {
+					new SerializableApiResourceSecret {
 						Description = "Description for Sample Secret #2 for resource #eb3709b7400c446bb56ce12243e3880f",
 						Expiration = null,
 						IsValueHashed = false,
@@ -161,7 +160,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 					"api-resource-bb382de595be42ff8fdd53d9fa6a062d-scope-2",
 				},
 				ApiSecrets = new[] {
-					new SerializableSecret {
+					new SerializableApiResourceSecret {
 						Description = "Description for Sample Secret #1 for resource #bb382de595be42ff8fdd53d9fa6a062d",
 						Expiration = new DateTime(2000, 8, 20),
 						IsValueHashed = true,
@@ -236,73 +235,22 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var client = WebAppFactory.CreateClient();
 
 			// Initialize database
-			var autoMapperConfigs = new MapperConfiguration(configs =>
-			{
-				configs.AddProfile<AutoMapperProfile>();
-			});
-			autoMapperConfigs.AssertConfigurationIsValid();
-			var objectsMapper = autoMapperConfigs.CreateMapper();
-
-
 			var initializationData = new TestDatabaseInitializerInputModel {
 				Users = new[] {
-					_userCanViewClients,
-					_userWithoutAuthServerClaims,
-					_userCanViewAndEditClients
+					UserCanViewClients,
+					UserWithoutAuthServerClaims,
+					UserCanViewAndEditClients
 				},
 				Clients = withSampleClients
-					? TestData.SampleClients.Select(client => objectsMapper.Map<SerializableClient>(client))
+					? TestData.SampleClients
 					: Enumerable.Empty<SerializableClient>(),
-				ApiScopes = _sampleResources.OfType<SerializableApiScope>().Select(apiScope => objectsMapper.Map<SerializableApiScope>(apiScope)),
-				ApiResources = _sampleResources.OfType<SerializableApiResource>().Select(apiResource => objectsMapper.Map<SerializableApiResource>(apiResource)),
-				IdentityResources = _sampleResources.OfType<SerializableIdentityResource>().Select(identityResource => objectsMapper.Map<SerializableIdentityResource>(identityResource)),
+				ApiScopes = SampleResources.OfType<SerializableApiScope>(),
+				ApiResources = SampleResources.OfType<SerializableApiResource>(),
+				IdentityResources = SampleResources.OfType<SerializableIdentityResource>(),
 			};
 			var response = await client.PostAsync(TestDatabaseInitializerServiceController.InitializeDatabaseEndpoint, JsonContent.Create(initializationData));
 			if (response.IsSuccessStatusCode == false)
 				throw new IntegrationTestInitializationException($@"Failed to setup database for test: database initialization endpoint returned a non-successful HTTP Status Code (code={response.StatusCode.ToString("D")} ""{response.StatusCode.ToString()}"").");
-		}
-
-
-		/// <summary>Compares a <see cref="Client"/> object with a <see cref="SerializableClient"/> to verify for their equality.</summary>
-		/// <param name="identityServerClient">The IdentityServer's representation of the client to be compared.</param>
-		/// <param name="serializableClient">The auth-server's representation of the client to be compared.</param>
-		/// <returns>Returns a flag indicating if both clients are to be considered equal.</returns>
-		private static bool AreClientsEqual(Client identityServerClient, SerializableClient serializableClient)
-		{
-			// Compare basic data
-			if (identityServerClient.AllowAccessTokensViaBrowser != serializableClient.AllowAccessTokensViaBrowser
-				|| identityServerClient.ClientName != serializableClient.ClientName
-				|| identityServerClient.RequireClientSecret != serializableClient.RequireClientSecret
-				|| identityServerClient.RequireConsent != serializableClient.RequireConsent
-				|| identityServerClient.RequirePkce != serializableClient.RequirePkce)
-			{
-				return false;
-			}
-
-			// Compare collections of strings
-			if ( AreCollectionsSetEqual(identityServerClient.AllowedCorsOrigins, serializableClient.AllowedCorsOrigins) == false
-				|| AreCollectionsSetEqual(identityServerClient.AllowedGrantTypes, serializableClient.AllowedGrantTypes) == false
-				|| AreCollectionsSetEqual(identityServerClient.AllowedScopes, serializableClient.AllowedScopes) == false
-				|| AreCollectionsSetEqual(identityServerClient.PostLogoutRedirectUris, serializableClient.PostLogoutRedirectUris) == false
-				|| AreCollectionsSetEqual(identityServerClient.RedirectUris, serializableClient.RedirectUris) == false)
-			{
-				return false;
-			}
-
-			// Compare secrets
-			foreach (var curSampleSecret in identityServerClient.ClientSecrets)
-			{
-				var incomingResponseClientSecret = serializableClient.ClientSecrets
-					.FirstOrDefault(secret =>
-						secret.Type == curSampleSecret.Type
-						&& secret.Description == curSampleSecret.Description
-						&& secret.Expiration == curSampleSecret.Expiration);
-				if (incomingResponseClientSecret == null || incomingResponseClientSecret.Value != curSampleSecret.Value)
-					return false;
-			}
-
-			// All comparisons passed: clients are equal.
-			return true;
 		}
 
 
@@ -342,7 +290,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			var httpClient = WebAppFactory.CreateClient();
 
-			var userToLogin = _userWithoutAuthServerClaims;
+			var userToLogin = UserWithoutAuthServerClaims;
 			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
 			// Act
@@ -360,8 +308,9 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		{
 			// Arrange
 			await SetupDatabaseForTests(withSampleClients: true);
+			var clientsEqualityComparer = new SerializableClientEqualityComparer();
 
-			var usersToTest = new[] { _userCanViewClients, _userCanViewAndEditClients };
+			var usersToTest = new[] { UserCanViewClients, UserCanViewAndEditClients };
 			foreach (var userToLogin in usersToTest)
 			{
 				var httpClient = WebAppFactory.CreateClient();
@@ -382,7 +331,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				{
 					var incomingResponseClient = getAllClientsHttpResponseClients.Single(responseClient => responseClient.ClientId == curSampleClient.ClientId);
 
-					bool clientsAreEqual = AreClientsEqual(curSampleClient, incomingResponseClient);
+					bool clientsAreEqual = clientsEqualityComparer.Equals(curSampleClient, incomingResponseClient);
 					Assert.True(clientsAreEqual);
 				}
 			}
@@ -418,7 +367,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			var httpClient = WebAppFactory.CreateClient();
 
-			var userToLogin = _userWithoutAuthServerClaims;
+			var userToLogin = UserWithoutAuthServerClaims;
 			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
 			var clientToTest = TestData.SampleClients.First();
@@ -441,8 +390,9 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		{
 			// Arrange
 			await SetupDatabaseForTests(withSampleClients: true);
+			var clientsEqualityComparer = new SerializableClientEqualityComparer();
 
-			var usersToTest = new[] { _userCanViewClients, _userCanViewAndEditClients };
+			var usersToTest = new[] { UserCanViewClients, UserCanViewAndEditClients };
 			foreach (var userToLogin in usersToTest)
 			{
 				var httpClient = WebAppFactory.CreateClient();
@@ -462,7 +412,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 					// Assert
 					Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 					Assert.Equal(HttpStatusCode.OK, getClientHttpResponse.StatusCode);
-					Assert.True(AreClientsEqual(clientToTest, getClientHttpResponseClient));
+					Assert.True(clientsEqualityComparer.Equals(clientToTest, getClientHttpResponseClient));
 				}
 			}
 		}
@@ -476,7 +426,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			const string nonExistingClientId = "random-non-existing-client-id-89cdb0ce9f70445790740936f2da1b78";
 
-			var usersToTest = new[] { _userCanViewClients, _userCanViewAndEditClients };
+			var usersToTest = new[] { UserCanViewClients, UserCanViewAndEditClients };
 			foreach (var userToLogin in usersToTest)
 			{
 				var httpClient = WebAppFactory.CreateClient();
@@ -522,7 +472,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			var httpClient = WebAppFactory.CreateClient();
 
-			var userToLogin = _userWithoutAuthServerClaims;
+			var userToLogin = UserWithoutAuthServerClaims;
 			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
 			// Act
@@ -541,7 +491,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			// Arrange
 			await SetupDatabaseForTests(withSampleClients: false);
 
-			var usersToTest = new[] { _userCanViewClients, _userCanViewAndEditClients };
+			var usersToTest = new[] { UserCanViewClients, UserCanViewAndEditClients };
 			foreach (var userToLogin in usersToTest)
 			{
 				var httpClient = WebAppFactory.CreateClient();
@@ -587,7 +537,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			var httpClient = WebAppFactory.CreateClient();
 
-			var userToLogin = _userWithoutAuthServerClaims;
+			var userToLogin = UserWithoutAuthServerClaims;
 			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
 			// Act
@@ -610,9 +560,9 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var jsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 			jsonSerializerOptions.Converters.Add(new PolymorphicDiscriminatorJsonConverterFactory());
 
-			var allSampleApiScopes = _sampleResources.OfType<SerializableApiScope>();
-			var allSampleApiResources = _sampleResources.OfType<SerializableApiResource>();
-			var allSampleIdentityResources = _sampleResources.OfType<SerializableIdentityResource>();
+			var allSampleApiScopes = SampleResources.OfType<SerializableApiScope>();
+			var allSampleApiResources = SampleResources.OfType<SerializableApiResource>();
+			var allSampleIdentityResources = SampleResources.OfType<SerializableIdentityResource>();
 
 			var apiScopeEqualityComparer = new SerializableApiScopeEqualityComparer {
 				CompareProperties = false,
@@ -630,7 +580,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				CompareUserClaims = false,
 			};
 
-			var usersToTest = new[] { _userCanViewClients, _userCanViewAndEditClients };
+			var usersToTest = new[] { UserCanViewClients, UserCanViewAndEditClients };
 			foreach (var userToLogin in usersToTest)
 			{
 				var httpClient = WebAppFactory.CreateClient();
@@ -694,7 +644,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			foreach (var clientApp in TestData.SampleClients)
 			{
-				var usersToTest = new[] { _userWithoutAuthServerClaims, _userCanViewClients };
+				var usersToTest = new[] { UserWithoutAuthServerClaims, UserCanViewClients };
 				foreach (var userToLogin in usersToTest)
 				{
 					var httpClient = WebAppFactory.CreateClient();
@@ -727,24 +677,23 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			{
 				var httpClient = WebAppFactory.CreateClient();
 
-				var userToLogin = _userCanViewAndEditClients;
+				var userToLogin = UserCanViewAndEditClients;
 				var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
 				// New client applications should not have a set "Client ID", as it will be automatically generated by the IdP after client registration
-				var serializableClientApp = Mapper.Map<SerializableClient>(clientApp);
-				serializableClientApp.ClientId = null;
+				clientApp.ClientId = null;
 
 
 				// ***** Act *****
 				var loginResponse = await AuthenticationUtilities.PerformRequestToLoginEndpointAsync(httpClient, userEmail, userToLogin.Password);
-				var createNewClientHttpResponse = await httpClient.PostAsync(AppEndpoints.CreateNewClientApplication, JsonContent.Create(serializableClientApp));
+				var createNewClientHttpResponse = await httpClient.PostAsync(AppEndpoints.CreateNewClientApplication, JsonContent.Create(clientApp));
 				var returnedClientData = await createNewClientHttpResponse.Content.ReadFromJsonAsync<SerializableClient>();
 
 
 				// ***** Assert *****
 				Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 				Assert.Equal(HttpStatusCode.Created, createNewClientHttpResponse.StatusCode);
-				Assert.Equal(serializableClientApp, returnedClientData, clientsEqualityComparer);
+				Assert.Equal(clientApp, returnedClientData, clientsEqualityComparer);
 				Assert.NotNull(returnedClientData.ClientId);
 				Assert.NotEmpty(returnedClientData.ClientId);
 			}
@@ -761,15 +710,13 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			{
 				var httpClient = WebAppFactory.CreateClient();
 
-				var userToLogin = _userCanViewAndEditClients;
+				var userToLogin = UserCanViewAndEditClients;
 				var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
-
-				var serializableClientApp = Mapper.Map<SerializableClient>(clientApp);
 
 
 				// ***** Act *****
 				var loginResponse = await AuthenticationUtilities.PerformRequestToLoginEndpointAsync(httpClient, userEmail, userToLogin.Password);
-				var createNewClientHttpResponse = await httpClient.PostAsync(AppEndpoints.CreateNewClientApplication, JsonContent.Create(serializableClientApp));
+				var createNewClientHttpResponse = await httpClient.PostAsync(AppEndpoints.CreateNewClientApplication, JsonContent.Create(clientApp));
 
 
 				// ***** Assert *****
@@ -807,7 +754,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			// Arrange
 			await SetupDatabaseForTests(withSampleClients: true);
 
-			var usersToTest = new[] { _userWithoutAuthServerClaims, _userCanViewClients };
+			var usersToTest = new[] { UserWithoutAuthServerClaims, UserCanViewClients };
 			foreach (var userToLogin in usersToTest)
 			{
 				var httpClient = WebAppFactory.CreateClient();
@@ -832,12 +779,12 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			var httpClient = WebAppFactory.CreateClient();
 
-			var userToLogin = _userCanViewAndEditClients;
+			var userToLogin = UserCanViewAndEditClients;
 			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
-			var originalClientData = Mapper.Map<SerializableClient>(TestData.ClientAuthorizationCodeFlowWithPkce);
+			var originalClientData = TestData.ClientAuthorizationCodeFlowWithPkce;
 
-			var clientDataToSend = Mapper.Map<SerializableClient>(TestData.ClientAuthorizationCodeFlowWithPkce);
+			var clientDataToSend = TestData.ClientAuthorizationCodeFlowWithPkce;
 			clientDataToSend.AllowAccessTokensViaBrowser = !clientDataToSend.AllowAccessTokensViaBrowser;
 			clientDataToSend.AllowedCorsOrigins = clientDataToSend.AllowedCorsOrigins.Select(origin => origin.ToUpper());
 			clientDataToSend.AllowedGrantTypes = clientDataToSend.AllowedGrantTypes
@@ -849,7 +796,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				});
 			clientDataToSend.AllowedScopes = clientDataToSend.AllowedScopes.Select(scope => scope.ToUpper());
 			clientDataToSend.ClientName = clientDataToSend.ClientName.ToUpper();
-			clientDataToSend.ClientSecrets = clientDataToSend.ClientSecrets.Select(secret => new SerializableSecret {
+			clientDataToSend.ClientSecrets = clientDataToSend.ClientSecrets.Select(secret => new SerializableClientSecret {
 				Description = (secret.Description ?? "random-description-9ab718ad560e479993aacb397c74c64c").ToUpper(),
 				Expiration = secret.Expiration?.AddDays(-1) ?? DateTime.Now,
 				IsValueHashed = !(secret.IsValueHashed ?? true),
@@ -893,10 +840,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			var httpClient = WebAppFactory.CreateClient();
 
-			var userToLogin = _userCanViewAndEditClients;
+			var userToLogin = UserCanViewAndEditClients;
 			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
-			var clientDataToSend = Mapper.Map<SerializableClient>(TestData.ClientAuthorizationCodeFlowWithPkce);
+			var clientDataToSend = TestData.ClientAuthorizationCodeFlowWithPkce;
 
 			var updateEndpointUri = AppEndpoints.UpdateClientApplication
 				.Replace($"{{{AppEndpoints.ClientIdParameterName}}}", TestData.ClientClientCredentialsFlow.ClientId);
@@ -927,10 +874,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 			var httpClient = WebAppFactory.CreateClient();
 
-			var userToLogin = _userCanViewAndEditClients;
+			var userToLogin = UserCanViewAndEditClients;
 			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
-			var clientDataToSend = Mapper.Map<SerializableClient>(TestData.ClientAuthorizationCodeFlowWithPkce);
+			var clientDataToSend = TestData.ClientAuthorizationCodeFlowWithPkce;
 			clientDataToSend.ClientId = "random-client-id-c1e17fa85550474c9f3ebdbd7179ea86";
 
 			var updateEndpointUri = AppEndpoints.UpdateClientApplication

@@ -1,4 +1,3 @@
-using IdentityServer4.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SimpleOidcOauth.Data.Serialization;
 using SimpleOidcOauth.Services;
@@ -36,17 +35,17 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Services
 		private TestDatabaseInitializerInputModel GetDefaultDataToSave() => new TestDatabaseInitializerInputModel()
 		{
 			Clients = new [] {
-				Mapper.Map<SerializableClient>(TestData.ClientAuthorizationCodeFlowWithPkce),
-				Mapper.Map<SerializableClient>(TestData.ClientResourceOwnerPasswordFlow),
+				TestData.ClientAuthorizationCodeFlowWithPkce,
+				TestData.ClientResourceOwnerPasswordFlow,
 			},
 			ApiScopes = new [] {
-				Mapper.Map<SerializableApiScope>(TestData.ApiScopeProductsApi),
-				Mapper.Map<SerializableApiScope>(TestData.ApiScopeUserManagementApi)
+				TestData.ApiScopeProductsApi,
+				TestData.ApiScopeUserManagementApi,
 			},
-			ApiResources = new [] { Mapper.Map<SerializableApiResource>(TestData.ApiResourceProducts) },
+			ApiResources = new [] { TestData.ApiResourceProducts },
 			IdentityResources = new [] {
-				Mapper.Map<SerializableIdentityResource>(new IdentityResources.OpenId()),
-				Mapper.Map<SerializableIdentityResource>(TestData.IdentityResourceConfidentialUserInfo)
+				TestData.IdentityResourceOpenId,
+				TestData.IdentityResourceConfidentialUserInfo,
 			},
 			Users = new [] { Mapper.Map<SerializableTestUser>(TestData.UserBob) },
 		};
@@ -122,7 +121,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Services
 					var savedRedirectUri = savedClient.RedirectUris.Single(redirectUri => redirectUri.Equals(redirectUriToSave));
 					Assert.Equal(redirectUriToSave, savedRedirectUri);
 				}
-				foreach (var secretToSave in clientToSave.ClientSecrets ?? Enumerable.Empty<SerializableSecret>())
+				foreach (var secretToSave in clientToSave.ClientSecrets ?? Enumerable.Empty<SerializableClientSecret>())
 				{
 					var savedSecret = savedClient.ClientSecrets.SingleOrDefault(secret =>
 						secret.Description == secretToSave.Description

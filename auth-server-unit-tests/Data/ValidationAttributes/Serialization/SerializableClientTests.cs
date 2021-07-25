@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using IdentityModel;
 using IdentityServer4;
-using IdentityServer4.Models;
 using SimpleOidcOauth.Data.Serialization;
 using Xunit;
+using Is4HashExtensions = IdentityServer4.Models.HashExtensions;
 
 namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 {
@@ -33,7 +33,7 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 				"random-scope-6e0ac6e2df3b4753a6c3ddce8f8c82c2",
 			},
 			ClientSecrets = new [] {
-				new SerializableSecret { Type = IdentityServerConstants.SecretTypes.SharedSecret, Value = "my-shared-secret-840dada4e56c4417b6d307efe6148d69".Sha256() },
+				new SerializableClientSecret { Type = IdentityServerConstants.SecretTypes.SharedSecret, Value = Is4HashExtensions.Sha256("my-shared-secret-840dada4e56c4417b6d307efe6148d69") },
 			},
 			PostLogoutRedirectUris = new [] {
 				"http://valid-post-logout-redirect-uri-7db192b1d75e4a0da751f394f92b2839.com",
@@ -264,7 +264,7 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 		{
 			var clientData = InstantiateValidSerializableClient();
 			clientData.RequireClientSecret = true;
-			clientData.ClientSecrets = new List<SerializableSecret>();
+			clientData.ClientSecrets = new List<SerializableClientSecret>();
 
 			var validationContext = new ValidationContext(clientData);
 			var errorsCollection = new List<ValidationResult>();
@@ -286,9 +286,9 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 			clientData.ClientSecrets = plainTextSecrets
 				.Select(plainTextSecret => plainTextSecret == null
 					? null
-					: new SerializableSecret {
+					: new SerializableClientSecret {
 						Type = IdentityServerConstants.SecretTypes.SharedSecret,
-						Value = plainTextSecret.Sha256(),
+						Value = Is4HashExtensions.Sha256(plainTextSecret),
 					})
 				.ToList();
 
@@ -310,9 +310,11 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 
 			var clientData = InstantiateValidSerializableClient();
 			clientData.ClientSecrets = plainTextSecrets
-				.Select(plainTextSecret => new SerializableSecret {
+				.Select(plainTextSecret => new SerializableClientSecret {
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
-					Value = plainTextSecret?.Sha256(),
+					Value = plainTextSecret != null
+						? Is4HashExtensions.Sha256(plainTextSecret)
+						: null,
 				})
 				.ToList();
 
@@ -332,17 +334,17 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 		{
 			var clientData = InstantiateValidSerializableClient();
 			clientData.ClientSecrets = new [] {
-				new SerializableSecret {
+				new SerializableClientSecret {
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
-					Value = "my-secret-da89bba38e214e9c9ffcc645b65ebd0d".Sha256(),
+					Value = Is4HashExtensions.Sha256("my-secret-da89bba38e214e9c9ffcc645b65ebd0d"),
 				},
-				new SerializableSecret {
+				new SerializableClientSecret {
 					Type = null,
-					Value = "my-secret-ad8f32f132804558831008b7ea0d22d5".Sha256(),
+					Value = Is4HashExtensions.Sha256("my-secret-ad8f32f132804558831008b7ea0d22d5"),
 				},
-				new SerializableSecret {
+				new SerializableClientSecret {
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
-					Value = "my-secret-df0ffa444ee346fc9ba39a76f30a56d0".Sha256(),
+					Value = Is4HashExtensions.Sha256("my-secret-df0ffa444ee346fc9ba39a76f30a56d0"),
 				},
 			};
 

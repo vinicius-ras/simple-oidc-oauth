@@ -1,4 +1,4 @@
-using IdentityServer4.Models;
+using IdentityServer4.EntityFramework.Entities;
 
 namespace SimpleOidcOauth.Data.Serialization
 {

@@ -1,5 +1,5 @@
-using IdentityServer4.Models;
 using IdentityServer4.Test;
+using SimpleOidcOauth.Data.Serialization;
 using SimpleOidcOauth.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -28,10 +28,10 @@ namespace SimpleOidcOauth.Services
 		///     wrapped within a <see cref="Task"/> object.
 		/// </returns>
 		Task<DatabaseInitializationResult> InitializeDatabaseAsync(
-			IEnumerable<Client> clients = default,
-			IEnumerable<ApiScope> apiScopes = default,
-			IEnumerable<ApiResource> apiResources = default,
-			IEnumerable<IdentityResource> identityResources = default,
+			IEnumerable<SerializableClient> clients = default,
+			IEnumerable<SerializableApiScope> apiScopes = default,
+			IEnumerable<SerializableApiResource> apiResources = default,
+			IEnumerable<SerializableIdentityResource> identityResources = default,
 			IEnumerable<TestUser> users = default);
 	}
 }

@@ -83,10 +83,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 				var configToSave = new {
 					App = new {
 						DatabaseInitialization = new {
-							Clients = TestData.SampleClients.Select(model => Mapper.Map<SerializableClient>(model)),
-							ApiScopes = TestData.SampleApiScopes.Select(model => Mapper.Map<SerializableApiScope>(model)),
-							ApiResources = TestData.SampleApiResources.Select(model => Mapper.Map<SerializableApiResource>(model)),
-							IdentityResources = TestData.SampleIdentityResources.Select(model => Mapper.Map<SerializableIdentityResource>(model)),
+							Clients = TestData.SampleClients,
+							ApiScopes = TestData.SampleApiScopes,
+							ApiResources = TestData.SampleApiResources,
+							IdentityResources = TestData.SampleIdentityResources,
 							Users = TestData.SampleUsers.Select(model => Mapper.Map<SerializableTestUser>(model)),
 						},
 					},

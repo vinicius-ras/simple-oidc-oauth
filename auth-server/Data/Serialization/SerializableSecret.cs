@@ -1,12 +1,12 @@
-using IdentityServer4.Models;
+using IdentityServer4.EntityFramework.Entities;
 using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace SimpleOidcOauth.Data.Serialization
 {
 	/// <summary>Serialized data of a secret.</summary>
-	/// <remarks>This class is basically a serializable version of the <see cref="Secret"/> class.</remarks>
-	public class SerializableSecret
+	/// <remarks>This class is basically an altered serializable version of the <see cref="Secret"/> class, which is a base class for Identity Server secrets.</remarks>
+	public abstract class SerializableSecret
 	{
 		/// <summary>Gets or sets a description for the secret.</summary>
 		/// <value>The description.</value>

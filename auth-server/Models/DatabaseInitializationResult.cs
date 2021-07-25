@@ -1,11 +1,12 @@
 using IdentityServer4.EntityFramework.Entities;
 using SimpleOidcOauth.Data.Security;
+using SimpleOidcOauth.Data.Serialization;
 using SimpleOidcOauth.Services;
 using System.Collections.Generic;
 
 namespace SimpleOidcOauth.Models
 {
-	/// <summary>Describes the results of a call to <see cref="DatabaseInitializerService.InitializeDatabaseAsync(IEnumerable{IdentityServer4.Models.Client}, IEnumerable{IdentityServer4.Models.ApiScope}, IEnumerable{IdentityServer4.Models.ApiResource}, IEnumerable{IdentityServer4.Models.IdentityResource}, IEnumerable{IdentityServer4.Test.TestUser})"/>.</summary>
+	/// <summary>Describes the results of a call to <see cref="DatabaseInitializerService.InitializeDatabaseAsync(IEnumerable{SerializableClient}, IEnumerable{SerializableApiScope}, IEnumerable{SerializableApiResource}, IEnumerable{SerializableIdentityResource}, IEnumerable{IdentityServer4.Test.TestUser})"/>.</summary>
 	public class DatabaseInitializationResult
 	{
 		/// <summary>The entities of type <see cref="Client"/> that have been inserted into the database during the initialization operation.</summary>

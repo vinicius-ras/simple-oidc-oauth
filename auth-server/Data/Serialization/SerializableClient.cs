@@ -1,4 +1,4 @@
-using IdentityServer4.Models;
+using IdentityServer4.EntityFramework.Entities;
 using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.ValidationAttributes;
 using SimpleOidcOauth.OpenApi.Swagger.Filters;
@@ -15,6 +15,8 @@ namespace SimpleOidcOauth.Data.Serialization
 	public class SerializableClient : IValidatableObject
 	{
 		// INSTANCE PROPERTIES
+		/// <summary>The actual database (row) ID for the Client.</summary>
+		public int? ClientDatabaseId { get; set; }
 		/// <summary>
 		///     Controls whether access tokens are transmitted via the browser for this client
         ///     (defaults to false). This can prevent accidental leakage of access tokens when
@@ -46,7 +48,7 @@ namespace SimpleOidcOauth.Data.Serialization
 		[Required]
 		public string ClientName { get; set; }
 		/// <summary>Client secrets - only relevant for flows that require a secret.</summary>
-		public IEnumerable<SerializableSecret> ClientSecrets { get; set; }
+		public IEnumerable<SerializableClientSecret> ClientSecrets { get; set; }
 		/// <summary>Specifies allowed URIs to redirect to after logout.</summary>
 		[Required]
 		[MinLength(1)]
@@ -121,7 +123,7 @@ namespace SimpleOidcOauth.Data.Serialization
 
 
 			// If a Client Secret is required, then at least one client secret must be provided
-			var clientSecrets = this.ClientSecrets ?? Enumerable.Empty<SerializableSecret>();
+			var clientSecrets = this.ClientSecrets ?? Enumerable.Empty<SerializableClientSecret>();
 			if (this.RequireClientSecret && clientSecrets.Count() <= 0)
 				yield return new ValidationResult(
 					"Client requires at least one secret to be valid.",

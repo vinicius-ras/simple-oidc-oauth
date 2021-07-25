@@ -145,7 +145,7 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 			if (CompareClientSecrets)
 			{
 				if (obj.ClientSecrets == null)
-					hashCode.Add<IEnumerable<SerializableSecret>>(null);
+					hashCode.Add<IEnumerable<SerializableClientSecret>>(null);
 				else
 				{
 					foreach (var clientSecret in obj.ClientSecrets.OrderBy(clientSecret => new { clientSecret.Description, clientSecret.Value } ))

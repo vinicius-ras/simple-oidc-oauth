@@ -1,11 +1,11 @@
 using IdentityModel;
 using IdentityModel.Client;
-using IdentityServer4.Models;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
 using SimpleOidcOauth.Data;
+using SimpleOidcOauth.Data.Serialization;
 using SimpleOidcOauth.Models;
 using SimpleOidcOauth.Tests.Integration.Data;
 using SimpleOidcOauth.Tests.Integration.Exceptions;
@@ -18,6 +18,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
+using Is4HashExtensions = IdentityServer4.Models.HashExtensions;
 
 namespace SimpleOidcOauth.Tests.Integration.Utilities
 {
@@ -59,7 +60,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 		/// <param name="pkceCodeVerifier">The PKCE Code Verifier from which a PKCE Code Challenge will be generated.</param>
 		/// <returns>Returns a string representation of the PKCE Code Challenge generated for the given PKCE Code Challenge.</returns>
 		public static string TransformPkceCodeVerifierIntoCodeChallenge(string pkceCodeVerifier)
-			=> WebEncoders.Base64UrlEncode(Encoding.ASCII.GetBytes(FakePkceCodeVerifier).Sha256());
+			=> WebEncoders.Base64UrlEncode(Is4HashExtensions.Sha256(Encoding.ASCII.GetBytes(FakePkceCodeVerifier)));
 
 
 		/// <summary>Performs a call to the IdentityServer4's Authorize Endpoint.</summary>
@@ -225,7 +226,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 			where TStartup : class
 		{
 			// Call the Authorize Endpoint to retrieve a post-login return URL
-			httpClient = httpClient ?? webAppFactory.CreateIntegrationTestClient(false);;
+			httpClient = httpClient ?? webAppFactory.CreateIntegrationTestClient(false);
 			string returnUrlAfterLogin = await CallAuthorizeEndpointAsync(webAppFactory, authorizeEndpointQueryParams, httpClient);
 
 			// Send the user credentials and post-login return URL to the login endpoint
@@ -261,7 +262,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 		public static async Task<TokenResponse> RetrieveUserTokenForAuthorizationCodeFlowAsync<TStartup>(
 			WebApplicationFactory<TStartup> webAppFactory,
 			TestUser targetUser,
-			Client targetClient,
+			SerializableClient targetClient,
 			string clientSecret,
 			HttpClient httpClient = null)
 			where TStartup : class
@@ -338,7 +339,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 		public static async Task<string> RetrieveUserTokenForImplicitFlowAsync<TStartup>(
 			WebApplicationFactory<TStartup> webAppFactory,
 			TestUser targetUser,
-			Client targetClient,
+			SerializableClient targetClient,
 			HttpClient httpClient = null)
 			where TStartup : class
 		{
@@ -396,7 +397,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 		/// </returns>
 		public static async Task<TokenResponse> RetrieveTokenForClientCredentialsFlowAsync<TStartup>(
 			WebApplicationFactory<TStartup> webAppFactory,
-			Client targetClient,
+			SerializableClient targetClient,
 			string clientSecret,
 			HttpClient httpClient = null)
 			where TStartup : class
@@ -445,7 +446,7 @@ namespace SimpleOidcOauth.Tests.Integration.Utilities
 		/// </returns>
 		public static async Task<TokenResponse> RetrieveTokenForResourceOwnerPasswordFlowAsync<TStartup>(
 			WebApplicationFactory<TStartup> webAppFactory,
-			Client targetClient,
+			SerializableClient targetClient,
 			string clientSecret,
 			string userName,
 			string userPassword,

@@ -1,7 +1,5 @@
 using AutoMapper;
 using IdentityServer4.EntityFramework.DbContexts;
-using IdentityServer4.EntityFramework.Mappers;
-using IdentityServer4.Models;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
@@ -85,7 +83,7 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 
 
 		/// <summary>
-		///     Endpoint used to test the <see cref="IDatabaseInitializerService.InitializeDatabaseAsync(IEnumerable{Client}, IEnumerable{ApiScope}, IEnumerable{ApiResource}, IEnumerable{IdentityResource}, IEnumerable{TestUser})"/> method.
+		///     Endpoint used to test the <see cref="IDatabaseInitializerService.InitializeDatabaseAsync(IEnumerable{SerializableClient}, IEnumerable{SerializableApiScope}, IEnumerable{SerializableApiResource}, IEnumerable{SerializableIdentityResource}, IEnumerable{TestUser})"/> method.
 		///     Any POSTed data will be used in a call to the target method.
 		/// </summary>
 		/// <param name="input">The data to be used to initialize the test database.</param>
@@ -95,10 +93,10 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 		[HttpPost(InitializeDatabaseEndpoint)]
 		public async Task<IActionResult> InitializeDatabase([FromBody] TestDatabaseInitializerInputModel input)
 		{
-			var clients = input.Clients?.Select(serializableClient => _mapper.Map<Client>(serializableClient));
-			var apiScopes = input.ApiScopes?.Select(serializableApiScope => _mapper.Map<ApiScope>(serializableApiScope));
-			var apiResources = input.ApiResources?.Select(serializableApiResource => _mapper.Map<ApiResource>(serializableApiResource));
-			var identityResources = input.IdentityResources?.Select(serializableIdentityResource => _mapper.Map<IdentityResource>(serializableIdentityResource));
+			var clients = input.Clients;
+			var apiScopes = input.ApiScopes;
+			var apiResources = input.ApiResources;
+			var identityResources = input.IdentityResources;
 			var users = input.Users?.Select(serializableUser => _mapper.Map<TestUser>(serializableUser));
 
 			await _databaseInitializerService.InitializeDatabaseAsync(
@@ -161,10 +159,10 @@ namespace SimpleOidcOauth.Tests.Integration.Controllers
 			}
 
 			// Return results
-			var serializableClients = clients.Select(client => _mapper.Map<SerializableClient>(client.ToModel()));
-			var serializableApiScopes = apiScopes.Select(apiScope => _mapper.Map<SerializableApiScope>(apiScope.ToModel()));
-			var serializableApiResources = apiResources.Select(apiResource => _mapper.Map<SerializableApiResource>(apiResource.ToModel()));
-			var serializableIdentityResources = identityResources.Select(identityResource => _mapper.Map<SerializableIdentityResource>(identityResource.ToModel()));
+			var serializableClients = clients.Select(client => _mapper.Map<SerializableClient>(client));
+			var serializableApiScopes = apiScopes.Select(apiScope => _mapper.Map<SerializableApiScope>(apiScope));
+			var serializableApiResources = apiResources.Select(apiResource => _mapper.Map<SerializableApiResource>(apiResource));
+			var serializableIdentityResources = identityResources.Select(identityResource => _mapper.Map<SerializableIdentityResource>(identityResource));
 			var result = new TestDatabaseInitializerOutputModel()
 			{
 				Clients = serializableClients,

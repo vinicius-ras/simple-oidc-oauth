@@ -1,7 +1,6 @@
 using AutoMapper;
 using IdentityServer4.EntityFramework.DbContexts;
-using IdentityServer4.EntityFramework.Mappers;
-using IdentityServer4.Models;
+using IdentityServer4.EntityFramework.Entities;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +16,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using SimpleOidcOauth.Data.Serialization;
 
 namespace SimpleOidcOauth.Services
 {
@@ -46,7 +46,7 @@ namespace SimpleOidcOauth.Services
 		///     Utility method for saving the entities of a test collection into a database.
 		///     This method will only save entities which are not yet present in the target database.
 		/// </summary>
-		/// <typeparam name="TIdentityServerModel">The type which represents the entities to be saved on IdentityServer's model realm.</typeparam>
+		/// <typeparam name="TApplicationModel">The type which represents the entities to be saved on IdentityServer's model realm.</typeparam>
 		/// <typeparam name="TEntityFrameworkModel">The type which represents the entities to be saved on Entity Framework Core's model realm</typeparam>
 		/// <typeparam name="TKey">The type of a key which will be used to verify which of the entities are already present in the target database.</typeparam>
 		/// <typeparam name="TEntityFrameworkModelId">
@@ -67,14 +67,14 @@ namespace SimpleOidcOauth.Services
 		///     This function is used to convert entities to the right class before saving them to the target database.
 		/// </param>
 		/// <return>Returns a list saved entities.</return>
-		private async Task<SaveEntitiesResult<TEntityFrameworkModel>> SaveAllUnsavedTestEntities<TIdentityServerModel, TEntityFrameworkModel, TKey, TEntityFrameworkModelId>(
-			IQueryable<TIdentityServerModel> entities,
+		private async Task<SaveEntitiesResult<TEntityFrameworkModel>> SaveAllUnsavedTestEntities<TApplicationModel, TEntityFrameworkModel, TKey, TEntityFrameworkModelId>(
+			IQueryable<TApplicationModel> entities,
 			DbContext databaseContext,
 			DbSet<TEntityFrameworkModel> databaseCollection,
-			Expression<Func<TIdentityServerModel, TKey>> identityServerModelKeySelector,
+			Expression<Func<TApplicationModel, TKey>> identityServerModelKeySelector,
 			Expression<Func<TEntityFrameworkModel, TKey>> entityFrameworkModelKeySelector,
 			Expression<Func<TEntityFrameworkModel, TEntityFrameworkModelId>> entityFrameworkModelIdSelector,
-			Expression<Func<TIdentityServerModel, TEntityFrameworkModel>> convertToEntityFrameworkModel) where TEntityFrameworkModel : class
+			Expression<Func<TApplicationModel, TEntityFrameworkModel>> convertToEntityFrameworkModel) where TEntityFrameworkModel : class
 		{
 			if (entities == null)
 				return SaveEntitiesResult<TEntityFrameworkModel>.GetEmptyInstance();
@@ -266,10 +266,10 @@ namespace SimpleOidcOauth.Services
 
 		/// <inheritdoc/>
 		public async Task<DatabaseInitializationResult> InitializeDatabaseAsync(
-			IEnumerable<Client> clients = default,
-			IEnumerable<ApiScope> apiScopes = default,
-			IEnumerable<ApiResource> apiResources = default,
-			IEnumerable<IdentityResource> identityResources = default,
+			IEnumerable<SerializableClient> clients = default,
+			IEnumerable<SerializableApiScope> apiScopes = default,
+			IEnumerable<SerializableApiResource> apiResources = default,
+			IEnumerable<SerializableIdentityResource> identityResources = default,
 			IEnumerable<TestUser> users = default)
 		{
 			// Perform pending migrations for the IS4 operational database, the IS4 configuration database, and the application's database
@@ -285,7 +285,7 @@ namespace SimpleOidcOauth.Services
 				idSrvApiScope => idSrvApiScope.Name,
 				efApiScope => efApiScope.Name,
 				efApiScope => efApiScope.Id,
-				idSrvApiScope => idSrvApiScope.ToEntity());
+				idSrvApiScope => _mapper.Map<ApiScope>(idSrvApiScope));
 
 			var savedClients = await SaveAllUnsavedTestEntities(
 				clients?.AsQueryable(),
@@ -294,7 +294,7 @@ namespace SimpleOidcOauth.Services
 				idSrvClient => idSrvClient.ClientId,
 				efClient => efClient.ClientId,
 				efClient => efClient.Id,
-				idSrvClient => idSrvClient.ToEntity());
+				idSrvClient => _mapper.Map<Client>(idSrvClient));
 
 			var savedApiResources = await SaveAllUnsavedTestEntities(
 				apiResources?.AsQueryable(),
@@ -303,7 +303,7 @@ namespace SimpleOidcOauth.Services
 				idSrvApiResource => idSrvApiResource.Name,
 				efApiResource => efApiResource.Name,
 				efApiResource => efApiResource.Id,
-				idSrvApiResource => idSrvApiResource.ToEntity());
+				idSrvApiResource => _mapper.Map<ApiResource>(idSrvApiResource));
 
 			var savedIdentityResources = await SaveAllUnsavedTestEntities(
 				identityResources?.AsQueryable(),
@@ -312,7 +312,7 @@ namespace SimpleOidcOauth.Services
 				idSrvIdentityResource => idSrvIdentityResource.Name,
 				efIdentityResource => efIdentityResource.Name,
 				efIdentityResource => efIdentityResource.Id,
-				idSrvIdentityResource => idSrvIdentityResource.ToEntity());
+				idSrvIdentityResource => _mapper.Map<IdentityResource>(idSrvIdentityResource));
 
 			var savedUsers = await SaveAllUnsavedTestEntities(
 				users?.AsQueryable(),

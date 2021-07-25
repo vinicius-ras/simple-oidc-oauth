@@ -1,10 +1,10 @@
 using AutoMapper;
 using IdentityModel;
-using IdentityServer4.Models;
+using IdentityServer4.EntityFramework.Entities;
 using IdentityServer4.Test;
-using Microsoft.AspNetCore.Identity;
 using SimpleOidcOauth.Data.Security;
 using SimpleOidcOauth.Data.Serialization;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 
@@ -16,24 +16,153 @@ namespace SimpleOidcOauth.Data.Configuration
 		/// <summary>Constructor.</summary>
 		public AutoMapperProfile()
 		{
+			// Mappings for Claims
 			CreateMap<Claim, SerializableClaim>()
 				.ReverseMap();
+
+
+			// Mappings for Secrets
 			CreateMap<Secret, SerializableSecret>()
+				.Include<ClientSecret, SerializableClientSecret>()
+				.Include<ApiResourceSecret, SerializableApiResourceSecret>()
 				.ForMember(serializableSecret => serializableSecret.IsValueHashed, opts => opts.MapFrom(_ => true))
 				.ReverseMap();
+			CreateMap<ClientSecret, SerializableClientSecret>()
+				.ForMember(serializableClientSecret => serializableClientSecret.ClientDatabaseId, opts => opts.MapFrom(clientSecret => clientSecret.ClientId))
+				.ReverseMap()
+				.ForMember(clientSecret => clientSecret.Client, opts => opts.Ignore());
+			CreateMap<ApiResourceSecret, SerializableApiResourceSecret>()
+				.ForMember(serializableApiResourceSecret => serializableApiResourceSecret.ApiResourceDatabaseId, opts => opts.MapFrom(apiResourceSecret => apiResourceSecret.ApiResourceId))
+				.ReverseMap()
+				.ForMember(apiResourceSecret => apiResourceSecret.ApiResource, opts => opts.Ignore());
+
+
+			// Mappings for Client Applications
 			CreateMap<Client, SerializableClient>()
-				.ReverseMap();
-			CreateMap<Resource, SerializableResource>()
-				.ReverseMap();
-			CreateMap<ApiScope, SerializableApiScope>()
-				.IncludeBase<Resource, SerializableResource>()
-				.ReverseMap();
+				.ForMember(serializableClient => serializableClient.ClientDatabaseId, opts => opts.MapFrom(client => client.Id))
+				.ForMember(serializableClient => serializableClient.AllowedGrantTypes, opts => opts.MapFrom(client => client.AllowedGrantTypes.Select(grantType => grantType.GrantType)))
+				.ForMember(serializableClient => serializableClient.RedirectUris, opts => opts.MapFrom(client => client.RedirectUris.Select(redirectUri => redirectUri.RedirectUri)))
+				.ForMember(serializableClient => serializableClient.PostLogoutRedirectUris, opts => opts.MapFrom(client => client.PostLogoutRedirectUris.Select(postLogoutRedirectUri => postLogoutRedirectUri.PostLogoutRedirectUri)))
+				.ForMember(serializableClient => serializableClient.AllowedCorsOrigins, opts => opts.MapFrom(client => client.AllowedCorsOrigins.Select(corsOrigin => corsOrigin.Origin)))
+				.ForMember(serializableClient => serializableClient.AllowedScopes, opts => opts.MapFrom(client => client.AllowedScopes.Select(scope => scope.Scope)))
+				.ForMember(serializableClient => serializableClient.ClientSecrets, opts => opts.MapFrom(client => client.ClientSecrets))
+				.ReverseMap()
+				.ForMember(client => client.Id, opts => opts.Ignore())
+				.ForMember(client => client.IdentityProviderRestrictions, opts => opts.Ignore())
+				.ForMember(client => client.Claims, opts => opts.Ignore())
+				.ForMember(client => client.Properties, opts => opts.Ignore())
+				.ForMember(client => client.AllowedGrantTypes, opts => opts.MapFrom(serializableClient =>
+					serializableClient.AllowedGrantTypes.Select(grantType => new ClientGrantType {
+						ClientId = serializableClient.ClientDatabaseId ?? 0,
+						GrantType = grantType,
+					}).ToList()
+				))
+				.ForMember(client => client.AllowedCorsOrigins, opts => opts.MapFrom(serializableClient =>
+					serializableClient.AllowedCorsOrigins.Select(corsOrigin => new ClientCorsOrigin {
+						ClientId = serializableClient.ClientDatabaseId ?? 0,
+						Origin = corsOrigin,
+					}).ToList()
+				))
+				.ForMember(client => client.RedirectUris, opts => opts.MapFrom(serializableClient =>
+					serializableClient.RedirectUris.Select(redirectUri => new ClientRedirectUri {
+						ClientId = serializableClient.ClientDatabaseId ?? 0,
+						RedirectUri = redirectUri,
+					}).ToList()
+				))
+				.ForMember(client => client.PostLogoutRedirectUris, opts => opts.MapFrom(serializableClient =>
+					serializableClient.PostLogoutRedirectUris.Select(postLogoutRedirectUri => new ClientPostLogoutRedirectUri {
+						ClientId = serializableClient.ClientDatabaseId ?? 0,
+						PostLogoutRedirectUri = postLogoutRedirectUri,
+					}).ToList()
+				))
+				.ForMember(client => client.AllowedScopes, opts => opts.MapFrom(serializableClient =>
+					serializableClient.AllowedScopes.Select(scope => new ClientScope {
+						ClientId = serializableClient.ClientDatabaseId ?? 0,
+						Scope = scope,
+					}).ToList()
+				))
+				;
+
+
+			// Mappings for Identity Server's Resources (API Scopes, API Resources, Identity Resources).
+			CreateMap<ApiResource, SerializableResource>()
+				.ForMember(serializableResource => serializableResource.ResourceDatabaseId, opts => opts.MapFrom(apiResource => apiResource.Id))
+				.ForMember(serializableResource => serializableResource.UserClaims, opts => opts.MapFrom(apiResource => apiResource.UserClaims.Select(claim => claim.Type)))
+				.ForMember(serializableResource => serializableResource.Properties, opts => opts.MapFrom(apiResource => new Dictionary<string,string>(apiResource.Properties.Select(property => KeyValuePair.Create(property.Key, property.Value)))))
+				.ReverseMap()
+				.ForMember(apiResource => apiResource.Id, opts => opts.Ignore())
+				.ForMember(apiResource => apiResource.UserClaims, opts => opts.MapFrom(serializableResource => serializableResource.UserClaims.Select(claim => new ApiResourceClaim
+					{
+						ApiResourceId = serializableResource.ResourceDatabaseId ?? 0,
+						Type = claim,
+					}).ToList()
+				))
+				.ForMember(apiResource => apiResource.Properties, opts => opts.MapFrom(serializableResource => serializableResource.Properties.Select(property => new ApiResourceProperty
+					{
+						ApiResourceId = serializableResource.ResourceDatabaseId ?? 0,
+						Key = property.Key,
+						Value = property.Value,
+					}).ToList()
+				));
 			CreateMap<ApiResource, SerializableApiResource>()
-				.IncludeBase<Resource, SerializableResource>()
+				.IncludeBase<ApiResource, SerializableResource>()
+				.ForMember(serializableApiResource => serializableApiResource.ApiSecrets, opts => opts.MapFrom(apiResource => apiResource.Secrets))
+				.ForMember(serializableApiResource => serializableApiResource.Scopes, opts => opts.MapFrom(apiResource => apiResource.Scopes.Select(scope => scope.Scope)))
+				.ReverseMap()
+				.ForMember(apiResource => apiResource.Scopes, opts => opts.MapFrom(serializableApiResource => serializableApiResource.Scopes.Select(scope => new ApiResourceScope
+					{
+						ApiResourceId = serializableApiResource.ResourceDatabaseId ?? 0,
+						Scope = scope,
+					}).ToList()
+				));
+
+			CreateMap<ApiScope, SerializableResource>()
+				.ForMember(serializableResource => serializableResource.ResourceDatabaseId, opts => opts.MapFrom(apiScope => apiScope.Id))
+				.ForMember(serializableApiScope => serializableApiScope.UserClaims, opts => opts.MapFrom(apiScope => apiScope.UserClaims.Select(claim => claim.Type)))
+				.ForMember(serializableResource => serializableResource.Properties, opts => opts.MapFrom(apiScope => new Dictionary<string,string>(apiScope.Properties.Select(property => KeyValuePair.Create(property.Key, property.Value)))))
+				.ReverseMap()
+				.ForMember(apiScope => apiScope.UserClaims, opts => opts.MapFrom(serializableResource => serializableResource.UserClaims.Select(claim => new ApiScopeClaim
+					{
+						ScopeId = serializableResource.ResourceDatabaseId ?? 0,
+						Type = claim,
+					}).ToList()
+				))
+				.ForMember(apiScope => apiScope.Properties, opts => opts.MapFrom(serializableResource => serializableResource.Properties.Select(property => new ApiScopeProperty
+					{
+						ScopeId = serializableResource.ResourceDatabaseId ?? 0,
+						Key = property.Key,
+						Value = property.Value,
+					}).ToList()
+				));
+			CreateMap<ApiScope, SerializableApiScope>()
+				.IncludeBase<ApiScope, SerializableResource>()
 				.ReverseMap();
+
+			CreateMap<IdentityResource, SerializableResource>()
+				.ForMember(serializableResource => serializableResource.ResourceDatabaseId, opts => opts.MapFrom(identityResource => identityResource.Id))
+				.ForMember(serializableResource => serializableResource.UserClaims, opts => opts.MapFrom(identityResource => identityResource.UserClaims.Select(claim => claim.Type)))
+				.ForMember(serializableResource => serializableResource.Properties, opts => opts.MapFrom(identityResource => new Dictionary<string,string>(identityResource.Properties.Select(property => KeyValuePair.Create(property.Key, property.Value)))))
+				.ReverseMap()
+				.ForMember(identityResource => identityResource.Id, opts => opts.Ignore())
+				.ForMember(identityResource => identityResource.UserClaims, opts => opts.MapFrom(serializableResource => serializableResource.UserClaims.Select(claim => new IdentityResourceClaim
+					{
+						IdentityResourceId = serializableResource.ResourceDatabaseId ?? 0,
+						Type = claim,
+					}).ToList()
+				))
+				.ForMember(identityResource => identityResource.Properties, opts => opts.MapFrom(serializableResource => serializableResource.Properties.Select(property => new IdentityResourceProperty
+					{
+						IdentityResourceId = serializableResource.ResourceDatabaseId ?? 0,
+						Key = property.Key,
+						Value = property.Value,
+					}).ToList()
+				));
 			CreateMap<IdentityResource, SerializableIdentityResource>()
-				.IncludeBase<Resource, SerializableResource>()
+				.IncludeBase<IdentityResource, SerializableResource>()
 				.ReverseMap();
+
+
+			// Mappings for Users data
 			CreateMap<TestUser, SerializableTestUser>()
 				.ForMember(serializableTestUser => serializableTestUser.Claims, opt => opt.MapFrom(testUser => testUser.Claims))
 				.ReverseMap();
