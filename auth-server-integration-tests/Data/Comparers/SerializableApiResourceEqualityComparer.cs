@@ -48,7 +48,7 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 			{
 				var xSecrets = x.ApiSecrets ?? Enumerable.Empty<SerializableApiResourceSecret>();
 				var ySecrets = y.ApiSecrets ?? Enumerable.Empty<SerializableApiResourceSecret>();
-				var secretsComparer = new SerializableSecretEqualityComparer();
+				var secretsComparer = new SerializableApiResourceSecretEqualityComparer();
 				if (xSecrets.ToHashSet(secretsComparer).SetEquals(ySecrets.ToHashSet(secretsComparer)) == false)
 					return false;
 			}

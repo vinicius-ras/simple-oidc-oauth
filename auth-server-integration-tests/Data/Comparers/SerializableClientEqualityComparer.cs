@@ -92,7 +92,7 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 
 			if (CompareClientSecrets)
 			{
-				var secretsEqualityComparer = new SerializableSecretEqualityComparer();
+				var secretsEqualityComparer = new SerializableClientSecretEqualityComparer();
 
 				if (SetUtilities.AreSetsEqual(x.ClientSecrets, y.ClientSecrets, secretsEqualityComparer) == false)
 					return false;

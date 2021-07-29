@@ -7,7 +7,7 @@ using SimpleOidcOauth.Data.Serialization;
 namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 {
 	/// <summary>An equality comparer for <see cref="SerializableSecret"/> objects.</summary>
-	class SerializableSecretEqualityComparer : IEqualityComparer<SerializableSecret>
+	abstract class SerializableSecretEqualityComparer : IEqualityComparer<SerializableSecret>
 	{
 		// INTERFACE IMPLEMENTATION: IEqualityComparer<SerializableSecret>
 		/// <inheritdoc/>
