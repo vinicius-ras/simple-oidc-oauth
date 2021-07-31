@@ -1,0 +1,8 @@
+.component-AppModal__overlay {
+	@apply fixed inset-0 bg-black bg-opacity-50;
+}
+
+
+.component-AppModal__content {
+	@apply absolute inset-10 border border-solid border-gray-700 bg-white overflow-auto rounded-xl outline-none p-5;
+}
