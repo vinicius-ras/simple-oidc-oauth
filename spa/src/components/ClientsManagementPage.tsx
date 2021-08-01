@@ -76,6 +76,8 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 	const [allGrantTypeDescriptors, setAllGrantTypeDescriptors] = useState<ReadonlyArray<GrantTypeDescriptor>>([]);
 	const [availableResources, setAvailableResources] = useState<ReadonlyArray<SerializableResource>>([]);
 	const [isSubmittingClientData, setIsSubmittingClientData] = useState(false);
+
+	const [modalConfirmSaveSecrets, setModalConfirmSaveSecrets] = useState<SerializableSecret[]>([]);
 	const [modalConfirmSaveResult, setModalConfirmSaveResult] = useState<PromiseExecutorArgs<boolean>>();
 
 
@@ -139,6 +141,10 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 	 * @param newSecrets The list of newly-added secrets, that should be written down by the user.
 	 * @returns {Promise<boolean>} Returns a promise, wrapping a flag which specifies if the user has confirmed saving the client secrets or not. */
 	async function confirmSaveClientModal(newSecrets: SerializableSecret[]): Promise<boolean> {
+		setModalConfirmSaveSecrets(newSecrets);
+		if (newSecrets.length <= 0)
+			return true;
+
 		const modalResultPromise = new Promise<boolean>((resolve, reject) => {
 			setModalConfirmSaveResult({resolve, reject});
 		});
@@ -150,6 +156,7 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 	/** Submits the data for the currently edited client to the back-end, so that it can be saved.
 	 * @param evt Object representing the click on the "save client" button. */
 	async function saveClient(evt: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
+		const isUpdatingExistingApplication = !!(selectedClientEntry?.clientId);
 		try
 		{
 			evt.preventDefault();
@@ -168,9 +175,9 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 
 
 			// Decide which endpoint to call: either PUT (update existing client) or POST (create new client)
-			const response = (selectedClientEntry?.clientId)
+			const response = isUpdatingExistingApplication
 				? await AxiosService.getInstance()
-					.put<SerializableClient>(AppConfigurationService.Endpoints.UpdateClientApplication(selectedClientEntry.clientId), dataToSend)
+					.put<SerializableClient>(AppConfigurationService.Endpoints.UpdateClientApplication(selectedClientEntry!.clientId!), dataToSend)
 				: await AxiosService.getInstance()
 					.post<SerializableClient>(AppConfigurationService.Endpoints.CreateNewClientApplication, dataToSend);
 
@@ -179,8 +186,12 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 					? SerializableClient.fixJsonDeserialization(response.data)
 					: client));
 			setSelectedClientEntry(response.data);
+
+			toast.success(isUpdatingExistingApplication
+				? "Client Application successfuly updated."
+				: "Client Application has been registered.")
 		} catch (error) {
-			const errorMsg = (selectedClientEntry?.clientId)
+			const errorMsg = isUpdatingExistingApplication
 				? "Failed to update the Client Application. Please, verify the form for errors."
 				: "Failed to create the new Client Application. Please, verify the form for errors.";
 			toast.error(errorMsg);
@@ -440,7 +451,7 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 
 
 							{ /* MODAL: displays the list of new secrets and a warning for the user to keep the new secrets' plaintext versions safe, as they won't be retrievable anymore. */}
-							<AppModal isOpen={isSubmittingClientData} contentLabel="Warning: store your secrets in a safe place.">
+							<AppModal isOpen={isSubmittingClientData && modalConfirmSaveSecrets.length > 0} contentLabel="Warning: store your secrets in a safe place.">
 								<div className="flex justify-center text-6xl text-yellow-500">
 									<FontAwesomeIcon icon={faExclamationTriangle} />
 								</div>
@@ -453,8 +464,7 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 								</div>
 								<ul className="mt-8">
 									{
-										clientSecrets
-											.filter(secret => secret.isValueHashed === false)
+										modalConfirmSaveSecrets
 											.map((secret, secretIndex) =>
 												<li key={`${secretIndex}|${secret.description ?? 'no-description'}`}>
 													{secretIndex === 0 ? null : <div className="border-t border-gray-500 my-4" />}
@@ -462,7 +472,7 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 														<span className="font-bold">Secret: </span>
 														<span className="truncate" title={secret.description}>{secret.description}</span>
 														<span className="font-bold">Value: </span>
-														<div className="space-x-4">
+														<div className="space-x-4 truncate">
 															<CopyToClipboardButton contentsToCopy={secret.value!} title="Copy secret to clipboard" copySuccessToast="Secret copied to clipboard." />
 															<span className="truncate" title={secret.value}>{secret.value}</span>
 														</div>
