@@ -17,6 +17,7 @@ import AppModal from './AppModal';
 import ButtonLink from './ButtonLink';
 import ButtonLinkWithIcon from './ButtonLinkWithIcon';
 import CheckBox from './CheckBox';
+import CopyToClipboardButton from './CopyToClipboardButton';
 import ErrorAlert from './ErrorAlert';
 import { ErrorDisplayMode } from './ErrorText';
 import InputElement from './InputElement';
@@ -65,14 +66,11 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 
 	const [clientSecrets, setClientSecrets] = useState<SerializableSecret[]>([]);
 	const [isClientSecretBeingEdited, setIsClientSecretBeingEdited] = useState<boolean[]>([]);
-	const [copyStates, setCopyStates] = useState<SecretsListContext["copyStates"]>([]);
 	const [SecretsListContextObject] = useState(createSecretsListContext({
 		clientSecrets,
 		setClientSecrets,
 		isClientSecretBeingEdited,
 		setIsClientSecretBeingEdited,
-		copyStates,
-		setCopyStates,
 	}));
 
 	const [allGrantTypeDescriptors, setAllGrantTypeDescriptors] = useState<ReadonlyArray<GrantTypeDescriptor>>([]);
@@ -268,7 +266,6 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 	useEffect(() => {
 		const secretsData = selectedClientEntry?.clientSecrets ?? [];
 		setClientSecrets(secretsData);
-		setCopyStates(Lodash.times(secretsData.length, Lodash.constant('idle')));
 		setIsClientSecretBeingEdited(Lodash.times(secretsData.length, Lodash.constant(false)));
 	}, [selectedClientEntry]);
 
@@ -284,8 +281,6 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 		setClientSecrets,
 		isClientSecretBeingEdited,
 		setIsClientSecretBeingEdited,
-		copyStates,
-		setCopyStates,
 	};
 
 	const shouldDisableControls = (!availableClients || isSubmittingClientData);
@@ -467,7 +462,10 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 														<span className="font-bold">Secret: </span>
 														<span className="truncate" title={secret.description}>{secret.description}</span>
 														<span className="font-bold">Value: </span>
-														<span className="truncate" title={secret.value}>{secret.value}</span>
+														<div className="space-x-4">
+															<CopyToClipboardButton contentsToCopy={secret.value!} title="Copy secret to clipboard" copySuccessToast="Secret copied to clipboard." />
+															<span className="truncate" title={secret.value}>{secret.value}</span>
+														</div>
 													</div>
 												</li>
 										)

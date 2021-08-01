@@ -1,11 +1,12 @@
-import { faCheck, faCheckCircle, faCopy, faEdit, faKey, faPlusCircle, faSpinner, faTrash } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon, FontAwesomeIconProps } from '@fortawesome/react-fontawesome';
+import { faCheckCircle, faEdit, faKey, faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { DateTime } from 'luxon';
 import React, { useContext } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import IdentityServerConstants from '../data/IdentityServerConstants';
 import SerializableSecret from '../data/SerializableSecret';
 import ButtonLinkWithIcon from './ButtonLinkWithIcon';
+import CopyToClipboardButton from './CopyToClipboardButton';
 import CustomDatePicker from './CustomDatePicker';
 import InputElement from './InputElement';
 
@@ -28,21 +29,8 @@ export type SecretsListContext = {
 	isClientSecretBeingEdited: boolean[],
 	/** Setter for {@link isClientSecretBeingEdited}. */
 	setIsClientSecretBeingEdited?: React.Dispatch<React.SetStateAction<boolean[]>>,
-	/** A value indicating the state of a "copy-to-clipboard" operation for the secret's value. */
-	copyStates: ('idle' | 'processing' | 'resetting')[];
-	/** Setter for {@link copyStates}. */
-	setCopyStates?: React.Dispatch<React.SetStateAction<('idle' | 'processing' | 'resetting')[]>>,
 };
 
-
-
-
-
-
-
-
-
-// TODO: DOCUMENTAR SecretListEntry abaixo!!
 
 
 
@@ -63,8 +51,6 @@ function SecretsList(props: SecretsListProps) {
 		setClientSecrets,
 		isClientSecretBeingEdited,
 		setIsClientSecretBeingEdited,
-		copyStates,
-		setCopyStates,
 	} = useContext(props.context);
 
 
@@ -75,7 +61,6 @@ function SecretsList(props: SecretsListProps) {
 		evt?.preventDefault();
 		setClientSecrets?.(secrets => [...secrets, newSecret]);
 		setIsClientSecretBeingEdited?.(secretsBeingEdited => [...secretsBeingEdited, false]);
-		setCopyStates?.(copyStates => [...copyStates, "idle"]);
 	}
 
 
@@ -86,7 +71,6 @@ function SecretsList(props: SecretsListProps) {
 		evt?.preventDefault();
 		setClientSecrets?.(secrets => secrets.filter((_, index) => index !== secretIndex));
 		setIsClientSecretBeingEdited?.(secretsBeingEdited => secretsBeingEdited.filter((_, index) => index !== secretIndex));
-		setCopyStates?.(copyStates => copyStates.filter((_, index) => index !== secretIndex));
 	}
 
 
@@ -134,39 +118,6 @@ function SecretsList(props: SecretsListProps) {
 		updateSecretData(targetSecretIndex, (oldSecretData) => ({...oldSecretData, expiration: date ?? undefined }));
 	}
 
-
-	/** Called when the user clicks the "Copy secret to clipboard" (copy icon) button.
-	 * @param {number} targetSecretIndex The index of the secret which has been edited. */
-	async function onCopySecretToClipboardClicked(targetSecretIndex: number) {
-		// Verify if the user is currently able to click the button
-		if (targetSecretIndex < 0
-			|| targetSecretIndex >= clientSecrets.length
-			|| !clientSecrets[targetSecretIndex].value
-			|| copyStates[targetSecretIndex] !== 'idle')
-			return;
-
-
-		// Update button to "processing" state, and perform an async write to the clipboard
-		const updateCopyStateTo = (targetState: SecretsListContext['copyStates'][0]) => setCopyStates?.(oldCopyStates => {
-			const newCopyStates = [...oldCopyStates];
-			newCopyStates[targetSecretIndex] = targetState;
-			return newCopyStates;
-		});
-		updateCopyStateTo('processing');
-
-		const clipboardPromise = navigator.clipboard.writeText(clientSecrets[targetSecretIndex].value!);
-		await clipboardPromise;
-
-
-		// Update the secret entry to the "resetting" state, which will display an "ok" icon to the user (indicating the data was copied to the clipboard).
-		// Then, wait for some seconds so that the user can see this.
-		updateCopyStateTo('resetting')
-		await new Promise(resolve => setTimeout(() => resolve(null), 3000));
-
-
-		// Finally, set the button's icon back to normal ("copy" icon)
-		updateCopyStateTo('idle');
-	}
 
 
 
@@ -226,36 +177,11 @@ function SecretsList(props: SecretsListProps) {
 						</div>
 						<div className="border-l border-gray-400"></div>
 						<div className="flex items-center gap-2">
-							<div title="Copy value to clipboard"
-								className={secret.isValueHashed ? "opacity-50" : "cursor-pointer"}
-								onClick={() => secret.isValueHashed ? (() => {}) : onCopySecretToClipboardClicked(secretIndex)}>
-									{ (() => {
-										let copyIcon: FontAwesomeIconProps['icon'],
-											copyIconShouldSpin: boolean;
-										switch (copyStates[secretIndex])
-										{
-											case 'idle':
-												copyIcon = faCopy;
-												copyIconShouldSpin = false;
-												break;
-											case 'processing':
-												copyIcon = faSpinner;
-												copyIconShouldSpin = true;
-												break;
-											case 'resetting':
-												copyIcon = faCheck;
-												copyIconShouldSpin = false;
-												break;
-											default:
-												throw new Error(`Unknown copy state: ${copyStates[secretIndex]}`);
-										}
-										return <FontAwesomeIcon icon={copyIcon} spin={copyIconShouldSpin} />;
-									})()}
-							</div>
-							<div className="cursor-pointer" onClick={() => onEditSecretButtonClicked(secretIndex)}>
+							<CopyToClipboardButton className={secret.isValueHashed ? "opacity-50 cursor-not-allowed" : ""} contentsToCopy={secret.value!} title="Copy secret to clipboard" copySuccessToast="Secret copied to clipboard." />
+							<div className="cursor-pointer" onClick={() => onEditSecretButtonClicked(secretIndex)} title={isClientSecretBeingEdited[secretIndex] ? "Confirm edited values" : "Edit values"}>
 								<FontAwesomeIcon icon={isClientSecretBeingEdited[secretIndex] ? faCheckCircle : faEdit} />
 							</div>
-							<div className="cursor-pointer" onClick={evt => onRemoveSecret(evt, secretIndex)}>
+							<div className="cursor-pointer" onClick={evt => onRemoveSecret(evt, secretIndex)} title="Remove secret">
 								<FontAwesomeIcon icon={faTrash} />
 							</div>
 						</div>
