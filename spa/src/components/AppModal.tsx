@@ -1,6 +1,11 @@
 import React from 'react';
 import ReactModal from 'react-modal';
 
+// Identifies the root element where the application is rendered, so that the React Modal library can
+// automatically take care of ARIA-related attributes for us.
+ReactModal.setAppElement("#root");
+
+
 /** Props for the {@link AppModal} functional component. */
 export type AppModalProps = Omit<ReactModal['props'], 'className'|'overlayClassName'>;
 

@@ -21,37 +21,37 @@ FontAwesomeIconsLibrary.add(fab);
 
 function App() {
 	return (
-		<Provider store={AppStore}>
-			<Toaster />
-			<Router>
-				<div className="App">
-					<div className="w-screen max-w-md md:max-w-6xl">
-						<NavigationBar />
-						<header className="mb-4 px-4">
-							{/* A component to display application-wide errors (HTTP Status Codes from 500 to 599). */}
-							<ErrorAlert alertBox={{color: AlertColor.ERROR, className: "mt-4"}} errorText={{displayMode: ErrorDisplayMode.DETAIL_OR_TITLE, statusCodes: ({minCode: 500, maxCode: 599})}} />
-						</header>
-						<main className="px-4">
-							<RequireAppInitialization>
-								<SignInListener />
-								<Switch>
-									{/* Public pages. */}
-									<Route path="/" exact={true} component={WelcomePage} />
-									<Route path="/login" component={UserCredentialsPage} />
-									<Route path="/logout" component={LogoutPage} />
+		<div className="App">
+			<Provider store={AppStore}>
+				<Toaster />
+				<Router>
+						<div className="w-screen max-w-md md:max-w-6xl">
+							<NavigationBar />
+							<header className="mb-4 px-4">
+								{/* A component to display application-wide errors (HTTP Status Codes from 500 to 599). */}
+								<ErrorAlert alertBox={{color: AlertColor.ERROR, className: "mt-4"}} errorText={{displayMode: ErrorDisplayMode.DETAIL_OR_TITLE, statusCodes: ({minCode: 500, maxCode: 599})}} />
+							</header>
+							<main className="px-4">
+								<RequireAppInitialization>
+									<SignInListener />
+									<Switch>
+										{/* Public pages. */}
+										<Route path="/" exact={true} component={WelcomePage} />
+										<Route path="/login" component={UserCredentialsPage} />
+										<Route path="/logout" component={LogoutPage} />
 
 
-									{/* IdP Management Interface. */}
-									<Route path="/management/clients" component={ClientsManagementPage} />
+										{/* IdP Management Interface. */}
+										<Route path="/management/clients" component={ClientsManagementPage} />
 
-								</Switch>
-							</RequireAppInitialization>
-						</main>
-						<footer className="mb-80" />
-					</div>
-				</div>
-			</Router>
-		</Provider>
+									</Switch>
+								</RequireAppInitialization>
+							</main>
+							<footer className="mb-80" />
+						</div>
+				</Router>
+			</Provider>
+		</div>
 	);
 }
 

@@ -1,4 +1,4 @@
-import { faSave, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faExclamationTriangle, faSave, faTimes, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Lodash from 'lodash';
 import React, { useEffect, useState } from 'react';
@@ -11,8 +11,11 @@ import SerializableResource from '../data/SerializableResource';
 import SerializableSecret from '../data/SerializableSecret';
 import AppConfigurationService from '../services/AppConfigurationService';
 import AxiosService from '../services/AxiosService';
+import PromiseExecutorArgs from '../utilities/PromiseExecutorArgs';
 import { AlertColor } from './AlertBox';
+import AppModal from './AppModal';
 import ButtonLink from './ButtonLink';
+import ButtonLinkWithIcon from './ButtonLinkWithIcon';
 import CheckBox from './CheckBox';
 import ErrorAlert from './ErrorAlert';
 import { ErrorDisplayMode } from './ErrorText';
@@ -75,6 +78,7 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 	const [allGrantTypeDescriptors, setAllGrantTypeDescriptors] = useState<ReadonlyArray<GrantTypeDescriptor>>([]);
 	const [availableResources, setAvailableResources] = useState<ReadonlyArray<SerializableResource>>([]);
 	const [isSubmittingClientData, setIsSubmittingClientData] = useState(false);
+	const [modalConfirmSaveResult, setModalConfirmSaveResult] = useState<PromiseExecutorArgs<boolean>>();
 
 
 	/** Called when the CORS Origins list is changed.
@@ -123,18 +127,49 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 	}
 
 
+	/** Called when one of the buttons on the "Confirm Save Client" modal is clicked.
+	 * @param evt The event that generated a call to this method.
+	 * @param confirmSaving A flag indicating if the user has confirmed or canceled saving the Client Application's data. */
+	function onModalConfirmSaveClientButtonClicked(evt: React.MouseEvent<HTMLElement, MouseEvent>, confirmSaving: boolean) {
+		evt?.preventDefault();
+		modalConfirmSaveResult?.resolve(confirmSaving);
+	}
+
+
+	/** Displays a modal asking the user to confirm saving the client, and informing that the secrets should be written down because there
+	 * will be no way to recover their plain text versions after saving.
+	 * @param newSecrets The list of newly-added secrets, that should be written down by the user.
+	 * @returns {Promise<boolean>} Returns a promise, wrapping a flag which specifies if the user has confirmed saving the client secrets or not. */
+	async function confirmSaveClientModal(newSecrets: SerializableSecret[]): Promise<boolean> {
+		const modalResultPromise = new Promise<boolean>((resolve, reject) => {
+			setModalConfirmSaveResult({resolve, reject});
+		});
+		const modalResult = await modalResultPromise;
+		return modalResult;
+	}
+
+
 	/** Submits the data for the currently edited client to the back-end, so that it can be saved.
 	 * @param evt Object representing the click on the "save client" button. */
 	async function saveClient(evt: React.MouseEvent<HTMLAnchorElement, MouseEvent>) {
-		evt.preventDefault();
+		try
+		{
+			evt.preventDefault();
+			setIsSubmittingClientData(true);
 
-		setIsSubmittingClientData(true);
-		try {
-			// Decide which endpoint to call: either PUT (update existing client) or POST (create new client)
+
+			// Displays a modal asking for the user to confirm saving
 			const dataToSend : SerializableClient = {
 				...selectedClientEntry,
 				clientSecrets,
-			}
+			};
+			const newlyCreatedSecrets = clientSecrets.filter(secret => secret.isValueHashed === false);
+			const confirmationModalResult = await confirmSaveClientModal(newlyCreatedSecrets);
+			if (!confirmationModalResult)
+				return;
+
+
+			// Decide which endpoint to call: either PUT (update existing client) or POST (create new client)
 			const response = (selectedClientEntry?.clientId)
 				? await AxiosService.getInstance()
 					.put<SerializableClient>(AppConfigurationService.Endpoints.UpdateClientApplication(selectedClientEntry.clientId), dataToSend)
@@ -152,8 +187,9 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 				: "Failed to create the new Client Application. Please, verify the form for errors.";
 			toast.error(errorMsg);
 			console.error("Failed to save client's data: ", error);
+		} finally {
+			setIsSubmittingClientData(false);
 		}
-		setIsSubmittingClientData(false);
 	}
 
 
@@ -351,7 +387,7 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 
 
 
-							{/* Allowed Redirect URIs after login/logout. */}
+							{/* Options related to Client secrets. */}
 							<h1 className="font-bold mb-2 mt-10">Client secrets</h1>
 							<CheckBox
 								text="Require client app to be authenticated"
@@ -406,6 +442,42 @@ function ClientsManagementPage(props: ClientsManagementPageProps) {
 									Save
 								</WorkerButtonLinkWithIcon>
 							</div>
+
+
+							{ /* MODAL: displays the list of new secrets and a warning for the user to keep the new secrets' plaintext versions safe, as they won't be retrievable anymore. */}
+							<AppModal isOpen={isSubmittingClientData} contentLabel="Warning: store your secrets in a safe place.">
+								<div className="flex justify-center text-6xl text-yellow-500">
+									<FontAwesomeIcon icon={faExclamationTriangle} />
+								</div>
+								<div className="space-y-4 mt-8">
+									<p>
+										<span className="font-bold">Attention: </span>
+										Write down the following newly-created secrets.
+									</p>
+									<p>After saving, they will be encrypted and stored in a database, and you will not be able to recover their plaintext versions in the future.</p>
+								</div>
+								<ul className="mt-8">
+									{
+										clientSecrets
+											.filter(secret => secret.isValueHashed === false)
+											.map((secret, secretIndex) =>
+												<li key={`${secretIndex}|${secret.description ?? 'no-description'}`}>
+													{secretIndex === 0 ? null : <div className="border-t border-gray-500 my-4" />}
+													<div className="flex flex-col">
+														<span className="font-bold">Secret: </span>
+														<span className="truncate" title={secret.description}>{secret.description}</span>
+														<span className="font-bold">Value: </span>
+														<span className="truncate" title={secret.value}>{secret.value}</span>
+													</div>
+												</li>
+										)
+									}
+								</ul>
+								<div className="flex justify-between mt-8">
+									<ButtonLinkWithIcon to="/" icon={faTimes} onClick={evt => onModalConfirmSaveClientButtonClicked(evt, false)}>Cancel</ButtonLinkWithIcon>
+									<ButtonLinkWithIcon to="/" icon={faSave} className="bg-yellow-600" onClick={evt => onModalConfirmSaveClientButtonClicked(evt, true)}>Proceed</ButtonLinkWithIcon>
+								</div>
+							</AppModal>
 						</section>
 					)
 					: null
