@@ -7,6 +7,7 @@ using SimpleOidcOauth.Data.Serialization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using Is4HashExtensions = IdentityServer4.Models.HashExtensions;
 
 namespace SimpleOidcOauth.Data.Configuration
 {
@@ -23,16 +24,19 @@ namespace SimpleOidcOauth.Data.Configuration
 
 			// Mappings for Secrets
 			CreateMap<Secret, SerializableSecret>()
-				.Include<ClientSecret, SerializableClientSecret>()
-				.Include<ApiResourceSecret, SerializableApiResourceSecret>()
+				.Include<ClientSecret, SerializableSecret>()
+				.Include<ApiResourceSecret, SerializableSecret>()
 				.ForMember(serializableSecret => serializableSecret.IsValueHashed, opts => opts.MapFrom(_ => true))
-				.ReverseMap();
-			CreateMap<ClientSecret, SerializableClientSecret>()
-				.ForMember(serializableClientSecret => serializableClientSecret.ClientDatabaseId, opts => opts.MapFrom(clientSecret => clientSecret.ClientId))
+				.ForMember(serializableSecret => serializableSecret.Value, opts => opts.MapFrom(_ => (string)null))
+				.ForMember(serializableSecret => serializableSecret.DatabaseId, opts => opts.MapFrom(secret => secret.Id))
+				.ReverseMap()
+				.ForMember(secret => secret.Value, opts => opts.MapFrom(serializableSecret => serializableSecret.IsValueHashed == true
+					? serializableSecret.Value
+					: Is4HashExtensions.Sha256(serializableSecret.Value)));
+			CreateMap<ClientSecret, SerializableSecret>()
 				.ReverseMap()
 				.ForMember(clientSecret => clientSecret.Client, opts => opts.Ignore());
-			CreateMap<ApiResourceSecret, SerializableApiResourceSecret>()
-				.ForMember(serializableApiResourceSecret => serializableApiResourceSecret.ApiResourceDatabaseId, opts => opts.MapFrom(apiResourceSecret => apiResourceSecret.ApiResourceId))
+			CreateMap<ApiResourceSecret, SerializableSecret>()
 				.ReverseMap()
 				.ForMember(apiResourceSecret => apiResourceSecret.ApiResource, opts => opts.Ignore());
 
@@ -47,7 +51,7 @@ namespace SimpleOidcOauth.Data.Configuration
 				.ForMember(serializableClient => serializableClient.AllowedScopes, opts => opts.MapFrom(client => client.AllowedScopes.Select(scope => scope.Scope)))
 				.ForMember(serializableClient => serializableClient.ClientSecrets, opts => opts.MapFrom(client => client.ClientSecrets))
 				.ReverseMap()
-				.ForMember(client => client.Id, opts => opts.Ignore())
+				.ForMember(client => client.Id, opts => opts.MapFrom(serializableSecret => serializableSecret.ClientDatabaseId))
 				.ForMember(client => client.IdentityProviderRestrictions, opts => opts.Ignore())
 				.ForMember(client => client.Claims, opts => opts.Ignore())
 				.ForMember(client => client.Properties, opts => opts.Ignore())

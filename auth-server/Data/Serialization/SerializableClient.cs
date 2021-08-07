@@ -3,6 +3,7 @@ using SimpleOidcOauth.Data.Configuration;
 using SimpleOidcOauth.Data.ValidationAttributes;
 using SimpleOidcOauth.OpenApi.Swagger.Filters;
 using Swashbuckle.AspNetCore.Annotations;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -48,7 +49,7 @@ namespace SimpleOidcOauth.Data.Serialization
 		[Required]
 		public string ClientName { get; set; }
 		/// <summary>Client secrets - only relevant for flows that require a secret.</summary>
-		public IEnumerable<SerializableClientSecret> ClientSecrets { get; set; }
+		public IEnumerable<SerializableSecret> ClientSecrets { get; set; }
 		/// <summary>Specifies allowed URIs to redirect to after logout.</summary>
 		[Required]
 		[MinLength(1)]
@@ -123,44 +124,33 @@ namespace SimpleOidcOauth.Data.Serialization
 
 
 			// If a Client Secret is required, then at least one client secret must be provided
-			var clientSecrets = this.ClientSecrets ?? Enumerable.Empty<SerializableClientSecret>();
+			var clientSecrets = (this.ClientSecrets ?? Enumerable.Empty<SerializableSecret>()).ToList();
 			if (this.RequireClientSecret && clientSecrets.Count() <= 0)
 				yield return new ValidationResult(
 					"Client requires at least one secret to be valid.",
 					new[] { nameof(this.ClientSecrets) }
 				);
 
-			// Client secrets should not be null references, should not have null values, and must be of valid types
-			if (clientSecrets.Any(secret => secret == null))
-				yield return new ValidationResult(
-					"Null Client Secret objects are not acceptable.",
-					new[] { nameof(this.ClientSecrets) }
-				);
-
-			var nonNullClientSecrets = clientSecrets.Where(secret => secret != null);
-			if (nonNullClientSecrets.Any(secret => secret.Value == null))
-				yield return new ValidationResult(
-					"Null Client Secret values are not acceptable.",
-					new[] { nameof(this.ClientSecrets) }
-				);
-
-			var unsupportedSecretTypes = nonNullClientSecrets
-				.Where(secret => AppConfigs.SupportedClientSecretTypes.Contains(secret.Type) == false)
-				.Select(secret => secret.Type)
-				.ToList();
-			if (unsupportedSecretTypes.Count > 0)
+			// Execute Secret-specific validation logic
+			for (int s = 0; s < clientSecrets.Count; s++)
 			{
-				var formattedSecretTypeNames = unsupportedSecretTypes.Select(secretType =>
-					secretType == null
-						? "null"
-						: $@"""{secretType}"""
-				);
-				yield return new ValidationResult(
-					unsupportedSecretTypes.Count == 1
-						? $@"Unsupported Secret type: {formattedSecretTypeNames.First()}."
-						: $@"Unsupported Secret types: {string.Join(", ", formattedSecretTypeNames)}.",
-					new[] { nameof(this.ClientSecrets) }
-				);
+				var secret = clientSecrets[s];
+				var currentSecretMemberName = $"{nameof(this.ClientSecrets)}[{s}]";
+				if (secret == null)
+				{
+					yield return new ValidationResult(
+						"Null Client Secret objects are not acceptable.",
+						new[] { currentSecretMemberName }
+					);
+					continue;
+				}
+
+				var secretValidationErrors = secret.Validate(validationContext);
+				foreach (var secretValidationError in secretValidationErrors)
+					yield return new ValidationResult(
+						secretValidationError.ErrorMessage,
+						secretValidationError.MemberNames.Select(memberName => $"{currentSecretMemberName}.{memberName}")
+					);
 			}
 		}
 	}

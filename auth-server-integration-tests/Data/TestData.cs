@@ -5,7 +5,6 @@ using SimpleOidcOauth.Data.Serialization;
 using System.Collections.Generic;
 using System.Security.Claims;
 using static IdentityModel.OidcConstants;
-using Is4HashExtensions = IdentityServer4.Models.HashExtensions;
 
 namespace SimpleOidcOauth.Tests.Integration.Data
 {
@@ -197,10 +196,10 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 			AllowedGrantTypes = new[] { GrantTypes.ClientCredentials },
 			ClientSecrets = new[]
 			{
-				new SerializableClientSecret
+				new SerializableSecret
 				{
-					IsValueHashed = true,
-					Value = Is4HashExtensions.Sha256(PlainTextPasswordClientClientCredentialsFlow),
+					IsValueHashed = false,
+					Value = PlainTextPasswordClientClientCredentialsFlow,
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
 				},
 			},
@@ -229,10 +228,10 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 			AllowedGrantTypes = new[] { GrantTypes.Password },
 			ClientSecrets = new[]
 			{
-				new SerializableClientSecret
+				new SerializableSecret
 				{
-					IsValueHashed = true,
-					Value = Is4HashExtensions.Sha256(PlainTextPasswordClientResourceOwnerPasswordFlow),
+					IsValueHashed = false,
+					Value = PlainTextPasswordClientResourceOwnerPasswordFlow,
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
 				},
 			},
@@ -250,10 +249,10 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 			ClientName = "Authorization Code Flow Client (Without PKCE)",
             ClientSecrets = new[]
 			{
-				new SerializableClientSecret
+				new SerializableSecret
 				{
-					IsValueHashed = true,
-					Value = Is4HashExtensions.Sha256(PlainTextPasswordClientAuthorizationCodeFlowWithoutPkce),
+					IsValueHashed = false,
+					Value = PlainTextPasswordClientAuthorizationCodeFlowWithoutPkce,
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
 				},
 			},
@@ -283,10 +282,10 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 			ClientName = "Authorization Code Flow Client (With PKCE)",
             ClientSecrets = new[]
 			{
-				new SerializableClientSecret
+				new SerializableSecret
 				{
-					IsValueHashed = true,
-					Value = Is4HashExtensions.Sha256(PlainTextPasswordClientAuthorizationCodeFlowWithPkce),
+					IsValueHashed = false,
+					Value = PlainTextPasswordClientAuthorizationCodeFlowWithPkce,
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
 				},
 			},

@@ -121,13 +121,14 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Services
 					var savedRedirectUri = savedClient.RedirectUris.Single(redirectUri => redirectUri.Equals(redirectUriToSave));
 					Assert.Equal(redirectUriToSave, savedRedirectUri);
 				}
-				foreach (var secretToSave in clientToSave.ClientSecrets ?? Enumerable.Empty<SerializableClientSecret>())
+				foreach (var secretToSave in clientToSave.ClientSecrets ?? Enumerable.Empty<SerializableSecret>())
 				{
 					var savedSecret = savedClient.ClientSecrets.SingleOrDefault(secret =>
 						secret.Description == secretToSave.Description
-						&& secret.Value == secretToSave.Value
 						&& secret.Expiration == secretToSave.Expiration
 						&& secret.Type == secretToSave.Type
+						&& secret.Value == null
+						&& secret.IsValueHashed == true
 					);
 					Assert.NotNull(savedSecret);
 				}

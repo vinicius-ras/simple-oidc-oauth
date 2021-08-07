@@ -53,6 +53,7 @@ namespace SimpleOidcOauth.Data.Configuration
 		/// <summary>The set of Client Secret types that are currently supported by the IdP.</summary>
 		public static readonly string[] SupportedClientSecretTypes = {
 			IdentityServerConstants.SecretTypes.SharedSecret,
+			IdentityServerConstants.SecretTypes.JsonWebKey,
 		};
 
 

@@ -33,7 +33,7 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 				"random-scope-6e0ac6e2df3b4753a6c3ddce8f8c82c2",
 			},
 			ClientSecrets = new [] {
-				new SerializableClientSecret { Type = IdentityServerConstants.SecretTypes.SharedSecret, Value = Is4HashExtensions.Sha256("my-shared-secret-840dada4e56c4417b6d307efe6148d69") },
+				new SerializableSecret { Type = IdentityServerConstants.SecretTypes.SharedSecret, Value = Is4HashExtensions.Sha256("my-shared-secret-840dada4e56c4417b6d307efe6148d69") },
 			},
 			PostLogoutRedirectUris = new [] {
 				"http://valid-post-logout-redirect-uri-7db192b1d75e4a0da751f394f92b2839.com",
@@ -264,7 +264,7 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 		{
 			var clientData = InstantiateValidSerializableClient();
 			clientData.RequireClientSecret = true;
-			clientData.ClientSecrets = new List<SerializableClientSecret>();
+			clientData.ClientSecrets = new List<SerializableSecret>();
 
 			var validationContext = new ValidationContext(clientData);
 			var errorsCollection = new List<ValidationResult>();
@@ -286,11 +286,12 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 			clientData.ClientSecrets = plainTextSecrets
 				.Select(plainTextSecret => plainTextSecret == null
 					? null
-					: new SerializableClientSecret {
+					: new SerializableSecret {
 						Type = IdentityServerConstants.SecretTypes.SharedSecret,
 						Value = Is4HashExtensions.Sha256(plainTextSecret),
 					})
 				.ToList();
+			string expectedErrorMemberName = $"{nameof(clientData.ClientSecrets)}[1]";
 
 			var validationContext = new ValidationContext(clientData);
 			var errorsCollection = new List<ValidationResult>();
@@ -299,24 +300,26 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 
 			Assert.False(isValid);
 			Assert.NotEmpty(errorsCollection);
-			Assert.Contains(errorsCollection, error => error.MemberNames.Count() == 1 && error.MemberNames.First() == nameof(clientData.ClientSecrets));
+			Assert.Contains(errorsCollection, error => error.MemberNames.Count() == 1 && error.MemberNames.First() == expectedErrorMemberName);
 		}
 
 
 		[Fact]
-		public void Validate_ClientSecretsWithNullValues_ReturnsFailure()
+		public void Validate_ClientSecretsWithNullValuesAndNotHashed_ReturnsFailure()
 		{
 			var plainTextSecrets = new [] { "my-secret-40e98a8d62a841bcb9d58c35fa63e01e", null, "my-secret-0e5fa86d7a234704ba791a6d9765e4a7" };
 
 			var clientData = InstantiateValidSerializableClient();
 			clientData.ClientSecrets = plainTextSecrets
-				.Select(plainTextSecret => new SerializableClientSecret {
+				.Select(plainTextSecret => new SerializableSecret {
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
 					Value = plainTextSecret != null
 						? Is4HashExtensions.Sha256(plainTextSecret)
 						: null,
+					IsValueHashed = false,
 				})
 				.ToList();
+			string expectedErrorMemberName = $"{nameof(clientData.ClientSecrets)}[1].{nameof(SerializableSecret.Value)}";
 
 			var validationContext = new ValidationContext(clientData);
 			var errorsCollection = new List<ValidationResult>();
@@ -325,7 +328,7 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 
 			Assert.False(isValid);
 			Assert.NotEmpty(errorsCollection);
-			Assert.Contains(errorsCollection, error => error.MemberNames.Count() == 1 && error.MemberNames.First() == nameof(clientData.ClientSecrets));
+			Assert.Contains(errorsCollection, error => error.MemberNames.Count() == 1 && error.MemberNames.First() == expectedErrorMemberName);
 		}
 
 
@@ -334,19 +337,20 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 		{
 			var clientData = InstantiateValidSerializableClient();
 			clientData.ClientSecrets = new [] {
-				new SerializableClientSecret {
+				new SerializableSecret {
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
 					Value = Is4HashExtensions.Sha256("my-secret-da89bba38e214e9c9ffcc645b65ebd0d"),
 				},
-				new SerializableClientSecret {
+				new SerializableSecret {
 					Type = null,
 					Value = Is4HashExtensions.Sha256("my-secret-ad8f32f132804558831008b7ea0d22d5"),
 				},
-				new SerializableClientSecret {
+				new SerializableSecret {
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
 					Value = Is4HashExtensions.Sha256("my-secret-df0ffa444ee346fc9ba39a76f30a56d0"),
 				},
 			};
+			string expectedErrorMemberName = $"{nameof(clientData.ClientSecrets)}[1].{nameof(SerializableSecret.Type)}";
 
 			var validationContext = new ValidationContext(clientData);
 			var errorsCollection = new List<ValidationResult>();
@@ -355,7 +359,7 @@ namespace SimpleOidcOauth.Tests.Unit.Data.Serialization
 
 			Assert.False(isValid);
 			Assert.NotEmpty(errorsCollection);
-			Assert.Contains(errorsCollection, error => error.MemberNames.Count() == 1 && error.MemberNames.First() == nameof(clientData.ClientSecrets));
+			Assert.Contains(errorsCollection, error => error.MemberNames.Count() == 1 && error.MemberNames.First() == expectedErrorMemberName);
 		}
 
 

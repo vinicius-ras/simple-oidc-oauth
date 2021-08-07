@@ -1,20 +1,25 @@
 using IdentityServer4.EntityFramework.Entities;
+using SimpleOidcOauth.Data.Configuration;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace SimpleOidcOauth.Data.Serialization
 {
 	/// <summary>Serialized data of a secret.</summary>
 	/// <remarks>This class is basically an altered serializable version of the <see cref="Secret"/> class, which is a base class for Identity Server secrets.</remarks>
-	public abstract class SerializableSecret
+	public class SerializableSecret : IValidatableObject
 	{
+		// INSTANCE PROPERTIES
+		/// <summary>The database row ID this secret, in its corresponding table.</summary>
+		public int? DatabaseId { get; set; }
 		/// <summary>Gets or sets a description for the secret.</summary>
 		/// <value>The description.</value>
 		/// <example>A token representing the administrator's password.</example>
 		public string Description { get; set; }
 		/// <summary>Gets or sets a value for the secret.</summary>
 		/// <example>123admin321</example>
-		[Required]
 		public string Value { get; set; }
 		/// <summary>Gets or sets an expiration date/time for the secret.</summary>
 		/// <value>The expiration date/time.</value>
@@ -38,5 +43,41 @@ namespace SimpleOidcOauth.Data.Serialization
 		/// </value>
 		/// <example>false</example>
 		public bool? IsValueHashed { get; set; }
+
+
+
+
+
+		// INTERFACE IMPLEMENTATION: IValidatableObject
+		/// <inheritdoc/>
+		public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+		{
+			bool isSecretValueHashed = (IsValueHashed == true),
+				isSecretValueEmpty = string.IsNullOrWhiteSpace(Value),
+				secretHasDatabaseId = DatabaseId.HasValue;
+			if (isSecretValueHashed)
+			{
+				if (isSecretValueEmpty == false)
+					yield return new ValidationResult("A hashed Secret requires an empty value, as its value is already stored in the database.", new [] { nameof(Value) });
+				if (secretHasDatabaseId == false)
+					yield return new ValidationResult("A hashed Secret requires a Database ID to identify its corresponding entry in the database.", new [] { nameof(DatabaseId) });
+			}
+			else if (isSecretValueEmpty)
+				yield return new ValidationResult("Non-hashed Secrets require a value.", new [] { nameof(Value) } );
+
+
+			// Verify if the given secret type is supported
+			if (AppConfigs.SupportedClientSecretTypes.Contains(this.Type) == false)
+			{
+				string humanReadableSecretType = this.Type == null
+					? "null"
+					: $@"""{this.Type}""";
+				yield return new ValidationResult(
+					$@"Unsupported Secret type: {humanReadableSecretType}.",
+					new[] { nameof(this.Type) }
+				);
+			}
+
+		}
 	}
 }

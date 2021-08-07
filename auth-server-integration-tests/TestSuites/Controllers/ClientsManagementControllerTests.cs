@@ -125,14 +125,14 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 					"api-resource-eb3709b7400c446bb56ce12243e3880f-scope-3",
 				},
 				ApiSecrets = new[] {
-					new SerializableApiResourceSecret {
+					new SerializableSecret {
 						Description = "Description for Sample Secret #1 for resource #eb3709b7400c446bb56ce12243e3880f",
 						Expiration = new DateTime(2000, 8, 20),
-						IsValueHashed = true,
+						IsValueHashed = false,
 						Value = "random-secret-value-70063fcc76d04dfeb5c12de080254d9d",
 						Type = IdentityServerConstants.SecretTypes.SharedSecret,
 					},
-					new SerializableApiResourceSecret {
+					new SerializableSecret {
 						Description = "Description for Sample Secret #2 for resource #eb3709b7400c446bb56ce12243e3880f",
 						Expiration = null,
 						IsValueHashed = false,
@@ -160,10 +160,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 					"api-resource-bb382de595be42ff8fdd53d9fa6a062d-scope-2",
 				},
 				ApiSecrets = new[] {
-					new SerializableApiResourceSecret {
+					new SerializableSecret {
 						Description = "Description for Sample Secret #1 for resource #bb382de595be42ff8fdd53d9fa6a062d",
 						Expiration = new DateTime(2000, 8, 20),
-						IsValueHashed = true,
+						IsValueHashed = false,
 						Value = "random-secret-value-70063fcc76d04dfeb5c12de080254d9d",
 						Type = IdentityServerConstants.SecretTypes.SharedSecret,
 					},
@@ -308,7 +308,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		{
 			// Arrange
 			await SetupDatabaseForTests(withSampleClients: true);
-			var clientsEqualityComparer = new SerializableClientEqualityComparer();
+			var clientsEqualityComparer = new SerializableClientEqualityComparer
+			{
+				CompareClientSecrets = false,
+			};
 
 			var usersToTest = new[] { UserCanViewClients, UserCanViewAndEditClients };
 			foreach (var userToLogin in usersToTest)
@@ -333,6 +336,9 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 					bool clientsAreEqual = clientsEqualityComparer.Equals(curSampleClient, incomingResponseClient);
 					Assert.True(clientsAreEqual);
+					Assert.DoesNotContain(incomingResponseClient.ClientSecrets, secret => secret.IsValueHashed == false);
+					Assert.DoesNotContain(incomingResponseClient.ClientSecrets, secret => secret.Value != null);
+					Assert.DoesNotContain(incomingResponseClient.ClientSecrets, secret => secret.DatabaseId == null);
 				}
 			}
 		}
@@ -390,7 +396,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 		{
 			// Arrange
 			await SetupDatabaseForTests(withSampleClients: true);
-			var clientsEqualityComparer = new SerializableClientEqualityComparer();
+			var clientsEqualityComparer = new SerializableClientEqualityComparer
+			{
+				CompareClientSecrets = false,
+			};
 
 			var usersToTest = new[] { UserCanViewClients, UserCanViewAndEditClients };
 			foreach (var userToLogin in usersToTest)
@@ -413,6 +422,9 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 					Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 					Assert.Equal(HttpStatusCode.OK, getClientHttpResponse.StatusCode);
 					Assert.True(clientsEqualityComparer.Equals(clientToTest, getClientHttpResponseClient));
+					Assert.DoesNotContain(getClientHttpResponseClient.ClientSecrets, secret => secret.IsValueHashed == false);
+					Assert.DoesNotContain(getClientHttpResponseClient.ClientSecrets, secret => secret.Value != null);
+					Assert.DoesNotContain(getClientHttpResponseClient.ClientSecrets, secret => secret.DatabaseId == null);
 				}
 			}
 		}
@@ -603,8 +615,12 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				{
 					if (resource is SerializableApiScope apiScope)
 						Assert.Contains(apiScope, allSampleApiScopes, apiScopeEqualityComparer);
-					else if (resource is SerializableApiResource apiResource)
+					else if (resource is SerializableApiResource apiResource) {
 						Assert.Contains(apiResource, allSampleApiResources, apiResourceEqualityComparer);
+						Assert.DoesNotContain(apiResource.ApiSecrets, secret => secret.IsValueHashed != true);
+						Assert.DoesNotContain(apiResource.ApiSecrets, secret => secret.Value != null);
+						Assert.DoesNotContain(apiResource.ApiSecrets, secret => secret.DatabaseId == null);
+					}
 					else if (resource is SerializableIdentityResource identityResource)
 						Assert.Contains(identityResource, allSampleIdentityResources, identityResourceEqualityComparer);
 					else
@@ -671,6 +687,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var clientsEqualityComparer = new SerializableClientEqualityComparer
 			{
 				CompareClientId = false,
+				CompareClientSecrets = false,
 			};
 
 			foreach (var clientApp in TestData.SampleClients)
@@ -694,6 +711,9 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 				Assert.Equal(HttpStatusCode.Created, createNewClientHttpResponse.StatusCode);
 				Assert.Equal(clientApp, returnedClientData, clientsEqualityComparer);
+				Assert.DoesNotContain(returnedClientData.ClientSecrets, secret => secret.IsValueHashed != true);
+				Assert.DoesNotContain(returnedClientData.ClientSecrets, secret => secret.Value != null);
+				Assert.DoesNotContain(returnedClientData.ClientSecrets, secret => secret.DatabaseId == null);
 				Assert.NotNull(returnedClientData.ClientId);
 				Assert.NotEmpty(returnedClientData.ClientId);
 			}
@@ -713,6 +733,73 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				var userToLogin = UserCanViewAndEditClients;
 				var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
 
+
+				// ***** Act *****
+				var loginResponse = await AuthenticationUtilities.PerformRequestToLoginEndpointAsync(httpClient, userEmail, userToLogin.Password);
+				var createNewClientHttpResponse = await httpClient.PostAsync(AppEndpoints.CreateNewClientApplication, JsonContent.Create(clientApp));
+
+
+				// ***** Assert *****
+				Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+				Assert.Equal(HttpStatusCode.BadRequest, createNewClientHttpResponse.StatusCode);
+			}
+		}
+
+
+		[Fact]
+		public async Task CreateNewClientApplication_DataContainingHashedSecret_ReturnsBadRequest()
+		{
+			// ***** Arrange *****
+			await SetupDatabaseForTests(withSampleClients: false);
+
+			var clientsWithSecrets = TestData.SampleClients
+				.Where(client => client.ClientSecrets?.Any() == true);
+			foreach (var clientApp in clientsWithSecrets)
+			{
+				var httpClient = WebAppFactory.CreateClient();
+
+				var userToLogin = UserCanViewAndEditClients;
+				var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+				clientApp.ClientSecrets
+					.FirstOrDefault()
+					.IsValueHashed = true;
+
+				// ***** Act *****
+				var loginResponse = await AuthenticationUtilities.PerformRequestToLoginEndpointAsync(httpClient, userEmail, userToLogin.Password);
+				var createNewClientHttpResponse = await httpClient.PostAsync(AppEndpoints.CreateNewClientApplication, JsonContent.Create(clientApp));
+
+
+				// ***** Assert *****
+				Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+				Assert.Equal(HttpStatusCode.BadRequest, createNewClientHttpResponse.StatusCode);
+			}
+		}
+
+
+		[Theory]
+		[InlineData(null)]
+		[InlineData("")]
+		[InlineData("   ")]
+		[InlineData(" \t \n \r    ")]
+		public async Task CreateNewClientApplication_DataContainingNonHashedSecretWithoutValue_ReturnsBadRequest(string secretValue)
+		{
+			// ***** Arrange *****
+			await SetupDatabaseForTests(withSampleClients: false);
+
+			var clientsWithSecrets = TestData.SampleClients
+				.Where(client => client.ClientSecrets?.Any() == true);
+			foreach (var clientApp in clientsWithSecrets)
+			{
+				var httpClient = WebAppFactory.CreateClient();
+
+				var userToLogin = UserCanViewAndEditClients;
+				var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+				var targetClient = clientApp.ClientSecrets
+					.FirstOrDefault();
+				targetClient.IsValueHashed = false;
+				targetClient.Value = secretValue;
 
 				// ***** Act *****
 				var loginResponse = await AuthenticationUtilities.PerformRequestToLoginEndpointAsync(httpClient, userEmail, userToLogin.Password);
@@ -796,10 +883,10 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 				});
 			clientDataToSend.AllowedScopes = clientDataToSend.AllowedScopes.Select(scope => scope.ToUpper());
 			clientDataToSend.ClientName = clientDataToSend.ClientName.ToUpper();
-			clientDataToSend.ClientSecrets = clientDataToSend.ClientSecrets.Select(secret => new SerializableClientSecret {
+			clientDataToSend.ClientSecrets = clientDataToSend.ClientSecrets.Select(secret => new SerializableSecret {
 				Description = (secret.Description ?? "random-description-9ab718ad560e479993aacb397c74c64c").ToUpper(),
 				Expiration = secret.Expiration?.AddDays(-1) ?? DateTime.Now,
-				IsValueHashed = !(secret.IsValueHashed ?? true),
+				IsValueHashed = false,
 				Type = secret.Type,
 				Value = secret.Value.ToUpper().Substring(secret.Value.Length / 2),
 			});
@@ -829,6 +916,75 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			Assert.Equal(HttpStatusCode.OK, updateClientHttpResponse.StatusCode);
 			Assert.NotEqual(originalClientData, updatedClientData, clientsEqualityComparer);
 			Assert.Equal(clientDataToSend, updatedClientData, clientsEqualityComparer);
+			Assert.DoesNotContain(updatedClientData.ClientSecrets, secret => secret.IsValueHashed != true);
+			Assert.DoesNotContain(updatedClientData.ClientSecrets, secret => secret.Value != null);
+			Assert.DoesNotContain(updatedClientData.ClientSecrets, secret => secret.DatabaseId == null);
+		}
+
+
+		[Fact]
+		public async Task UpdateClientApplication_DataContainsHashedSecretWithValue_ReturnsBadRequest()
+		{
+			// Arrange
+			await SetupDatabaseForTests(withSampleClients: true);
+
+			var httpClient = WebAppFactory.CreateClient();
+
+			var userToLogin = UserCanViewAndEditClients;
+			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+			var clientDataToSend = TestData.ClientAuthorizationCodeFlowWithPkce;
+			var firstSecret = clientDataToSend.ClientSecrets.First();
+			firstSecret.IsValueHashed = true;
+			firstSecret.Value = "random-secret-value-145b618362eb4535907cb8053421c38b";
+
+			var updateEndpointUri = AppEndpoints.UpdateClientApplication
+				.Replace($"{{{AppEndpoints.ClientIdParameterName}}}", clientDataToSend.ClientId);
+
+			// Act
+			var loginResponse = await AuthenticationUtilities.PerformRequestToLoginEndpointAsync(httpClient, userEmail, userToLogin.Password);
+
+			var updateClientHttpResponse = await httpClient.PutAsync(updateEndpointUri, JsonContent.Create(clientDataToSend));
+			var updatedClientData = await updateClientHttpResponse.Content.ReadFromJsonAsync<SerializableClient>();
+
+			// Assert
+			Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+			Assert.Equal(HttpStatusCode.BadRequest, updateClientHttpResponse.StatusCode);
+		}
+
+
+		[Theory]
+		[InlineData(null)]
+		[InlineData("")]
+		[InlineData("   ")]
+		[InlineData(" \t \n \r    ")]
+		public async Task UpdateClientApplication_DataContainsNonHashedSecretWithoutValue_ReturnsBadRequest(string secretValue)
+		{
+			// Arrange
+			await SetupDatabaseForTests(withSampleClients: true);
+
+			var httpClient = WebAppFactory.CreateClient();
+
+			var userToLogin = UserCanViewAndEditClients;
+			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+			var clientDataToSend = TestData.ClientAuthorizationCodeFlowWithPkce;
+			var firstSecret = clientDataToSend.ClientSecrets.First();
+			firstSecret.IsValueHashed = false;
+			firstSecret.Value = secretValue;
+
+			var updateEndpointUri = AppEndpoints.UpdateClientApplication
+				.Replace($"{{{AppEndpoints.ClientIdParameterName}}}", clientDataToSend.ClientId);
+
+			// Act
+			var loginResponse = await AuthenticationUtilities.PerformRequestToLoginEndpointAsync(httpClient, userEmail, userToLogin.Password);
+
+			var updateClientHttpResponse = await httpClient.PutAsync(updateEndpointUri, JsonContent.Create(clientDataToSend));
+			var updatedClientData = await updateClientHttpResponse.Content.ReadFromJsonAsync<SerializableClient>();
+
+			// Assert
+			Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+			Assert.Equal(HttpStatusCode.BadRequest, updateClientHttpResponse.StatusCode);
 		}
 
 

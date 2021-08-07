@@ -92,7 +92,7 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 
 			if (CompareClientSecrets)
 			{
-				var secretsEqualityComparer = new SerializableClientSecretEqualityComparer();
+				var secretsEqualityComparer = new SerializableSecretEqualityComparer();
 
 				if (SetUtilities.AreSetsEqual(x.ClientSecrets, y.ClientSecrets, secretsEqualityComparer) == false)
 					return false;
@@ -145,7 +145,7 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 			if (CompareClientSecrets)
 			{
 				if (obj.ClientSecrets == null)
-					hashCode.Add<IEnumerable<SerializableClientSecret>>(null);
+					hashCode.Add<IEnumerable<SerializableSecret>>(null);
 				else
 				{
 					foreach (var clientSecret in obj.ClientSecrets.OrderBy(clientSecret => new { clientSecret.Description, clientSecret.Value } ))
