@@ -21,8 +21,9 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 		public bool ComparePostLogoutRedirectUris { init; get; } = true;
 		/// <summary>A flag indicating if the <see cref="SerializableClient.RedirectUris"/> collections should be compared.</summary>
 		public bool CompareRedirectUris { init; get; } = true;
-		/// <summary>A flag indicating if the <see cref="SerializableClient.ClientSecrets"/> collections should be compared.</summary>
-		public bool CompareClientSecrets { init; get; } = true;
+		/// <summary>A comparer to be used for comparing client secrets.</summary>
+		/// <remarks>To disable comparison of client secrets, set this property to <c>null</c>.</remarks>
+		public SerializableSecretEqualityComparer ClientSecretsComparer { init; get; } = new SerializableSecretEqualityComparer();
 		/// <summary>A flag indicating if the <see cref="SerializableClient.ClientId"/> properties should be compared.</summary>
 		public bool CompareClientId { init; get; } = true;
 
@@ -90,11 +91,9 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 					return false;
 			}
 
-			if (CompareClientSecrets)
+			if (ClientSecretsComparer != null)
 			{
-				var secretsEqualityComparer = new SerializableSecretEqualityComparer();
-
-				if (SetUtilities.AreSetsEqual(x.ClientSecrets, y.ClientSecrets, secretsEqualityComparer) == false)
+				if (SetUtilities.AreSetsEqual(x.ClientSecrets, y.ClientSecrets, ClientSecretsComparer) == false)
 					return false;
 			}
 
@@ -142,7 +141,7 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 						hashCode.Add(allowedScope);
 				}
 			}
-			if (CompareClientSecrets)
+			if (ClientSecretsComparer != null)
 			{
 				if (obj.ClientSecrets == null)
 					hashCode.Add<IEnumerable<SerializableSecret>>(null);

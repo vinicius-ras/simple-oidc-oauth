@@ -47,7 +47,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites
 			// Arrange
 			var targetUser = TestData.UserAlice;
 			var targetClient = TestData.ClientAuthorizationCodeFlowWithPkce;
-			var targetClientPassword = TestData.PlainTextPasswordClientAuthorizationCodeFlowWithPkce;
+			var targetClientPassword = TestData.PlainTextPasswordClientAuthorizationCodeFlowWithPkce1;
 
 			// Act
 			var acquiredToken = await AuthenticationUtilities.RetrieveUserTokenForAuthorizationCodeFlowAsync(WebAppFactory, targetUser, targetClient, targetClientPassword);

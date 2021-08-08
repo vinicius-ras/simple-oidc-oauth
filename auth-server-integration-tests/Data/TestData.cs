@@ -2,6 +2,7 @@ using IdentityModel;
 using IdentityServer4;
 using IdentityServer4.Test;
 using SimpleOidcOauth.Data.Serialization;
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using static IdentityModel.OidcConstants;
@@ -41,7 +42,9 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 
 
 		/// <summary>A fake plain text password to be used for the "Authorization Code (with PKCE)" client.</summary>
-		public static readonly string PlainTextPasswordClientAuthorizationCodeFlowWithPkce = "74d8fb7b96dc4760846b432c7397f629";
+		public static readonly string PlainTextPasswordClientAuthorizationCodeFlowWithPkce1 = "74d8fb7b96dc4760846b432c7397f629";
+		/// <summary>A secondary fake plain text password to be used for the "Authorization Code (with PKCE)" client.</summary>
+		public static readonly string PlainTextPasswordClientAuthorizationCodeFlowWithPkce2 = "3bbc22e879d24fee90a20daf5948771e";
 
 
 		/// <summary>Stub collection of claims to be used as a placeholder for future improvements.</summary>
@@ -285,7 +288,16 @@ namespace SimpleOidcOauth.Tests.Integration.Data
 				new SerializableSecret
 				{
 					IsValueHashed = false,
-					Value = PlainTextPasswordClientAuthorizationCodeFlowWithPkce,
+					Description = "client-authorization-code-flow-with-pkce-secret-1",
+					Value = PlainTextPasswordClientAuthorizationCodeFlowWithPkce1,
+					Type = IdentityServerConstants.SecretTypes.SharedSecret,
+				},
+				new SerializableSecret
+				{
+					IsValueHashed = false,
+					Description = "client-authorization-code-flow-with-pkce-secret-2",
+					Expiration = (DateTime.Now + TimeSpan.FromDays(100 * 365)),
+					Value = PlainTextPasswordClientAuthorizationCodeFlowWithPkce2,
 					Type = IdentityServerConstants.SecretTypes.SharedSecret,
 				},
 			},

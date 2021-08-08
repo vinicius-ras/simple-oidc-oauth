@@ -9,6 +9,16 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 	/// <summary>An equality comparer for <see cref="SerializableSecret"/> objects.</summary>
 	class SerializableSecretEqualityComparer : IEqualityComparer<SerializableSecret>
 	{
+		// INSTANCE PROPERTIES
+		/// <summary>A flag indicating if the <see cref="SerializableSecret.IsValueHashed"/> properties should be compared.</summary>
+		public bool CompareIsValueHashed { init; get; } = true;
+		/// <summary>A flag indicating if the <see cref="SerializableSecret.Value"/> properties should be compared.</summary>
+		public bool CompareValue { init; get; } = true;
+
+
+
+
+
 		// INTERFACE IMPLEMENTATION: IEqualityComparer<SerializableSecret>
 		/// <inheritdoc/>
 		public bool Equals(SerializableSecret x, SerializableSecret y)
@@ -24,11 +34,12 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 				return false;
 			if (x.Expiration != y.Expiration)
 				return false;
-			if (x.IsValueHashed != y.IsValueHashed)
-				return false;
 			if (x.Type != y.Type)
 				return false;
-			if (x.Value != y.Value)
+
+			if (CompareIsValueHashed && x.IsValueHashed != y.IsValueHashed)
+				return false;
+			if (CompareValue && x.Value != y.Value)
 				return false;
 
 			// Both instances should be considered equal.
@@ -37,7 +48,19 @@ namespace SimpleOidcOauth.Tests.Integration.Data.Comparers
 
 
 		/// <inheritdoc/>
-		public int GetHashCode([DisallowNull] SerializableSecret obj) =>
-			HashCode.Combine(obj.Description, obj.Expiration, obj.IsValueHashed, obj.Type, obj.Value);
+		public int GetHashCode([DisallowNull] SerializableSecret obj)
+		{
+			var hashCode = new HashCode();
+			hashCode.Add(obj.Description);
+			hashCode.Add(obj.Expiration);
+			hashCode.Add(obj.Type);
+			if (CompareIsValueHashed)
+				hashCode.Add(obj.IsValueHashed);
+			if (CompareValue)
+				hashCode.Add(obj.Value);
+
+			int result = hashCode.ToHashCode();
+			return result;
+		}
 	}
 }

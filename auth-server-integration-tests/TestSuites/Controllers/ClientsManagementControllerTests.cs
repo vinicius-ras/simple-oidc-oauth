@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
-using AutoMapper;
 using IdentityModel;
 using IdentityServer4;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -22,6 +21,7 @@ using SimpleOidcOauth.Tests.Integration.Models;
 using SimpleOidcOauth.Tests.Integration.Utilities;
 using Xunit;
 using Xunit.Abstractions;
+using Is4HashExtensions = IdentityServer4.Models.HashExtensions;
 
 namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 {
@@ -310,7 +310,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			await SetupDatabaseForTests(withSampleClients: true);
 			var clientsEqualityComparer = new SerializableClientEqualityComparer
 			{
-				CompareClientSecrets = false,
+				ClientSecretsComparer = null,
 			};
 
 			var usersToTest = new[] { UserCanViewClients, UserCanViewAndEditClients };
@@ -398,7 +398,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			await SetupDatabaseForTests(withSampleClients: true);
 			var clientsEqualityComparer = new SerializableClientEqualityComparer
 			{
-				CompareClientSecrets = false,
+				ClientSecretsComparer = null,
 			};
 
 			var usersToTest = new[] { UserCanViewClients, UserCanViewAndEditClients };
@@ -687,7 +687,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var clientsEqualityComparer = new SerializableClientEqualityComparer
 			{
 				CompareClientId = false,
-				CompareClientSecrets = false,
+				ClientSecretsComparer = null,
 			};
 
 			foreach (var clientApp in TestData.SampleClients)
@@ -899,7 +899,7 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			var clientsEqualityComparer = new SerializableClientEqualityComparer
 			{
 				CompareClientId = false,
-				CompareClientSecrets = false,
+				ClientSecretsComparer = null,
 			};
 
 			var updateEndpointUri = AppEndpoints.UpdateClientApplication
@@ -1105,6 +1105,72 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 			// Assert
 			Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 			Assert.Equal(HttpStatusCode.NotFound, updateClientHttpResponse.StatusCode);
+		}
+
+
+		[Fact]
+		public async Task UpdateClientApplication_RemovingClientSecrets_ReturnsOkAndExcludesMissingSecrets()
+		{
+			// Arrange
+			await SetupDatabaseForTests(withSampleClients: true);
+
+			var httpClient = WebAppFactory.CreateClient();
+
+			var userToLogin = UserCanViewAndEditClients;
+			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+			var clientData = TestData.ClientAuthorizationCodeFlowWithPkce;
+
+			var clientsComparerWithSecrets = new SerializableClientEqualityComparer
+			{
+				ClientSecretsComparer = new SerializableSecretEqualityComparer
+				{
+					CompareIsValueHashed = false,
+					CompareValue = false,
+				}
+			};
+			var clientsComparerWithoutSecrets = new SerializableClientEqualityComparer
+			{
+				ClientSecretsComparer = null,
+			};
+
+			int initialCountOfSecrets = clientData.ClientSecrets.Count();
+			var newClientSecrets = clientData.ClientSecrets.ToList();
+			newClientSecrets.RemoveAt(0);
+			clientData.ClientSecrets = newClientSecrets;
+
+			var getRegisteredClientEndpointUri = AppEndpoints.GetRegisteredClient
+				.Replace($"{{{AppEndpoints.ClientIdParameterName}}}", clientData.ClientId);
+			var updateEndpointUri = AppEndpoints.UpdateClientApplication
+				.Replace($"{{{AppEndpoints.ClientIdParameterName}}}", clientData.ClientId);
+
+
+			// Act
+			var loginResponse = await AuthenticationUtilities.PerformRequestToLoginEndpointAsync(httpClient, userEmail, userToLogin.Password);
+
+			var getRegisteredClientBeforeUpdateHttpResponse = await httpClient.GetAsync(getRegisteredClientEndpointUri);
+			var getRegisteredClientBeforeUpdateData = await getRegisteredClientBeforeUpdateHttpResponse.Content.ReadFromJsonAsync<SerializableClient>();
+
+			var updateClientHttpResponse = await httpClient.PutAsync(updateEndpointUri, JsonContent.Create(clientData));
+
+			var getRegisteredClientAfterUpdateHttpResponse = await httpClient.GetAsync(getRegisteredClientEndpointUri);
+			var getRegisteredClientAfterUpdateData = await getRegisteredClientAfterUpdateHttpResponse.Content.ReadFromJsonAsync<SerializableClient>();
+
+			int finalCountOfSecrets = getRegisteredClientAfterUpdateData.ClientSecrets.Count();
+
+			// Assert
+			Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+			Assert.Equal(HttpStatusCode.OK, getRegisteredClientBeforeUpdateHttpResponse.StatusCode);
+			Assert.Equal(HttpStatusCode.OK, updateClientHttpResponse.StatusCode);
+			Assert.Equal(HttpStatusCode.OK, getRegisteredClientAfterUpdateHttpResponse.StatusCode);
+
+			Assert.Equal(initialCountOfSecrets - 1, finalCountOfSecrets);
+
+			Assert.Equal(clientData, getRegisteredClientBeforeUpdateData, clientsComparerWithoutSecrets);
+			Assert.Equal(clientData, getRegisteredClientAfterUpdateData, clientsComparerWithoutSecrets);
+
+			Assert.NotEqual(clientData, getRegisteredClientBeforeUpdateData, clientsComparerWithSecrets);
+			Assert.Equal(clientData, getRegisteredClientAfterUpdateData, clientsComparerWithSecrets);
 		}
 		#endregion
 	}
