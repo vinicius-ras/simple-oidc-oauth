@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Is4HashExtensions = IdentityServer4.Models.HashExtensions;
 
 namespace SimpleOidcOauth.Controllers
 {
@@ -178,6 +177,14 @@ namespace SimpleOidcOauth.Controllers
 
 
 		/// <summary>Registers a new Client Application in the IdP Management Interface.</summary>
+		/// <remarks>
+		///     Notice that all client secrets sent to this endpoint must be new. Thus, they must have their <see cref="SerializableSecret.IsValueHashed"/> field set to false, and
+		///     their <see cref="SerializableSecret.Value"/> field set to a non-empty plaintext representation of the password. Also notice that after this endpoint returns a
+		///     successful result, all of the Secrets' values will be hashed to the application's database and their plaintext representations will be unrecoverable.
+		///
+		///     Any endpoints called after a Client Application registration which return the client's data will always return the secrets'
+		///     <see cref="SerializableSecret.IsValueHashed"/> field set to true, and their <see cref="SerializableSecret.Value"/> fields always set to null.
+		/// </remarks>
 		/// <param name="client">The data for the client that needs to be created.</param>
 		/// <returns>Returns an <see cref="IActionResult" /> object representing the server's response to the client.</returns>
 		/// <response code="201">
@@ -208,6 +215,15 @@ namespace SimpleOidcOauth.Controllers
 			if (string.IsNullOrEmpty(client.ClientId) == false)
 				ModelState.AddModelError(nameof(client.ClientId), $@"New Client Applications must have an empty Client ID.");
 
+			client.ClientSecrets ??= Enumerable.Empty<SerializableSecret>();
+			int totalSecrets = client.ClientSecrets.Count();
+			for (int s = 0; s < totalSecrets; s++)
+			{
+				var secret = client.ClientSecrets.ElementAt(s);
+				if (secret.IsValueHashed == true)
+					ModelState.AddModelError($"{nameof(client.ClientSecrets)}[{s}]", "Secrets must not be hashed while registering new Client Applications.");
+			}
+
 			if (ModelState.ErrorCount > 0)
 				return BadRequest(new ValidationProblemDetails(ModelState));
 
@@ -230,6 +246,17 @@ namespace SimpleOidcOauth.Controllers
 
 
 		/// <summary>Updates the data of a Client Application that has been previously registered with the IdP.</summary>
+		/// <remarks>
+		///     Notice that all new client secrets sent to this endpoint must have their <see cref="SerializableSecret.IsValueHashed"/> field set to false, and
+		///     their <see cref="SerializableSecret.Value"/> field set to a non-empty plaintext representation of the password.
+		///
+		///     As opposed to that, any already registered client secrets that should be kept in the database must be sent with their <see cref="SerializableSecret.IsValueHashed"/>
+		///     fields set to true, and their <see cref="SerializableSecret.Value"/> fields set to null. This will inform the Auth Server to keep the secrets' values unchanged,
+		///     while possibly updating other fields of the secret (e.g., you can send a new description for the secret).
+		///
+		///     It is not possible to modify the value of any previously registered secret - if you lost the plaintext representation of a secret, it will need to be excluded
+		///     and recreated.
+		/// </remarks>
 		/// <param name="clientId">The Client ID for the client that must be updated.</param>
 		/// <param name="clientData">
 		///     <para>The new data for the client that needs to be updated.</para>
@@ -287,17 +314,41 @@ namespace SimpleOidcOauth.Controllers
 			if (clientInDatabase == null)
 				return NotFound();
 
-			// Hash any unhashed client secret
-			foreach (var secret in clientData.ClientSecrets)
-			{
-				if (secret.IsValueHashed == false)
-					secret.Value = Is4HashExtensions.Sha256(secret.Value);
-			}
 
-			// Update values and navigation properties on the found client
+			// For client secrets which are being updated, recover their values from the database
 			var updatedEntityData = _mapper.Map<Client>(clientData);
 			updatedEntityData.Id = clientInDatabase.Id;
 
+			var secretIdsToUpdateInDatabase = clientData.ClientSecrets
+				.Where(secret => secret.DatabaseId.HasValue)
+				.Select(secret => secret.DatabaseId.Value)
+				.ToHashSet();
+			var clientSecretsInDatabase = clientInDatabase.ClientSecrets
+				.Select(secret => new {
+					secretId = secret.Id,
+					secretValue = secret.Value,
+				})
+				.ToHashSet();
+			for (int s = 0; s < updatedEntityData.ClientSecrets.Count; s++)
+			{
+				var updatedSecret = updatedEntityData.ClientSecrets[s];
+				if (updatedSecret.Id <= 0)
+					continue;
+
+
+				var correspondingDatabaseSecret = clientSecretsInDatabase.FirstOrDefault(databaseSecret => databaseSecret.secretId == updatedSecret.Id);
+				if (correspondingDatabaseSecret == null)
+					ModelState.AddModelError($"{nameof(clientData.ClientSecrets)}[{s}].{nameof(SerializableSecret.DatabaseId)}", $"Could not find Secret entry in the database.");
+				else
+					updatedSecret.Value = correspondingDatabaseSecret.secretValue;
+			}
+
+			// In case of any new validation errors, return an HTTP Bad Request (400) response
+			if (ModelState.ErrorCount > 0)
+				return BadRequest(new ValidationProblemDetails(ModelState));
+
+
+			// Update values and navigation properties on the found client
 			var entry = _configurationDbContext.Entry(clientInDatabase);
 			entry.CurrentValues.SetValues(updatedEntityData);
 

@@ -989,6 +989,64 @@ namespace SimpleOidcOauth.Tests.Integration.TestSuites.Controllers
 
 
 		[Fact]
+		public async Task UpdateClientApplication_DataTriesToUpdateSecretThatDoesNotBelongToTheClientApplication_ReturnsBadRequest()
+		{
+			// Arrange
+			await SetupDatabaseForTests(withSampleClients: true);
+
+			var httpClient = WebAppFactory.CreateClient();
+
+			var userToLogin = UserCanViewAndEditClients;
+			var userEmail = userToLogin.Claims.First(claim => claim.Type == JwtClaimTypes.Email).Value;
+
+			var mainClient = TestData.ClientAuthorizationCodeFlowWithPkce;
+			var unrelatedClient = TestData.ClientClientCredentialsFlow;
+
+
+			string getUnrelatedClientDataEndpoint = AppEndpoints.GetRegisteredClient
+				.Replace($@"{{{AppEndpoints.ClientIdParameterName}}}", unrelatedClient.ClientId);
+			string getMainClientDataEndpoint = AppEndpoints.GetRegisteredClient
+				.Replace($@"{{{AppEndpoints.ClientIdParameterName}}}", mainClient.ClientId);
+			var updateMainClientEndpointUri = AppEndpoints.UpdateClientApplication
+				.Replace($"{{{AppEndpoints.ClientIdParameterName}}}", mainClient.ClientId);
+
+
+			// Act
+			var loginResponse = await AuthenticationUtilities.PerformRequestToLoginEndpointAsync(httpClient, userEmail, userToLogin.Password);
+
+			var getUnrelatedClientHttpResponse = await httpClient.GetAsync(getUnrelatedClientDataEndpoint);
+			var getUnrelatedClientHttpResponseClient = await getUnrelatedClientHttpResponse.Content.ReadFromJsonAsync<SerializableClient>();
+			var unrelatedClientFirstSecret = getUnrelatedClientHttpResponseClient.ClientSecrets.First();
+
+			var getMainClientHttpResponse = await httpClient.GetAsync(getMainClientDataEndpoint);
+			var getMainClientHttpResponseClient = await getMainClientHttpResponse.Content.ReadFromJsonAsync<SerializableClient>();
+			var mainClientFirstSecret = getMainClientHttpResponseClient.ClientSecrets.First();
+
+			var mainClientFirstSecretOriginalDatabaseId = mainClientFirstSecret.DatabaseId;
+			mainClientFirstSecret.DatabaseId = unrelatedClientFirstSecret.DatabaseId;
+
+			var updateClientHttpResponse = await httpClient.PutAsync(updateMainClientEndpointUri, JsonContent.Create(getMainClientHttpResponseClient));
+			var updatedClientData = await updateClientHttpResponse.Content.ReadFromJsonAsync<SerializableClient>();
+
+
+			// Assert
+			Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+			Assert.Equal(HttpStatusCode.OK, getUnrelatedClientHttpResponse.StatusCode);
+			Assert.NotNull(unrelatedClientFirstSecret.DatabaseId);
+			Assert.True(unrelatedClientFirstSecret.DatabaseId > 0);
+
+			Assert.Equal(HttpStatusCode.OK, getMainClientHttpResponse.StatusCode);
+			Assert.NotNull(mainClientFirstSecret.DatabaseId);
+			Assert.True(mainClientFirstSecret.DatabaseId > 0);
+
+			Assert.NotEqual(mainClientFirstSecretOriginalDatabaseId, unrelatedClientFirstSecret.DatabaseId);
+
+			Assert.Equal(HttpStatusCode.BadRequest, updateClientHttpResponse.StatusCode);
+		}
+
+
+		[Fact]
 		public async Task UpdateClientApplication_ClientIdInUriIsDifferentThanClientIdInJsonPayload_ReturnsBadRequestResponse()
 		{
 			// Arrange
